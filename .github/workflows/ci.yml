@@ -4,59 +4,62 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      CI: "true"
-      OXLINT_FORMAT: github
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - name: dprint from the flake
-        run: echo "$(nix build --no-link --print-out-paths .#dprint)/bin" >> "$GITHUB_PATH"
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Turbo cache
-        uses: actions/cache@v6
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-dist-${{ github.sha }}
-          restore-keys: |
-            turbo-${{ runner.os }}-dist-
-            turbo-${{ runner.os }}-
-      # Root package.json `check:ci` is the one definition. Never re-enumerate its steps here.
-      - name: Gate
-        run: pnpm check:ci
+  conflicts:
+    name: no merge conflicts
+    uses: ./.github/workflows/conflict-check.yml
+    with:
+      base_ref: ${{ github.event.pull_request.base.ref }}
+      head_sha: ${{ github.event.pull_request.head.sha }}
 
-  e2e:
-    name: e2e
+  abort-on-conflict:
+    name: abort on mid-run merge conflict
+    needs: conflicts
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      CI: "true"
+    timeout-minutes: 46
+    permissions:
+      contents: read
+      actions: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: attw CLI e2e
-        run: pnpm test:e2e
+      - name: Watch for the PR turning dirty
+        if: github.event.pull_request.head.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          while true; do
+            state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .mergeable_state)
+            if [ "$state" = "dirty" ]; then
+              printf '::error title=merge conflicts::This branch conflicted with the base while the run was in progress. Cancelling the run.\n'
+              gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/cancel" >/dev/null 2>&1 || true
+              exit 1
+            fi
+            active=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" \
+              --jq '[.jobs[] | select(.status != "completed")] | length')
+            if [ "$active" -le 1 ]; then
+              echo "no other jobs running; watcher done"
+              exit 0
+            fi
+            sleep 60
+          done
+
+  checks:
+    name: checks · static · types · tests · build
+    needs: conflicts
+    uses: ./.github/workflows/reusable-checks.yml
+
+  contract:
+    name: contract · CLI e2e
+    needs: conflicts
+    uses: ./.github/workflows/reusable-contract.yml

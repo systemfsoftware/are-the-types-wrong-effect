@@ -1,0 +1,27 @@
+name: Contract checks (reusable)
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: contract · CLI e2e (check:contract)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Install workspace dependencies
+        uses: ./.github/actions/install-deps
+        with:
+          cache-key-prefix: contract
+      - name: Gate — CLI e2e contract lane
+        run: pnpm check:contract

@@ -1,0 +1,30 @@
+name: Setup Node runtime
+description: Install pnpm and Node.js with the pnpm store cache, plus the flake-built dprint that `format:check` resolves from PATH.
+
+inputs:
+  node-version:
+    description: Node.js version
+    required: false
+    default: "24"
+  nix:
+    description: Install Nix and put the flake-built dprint on PATH; set to "false" for lanes that run no dprint check
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Nix
+      if: ${{ inputs.nix == 'true' }}
+      uses: cachix/install-nix-action@v31
+    - name: Put the flake-built dprint on PATH
+      if: ${{ inputs.nix == 'true' }}
+      shell: bash
+      run: echo "$(nix build --no-link --print-out-paths .#dprint)/bin" >> "$GITHUB_PATH"
+    - name: Install pnpm
+      uses: pnpm/action-setup@v6
+    - name: Install Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm

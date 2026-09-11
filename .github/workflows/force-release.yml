@@ -29,10 +29,12 @@ jobs:
   force-release:
     name: dummy changeset + release PR
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       HUSKY: "0"
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Write dummy changeset

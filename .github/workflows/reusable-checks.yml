@@ -1,0 +1,80 @@
+name: Checks (reusable)
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  OXLINT_FORMAT: github
+
+jobs:
+  static:
+    name: static · pnpm check:static
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+        with:
+          cache-key-prefix: checks-static
+      - name: pnpm check:static
+        run: pnpm check:static
+
+  types:
+    name: types · pnpm check:types
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+        with:
+          cache-key-prefix: checks-types
+          nix: "false"
+      - name: pnpm check:types
+        run: pnpm check:types
+
+  tests:
+    name: tests · pnpm check:tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+        with:
+          cache-key-prefix: checks-tests
+          nix: "false"
+      - name: pnpm check:tests
+        run: pnpm check:tests
+
+  build:
+    name: build · pnpm check:build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
+        with:
+          cache-key-prefix: checks-build
+          nix: "false"
+      - name: pnpm check:build
+        run: pnpm check:build

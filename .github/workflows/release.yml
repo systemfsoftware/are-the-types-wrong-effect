@@ -16,6 +16,7 @@ jobs:
   plan:
     name: plan · derive phase
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     outputs:
@@ -23,17 +24,18 @@ jobs:
     env:
       HUSKY: "0"
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
-      - uses: denoland/setup-deno@v2
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-key-prefix: release
+          nix: "false"
       - name: Preflight intent consumption
         run: pnpm version -r --dry-run
       - id: plan
@@ -45,22 +47,25 @@ jobs:
     needs: [plan]
     name: version · open release PR
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     env:
       HUSKY: "0"
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: denoland/setup-deno@v2
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-key-prefix: release
+          nix: "false"
       - name: Consume pending change intents
         run: pnpm version -r
       - name: Capture release set
@@ -84,20 +89,22 @@ jobs:
     name: publish · oidc · tag
     needs: [plan]
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       HUSKY: "0"
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
-      - uses: denoland/setup-deno@v2
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+      - name: Install dependencies
+        uses: ./.github/actions/install-deps
         with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-key-prefix: release
+          nix: "false"
       - name: Capture release set
         run: ./scripts/tag-released-packages.ts --dry-run --json --output /tmp/captured.json
       - name: Assert release notes
