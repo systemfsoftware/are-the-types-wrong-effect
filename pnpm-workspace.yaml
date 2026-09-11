@@ -21,7 +21,7 @@ catalog:
   "@systemfsoftware/effect-schema-vite": ^2.0.3
   "@systemfsoftware/npm-package": ^0.2.2
   "@systemfsoftware/oxlint-plugin-effect-dmmf": ^5.3.0
-  "@systemfsoftware/stryker-js-cli": ^6.0.0
+  "@systemfsoftware/stryker-js-cli": ^7.0.1
   "@systemfsoftware/stryker-js-typescript-checker": ^5.0.0
   "@systemfsoftware/stryker-js-vitest-runner": ^4.0.0
   "@systemfsoftware/stryker-plugins": ^3.0.0
@@ -52,6 +52,13 @@ catalogMode: prefer
 catalogs:
   attw:
     typescript: ^6.0.3
+minimumReleaseAgeExclude:
+  - "@systemfsoftware/effect-cell-types@7.0.0"
+  - "@systemfsoftware/stryker-js-cli@7.0.1"
+  - "@systemfsoftware/stryker-js-engine@2.0.1"
+  - "@systemfsoftware/stryker-js-html-reporter@3.0.1"
+  - "@systemfsoftware/stryker-js-instrumenter@5.0.2"
+  - "@systemfsoftware/stryker-js@3.0.1"
 packages:
   - apps/*
   - packages/*

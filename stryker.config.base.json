@@ -1,0 +1,37 @@
+{
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "checkers": ["typescript"],
+  "plugins": [
+    "@systemfsoftware/stryker-js-vitest-runner",
+    "@systemfsoftware/stryker-js-typescript-checker",
+    "@systemfsoftware/stryker-plugins"
+  ],
+  "ignorers": ["effect-schema-declarations"],
+  "reporters": ["progress", "html", "json"],
+  "htmlReporter": {
+    "fileName": "reports/mutation-report.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation-report.json"
+  },
+  "vitest": {
+    "configFile": "vitest.config.ts",
+    "dir": ".",
+    "related": true
+  },
+  "typescriptChecker": {
+    "prioritizePerformanceOverAccuracy": true
+  },
+  "coverageAnalysis": "perTest",
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
+  "ignorePatterns": ["reports", "coverage"],
+  "disableBail": true,
+  "dryRunTimeoutMinutes": 10,
+  "thresholds": {
+    "high": 100,
+    "low": 80,
+    "break": 100
+  }
+}
