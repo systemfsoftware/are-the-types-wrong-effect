@@ -117,7 +117,7 @@ pnpm exec attw ./my-package-1.2.3.tgz
 ```
 
 Its flags and profiles are documented in the
-[CLI package](https://github.com/systemfsoftware/are-the-types-wrong/tree/main/apps/arethetypeswrong-cli).
+[CLI package](https://github.com/systemfsoftware/are-the-types-wrong-effect/tree/main/apps/arethetypeswrong-cli).
 
 ## Checks
 

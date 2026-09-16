@@ -84,7 +84,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   meta = {
     description = "Analyze npm package contents for TypeScript type resolution issues";
-    homepage = "https://github.com/systemfsoftware/are-the-types-wrong";
+    homepage = "https://github.com/systemfsoftware/are-the-types-wrong-effect";
     license = lib.licenses.asl20;
     mainProgram = "attw";
     platforms = [

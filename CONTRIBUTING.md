@@ -12,8 +12,8 @@ Contributions are welcome. Follow these instructions to set up the development e
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/systemfsoftware/are-the-types-wrong.git
-cd are-the-types-wrong
+git clone https://github.com/systemfsoftware/are-the-types-wrong-effect.git
+cd are-the-types-wrong-effect
 pnpm install
 ```
 
