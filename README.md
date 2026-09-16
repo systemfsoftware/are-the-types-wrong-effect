@@ -26,7 +26,7 @@ pnpm add -D @systemfsoftware/arethetypeswrong-cli
 The CLI is also a flake output, built from this repository with the Node that runs it pinned:
 
 ```bash
-nix run github:systemfsoftware/are-the-types-wrong#attw -- --pack .
+nix run github:systemfsoftware/are-the-types-wrong-effect#attw -- --pack .
 ```
 
 ## Quick Start
