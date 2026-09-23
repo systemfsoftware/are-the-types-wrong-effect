@@ -25,18 +25,22 @@
     }
   },
   "scripts": {
-    "build": "tsdown",
+    "api:check": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "build": "tsdown -l warn && pnpm api:check",
     "clean": "rimraf dist",
-    "typecheck": "tsc --noEmit --incremental",
+    "mutation": "stryker run",
+    "mutation:full": "stryker run --force",
+    "typecheck": "tsc -b",
     "attw": "npm_config_ignore_scripts=true attw --pack .",
     "lint": "f=${OXLINT_FORMAT:-${AGENT:+agent}}; oxlint . --format=${f:-default}",
-    "mutation": "stryker run",
     "test": "vitest run",
     "prepack": "pnpm build"
   },
   "type": "module",
   "exports": {
     ".": {
+      "@systemfsoftware/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.mjs"
     },
@@ -53,6 +57,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@microsoft/api-extractor": "catalog:",
     "@systemfsoftware/arethetypeswrong-cli": "catalog:",
     "@systemfsoftware/arethetypeswrong-recipes": "workspace:^",
     "@systemfsoftware/effect-cell-types": "catalog:",
@@ -77,6 +82,7 @@
     "oxlint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {

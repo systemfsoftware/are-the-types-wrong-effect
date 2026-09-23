@@ -7,6 +7,7 @@ export default defineConfig({
   platform: 'node',
   shims: true,
   dts: false,
+  define: { 'import.meta.vitest': 'undefined' },
   outExtensions: () => ({ js: '.mjs' }),
   tsconfig: './tsconfig.build.json',
   deps: {

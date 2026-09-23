@@ -1,32 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@systemfsoftware/tsconfig/bundler/no-dom",
-  "compilerOptions": {
-    "exactOptionalPropertyTypes": false,
-    "noUncheckedIndexedAccess": false,
-    "noImplicitReturns": false,
-    "noImplicitOverride": false,
-    "noPropertyAccessFromIndexSignature": false,
-    "types": [
-      "node"
-    ],
-    // This is tooling code, not Effect cell code: the constitution policy in
-    // @systemfsoftware/tsconfig/effect is deliberately NOT extended here.
-    // The Effect Language Service runs at its own defaults — correctness tier only.
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ]
-  },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ],
+  "files": [],
   "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.test.json"
+    },
     {
       "path": "./tsconfig.node.json"
     }

@@ -15,7 +15,7 @@
     "lint": "f=${OXLINT_FORMAT:-${AGENT:+agent}}; oxlint . --format=${f:-default}",
     "test:e2e": "vitest run",
     "test:evals": "node evals/run.ts",
-    "typecheck": "tsc --noEmit --incremental"
+    "typecheck": "tsc -b"
   },
   "devDependencies": {
     "@systemfsoftware/arethetypeswrong-recipes": "workspace:^",
@@ -27,6 +27,7 @@
     "oxlint": "catalog:",
     "testcontainers": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {

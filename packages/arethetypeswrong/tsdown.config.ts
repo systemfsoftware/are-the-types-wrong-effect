@@ -31,7 +31,8 @@ export default defineConfig({
   entry: ['src/index.ts'],
   format: 'esm',
   clean: true,
-  exports: { customExports: injectTypes },
+  define: { 'import.meta.vitest': 'undefined' },
+  exports: { devExports: '@systemfsoftware/source', customExports: injectTypes },
   outExtensions: () => ({ js: '.mjs', dts: '.d.ts' }),
   tsconfig: './tsconfig.build.json',
   deps: {

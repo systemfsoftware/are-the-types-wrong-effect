@@ -1,6 +1,6 @@
-import { defineConfig } from '@systemfsoftware/stryker-js/config'
+import { defineConfig, type StrykerConfig } from '@systemfsoftware/stryker-js/config'
 
-export default defineConfig({
+const config: StrykerConfig = defineConfig({
   packageManager: 'pnpm',
   reporters: ['progress', 'html', 'json', 'progress-stream'],
   htmlReporter: { fileName: 'reports/mutation-report.html' },
@@ -30,3 +30,5 @@ export default defineConfig({
   mutate: ['src/**/*.workflow.ts'],
   dryRunTimeoutMinutes: 10,
 })
+
+export default config
