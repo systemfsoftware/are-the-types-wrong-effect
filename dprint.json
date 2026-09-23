@@ -17,6 +17,7 @@
     "pnpm-lock.yaml",
     "coverage/**",
     "reports/**",
+    "**/etc/*.api.md",
     "**/snapshots/*.md",
     "repos/**"
   ],
