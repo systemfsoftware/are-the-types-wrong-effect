@@ -201,6 +201,9 @@ importers:
       '@systemfsoftware/effect-cell-types':
         specifier: 'catalog:'
         version: 10.1.0(effect@4.0.0-rc.116)
+      '@systemfsoftware/effect-gherkin-spec':
+        specifier: 'catalog:'
+        version: 4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-law':
         specifier: 'catalog:'
         version: 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
@@ -264,6 +267,12 @@ importers:
 
   apps/arethetypeswrong-cli-e2e:
     devDependencies:
+      '@effect/platform-node':
+        specifier: 4.0.0-rc.116
+        version: 4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
+      '@effect/vitest':
+        specifier: 4.0.0-rc.116
+        version: 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/arethetypeswrong-recipes':
         specifier: workspace:^
         version: link:../../packages/arethetypeswrong-recipes
@@ -412,6 +421,9 @@ importers:
       '@systemfsoftware/npm-package':
         specifier: 'catalog:'
         version: 0.4.0(effect@4.0.0-rc.116)
+      effect:
+        specifier: 4.0.0-rc.116
+        version: 4.0.0-rc.116
     devDependencies:
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'

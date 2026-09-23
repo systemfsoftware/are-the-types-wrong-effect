@@ -1,5 +1,5 @@
 import { checkPackage } from '@systemfsoftware/arethetypeswrong'
-import { recipes } from '@systemfsoftware/arethetypeswrong-recipes'
+import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
 import { Gherkin, Given, it, layer, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { createPackage } from '@systemfsoftware/npm-package'
 import { Effect, Schema } from 'effect'
@@ -30,7 +30,7 @@ const declarationPlacements = [
   { placement: 'in a sibling directory beside it', verdict: 'shipping no declarations' },
 ] as const
 
-const recipeCount = Object.entries(recipes).length
+const recipeCount = Object.entries(Recipe).length
 
 const generatedPackageTree = (variant: number, placement: (typeof declarationPlacements)[number]['placement']) =>
   Effect.gen(function*() {
@@ -85,7 +85,7 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
     authoredProblems,
     (row) =>
       Gherkin.Do.pipe(
-        Given(`the ${row.recipe} synthetic package`)('pkg', () => Effect.sync(() => recipes[row.recipe]())),
+        Given(`the ${row.recipe} synthetic package`)('pkg', () => Effect.sync(() => Recipe[row.recipe]())),
         When('the package is analysed')('kinds', ({ pkg }) =>
           checkPackage(pkg).pipe(
             Effect.map((analysed) => {
@@ -147,7 +147,7 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
     Gherkin.Do.pipe(
       Given('every synthetic recipe package')(
         'packages',
-        () => Effect.sync(() => Object.entries(recipes).map(([name, make]) => ({ name, pkg: make() }))),
+        () => Effect.sync(() => Object.entries(Recipe).map(([name, make]) => ({ name, pkg: make() }))),
       ),
       When('the engine analyses every package')(
         'outcomes',

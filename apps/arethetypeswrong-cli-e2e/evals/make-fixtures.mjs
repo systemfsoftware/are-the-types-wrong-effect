@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { recipes } from '@systemfsoftware/arethetypeswrong-recipes'
+import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
 import { createPackage, packPackage } from '@systemfsoftware/npm-package'
 
 const FIXTURES_DIR = fileURLToPath(new URL('./fixtures', import.meta.url))
@@ -31,9 +31,9 @@ const node10ProblemsOnly = () =>
   )
 
 const TARBALL_BY_PACKAGE = {
-  'typed.tgz': recipes.NamedExports,
-  'untyped.tgz': recipes.TypesCompanion,
-  'false-cjs.tgz': recipes.FalseCJS,
+  'typed.tgz': Recipe.NamedExports,
+  'untyped.tgz': Recipe.TypesCompanion,
+  'false-cjs.tgz': Recipe.FalseCJS,
   'typed-node10.tgz': node10ProblemsOnly,
 }
 

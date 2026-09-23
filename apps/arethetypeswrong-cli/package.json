@@ -39,6 +39,7 @@
     "@effect/vitest": "catalog:",
     "@systemfsoftware/arethetypeswrong": "workspace:*",
     "@systemfsoftware/effect-cell-types": "catalog:",
+    "@systemfsoftware/effect-gherkin-spec": "catalog:",
     "@systemfsoftware/effect-schema-law": "catalog:",
     "@systemfsoftware/effect-schema-vite": "catalog:",
     "@systemfsoftware/oxlint-config-recommended": "catalog:",
