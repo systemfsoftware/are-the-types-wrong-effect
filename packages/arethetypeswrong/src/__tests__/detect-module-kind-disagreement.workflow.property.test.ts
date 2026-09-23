@@ -2,7 +2,7 @@ import { it } from '@effect/vitest'
 import { Result } from 'effect'
 import * as Match from 'effect/Match'
 import * as S from 'effect/Schema'
-import * as fc from 'effect/testing/FastCheck'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import { ModuleKindObservation as ModuleKindObservationSchema } from '../../tests/__fixtures__/module-kind-observation.schema.js'
 import {
@@ -34,9 +34,16 @@ const KIND_PAIRS = [
   { types: ESNextModuleKind, implementation: ESNextModuleKind },
 ] as const
 
-const completeObservationArbitrary: fc.Arbitrary<ModuleKindObservationComplete> = fc
-  .tuple(fc.constantFrom(...KIND_PAIRS), S.toArbitrary(ModuleKindObservationSchema)(fc))
-  .map(
+const kindPairArbitrary: Arbitrary.Arbitrary<(typeof KIND_PAIRS)[number]> = Arbitrary.flatMap(
+  Arbitrary.schema(S.Int.pipe(S.check(S.isBetween({ minimum: 0, maximum: KIND_PAIRS.length - 1 })))),
+  (index) => Arbitrary.Constant(KIND_PAIRS[index]),
+)
+
+const completeObservationArbitrary: Arbitrary.Arbitrary<ModuleKindObservationComplete> = Arbitrary.all([
+  kindPairArbitrary,
+  Arbitrary.schema(ModuleKindObservationSchema),
+]).pipe(
+  Arbitrary.map(
     ([pair, raw]) =>
       new ModuleKindObservationComplete({
         typesFileName: raw.typesFileName ?? 'types.d.ts',
@@ -52,30 +59,47 @@ const completeObservationArbitrary: fc.Arbitrary<ModuleKindObservationComplete> 
           reasonFileName: raw.implementationModuleKind?.reasonFileName ?? 'index.js',
         },
       }),
-  )
-
-const observationArbitrary: fc.Arbitrary<ModuleKindObservation> = fc.oneof(
-  S.toArbitrary(ModuleKindObservationSchema)(fc).map(
-    (raw): ModuleKindObservation =>
-      Match.value({
-        typesFileName: raw.typesFileName ?? undefined,
-        implementationFileName: raw.implementationFileName ?? undefined,
-        typesModuleKind: raw.typesModuleKind ?? undefined,
-        implementationModuleKind: raw.implementationModuleKind ?? undefined,
-      }).pipe(
-        Match.when(
-          {
-            typesFileName: Match.nonEmptyString,
-            implementationFileName: Match.nonEmptyString,
-            typesModuleKind: Match.defined,
-            implementationModuleKind: Match.defined,
-          },
-          (complete) => new ModuleKindObservationComplete(complete),
-        ),
-        Match.orElse(() => new ModuleKindObservationMissing()),
-      ),
   ),
-  completeObservationArbitrary,
+)
+
+const rawObservationArbitrary: Arbitrary.Arbitrary<ModuleKindObservation> = Arbitrary.schema(
+  ModuleKindObservationSchema,
+).pipe(
+  Arbitrary.map((raw): ModuleKindObservation =>
+    Match.value({
+      typesFileName: raw.typesFileName ?? undefined,
+      implementationFileName: raw.implementationFileName ?? undefined,
+      typesModuleKind: raw.typesModuleKind ?? undefined,
+      implementationModuleKind: raw.implementationModuleKind ?? undefined,
+    }).pipe(
+      Match.when(
+        {
+          typesFileName: Match.nonEmptyString,
+          implementationFileName: Match.nonEmptyString,
+          typesModuleKind: Match.defined,
+          implementationModuleKind: Match.defined,
+        },
+        (complete) => new ModuleKindObservationComplete(complete),
+      ),
+      Match.orElse(() => new ModuleKindObservationMissing()),
+    )
+  ),
+)
+
+const observationArbitrary: Arbitrary.Arbitrary<ModuleKindObservation> = Arbitrary.flatMap(
+  Arbitrary.schema(S.Literals(['raw', 'complete'])),
+  (side) =>
+    Match.value(side).pipe(
+      Match.when('raw', () => rawObservationArbitrary),
+      Match.orElse(() => completeObservationArbitrary),
+    ),
+)
+
+const disagreeingObservationArbitrary = completeObservationArbitrary.pipe(
+  Arbitrary.filter(
+    ({ typesModuleKind, implementationModuleKind }) =>
+      typesModuleKind.detectedKind !== implementationModuleKind.detectedKind,
+  ),
 )
 
 const observedChannel = (observation: ModuleKindObservation): DecisionChannel =>
@@ -126,8 +150,7 @@ it.prop(
   ([observation]) => observedChannel(observation) === referenceChannel(observation),
 )
 
-it.prop('∀declaration_ModuleKindDisagreement_≡NamesTheEsmSide', [completeObservationArbitrary], ([observation]) => {
-  fc.pre(observation.typesModuleKind.detectedKind !== observation.implementationModuleKind.detectedKind)
+it.prop('∀declaration_ModuleKindDisagreement_≡NamesTheEsmSide', [disagreeingObservationArbitrary], ([observation]) => {
   return Result.match(detectModuleKindDisagreement(new DetectModuleKindDisagreementCommand({ observation })), {
     onFailure: (): boolean => false,
     onSuccess: (decision) =>

@@ -8,7 +8,7 @@ const RegistryFailureDecisionTypeId: unique symbol = Symbol.for(
 type RegistryFailureDecisionTypeId = typeof RegistryFailureDecisionTypeId
 
 export class RegistryStatusObserved extends S.TaggedClass<RegistryStatusObserved>()('RegistryStatusObserved', {
-  status: S.Number,
+  status: S.Finite,
 }) {}
 
 export class RegistryNoResponseObserved extends S.TaggedClass<RegistryNoResponseObserved>()(
@@ -30,7 +30,9 @@ export class ClassifyRegistryFailureCommand extends S.Class<ClassifyRegistryFail
   'ClassifyRegistryFailureCommand',
 )({
   observation: S.Union([RegistryStatusObserved, RegistryNoResponseObserved, RegistryUnreadableShapeObserved]),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 export class RegistryNotFoundDecided extends S.TaggedError<RegistryNotFoundDecided>()('RegistryNotFound', {
   message: S.String,
@@ -55,7 +57,7 @@ export class RegistryBadResponseDecided extends S.TaggedError<RegistryBadRespons
 
 export class RegistryAnsweredSuccessfully extends S.TaggedError<RegistryAnsweredSuccessfully>()(
   'RegistryAnsweredSuccessfully',
-  { status: S.Number },
+  { status: S.Finite },
 ) {
   readonly [RegistryFailureDecisionTypeId] = RegistryFailureDecisionTypeId
 }
@@ -110,9 +112,11 @@ const registryBadResponse = (status: number): RegistryBadResponseDecided =>
     recovery: 'Check network access and the --registry URL, then rerun the same command.',
   })
 
-export const classifyRegistryFailure = Workflow.make(
-  ClassifyRegistryFailureCommand,
-  (command): Result.Result<RegistryFailureDecision, RegistryAnsweredSuccessfully> =>
+export const classifyRegistryFailure = Workflow.make({
+  command: ClassifyRegistryFailureCommand,
+  decision: S.Union([RegistryNotFoundDecided, RegistryUnreachableDecided, RegistryBadResponseDecided]),
+  error: RegistryAnsweredSuccessfully,
+  decide: (command): Result.Result<RegistryFailureDecision, RegistryAnsweredSuccessfully> =>
     Match.value(command.observation).pipe(
       Match.tag('RegistryNoResponseObserved', () => Result.succeed(registryUnreachable())),
       Match.tag('RegistryUnreadableShapeObserved', () => Result.succeed(registryUnreadable())),
@@ -125,4 +129,4 @@ export const classifyRegistryFailure = Workflow.make(
         )),
       Match.exhaustive,
     ),
-)
+})

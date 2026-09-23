@@ -1,6 +1,8 @@
 import * as Config from 'effect/Config'
 import * as Console from 'effect/Console'
 import * as Effect from 'effect/Effect'
+import * as Function from 'effect/Function'
+import type * as JsonSchema from 'effect/JsonSchema'
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import * as Argument from 'effect/unstable/cli/Argument'
@@ -11,77 +13,110 @@ import * as Flag from 'effect/unstable/cli/Flag'
 
 import type { CliRequest } from './AttwExecutor.js'
 import { runAttw } from './AttwExecutor.js'
+import { cliVersion } from './cli-version.js'
 import { failureOutcome } from './failure-shaping.js'
 import type { AttwFailure } from './Failure.schema.js'
 import { CliFilesystem as Filesystem } from './FilesystemAdapter.js'
 import { PackRunner } from './PackRunnerAdapter.js'
 import { CliFormat, CliProfile } from './ProblemUtils.js'
-import { schemaCommand } from './schema-command.js'
+import { buildSchemaDocument, schemaCommand } from './schema-command.js'
 import { Terminal } from './TerminalAdapter.js'
 
 const defaultFormat: typeof CliFormat[number] = 'auto'
 const defaultProfile: typeof CliProfile[number] = 'strict'
 
 export const analyzeFlags = {
-  'pack': Flag.boolean('pack').pipe(
+  'pack': Flag.Boolean('pack').pipe(
     Flag.withAlias('P'),
     Flag.withDefault(false),
     Flag.withDescription(
       'Run `npm pack` in the specified directory and delete the resulting .tgz file afterwards',
     ),
   ),
-  'from-npm': Flag.boolean('from-npm').pipe(
+  'from-npm': Flag.Boolean('from-npm').pipe(
     Flag.withAlias('p'),
     Flag.withDefault(false),
     Flag.withDescription('Read from the npm registry instead of a local file'),
   ),
-  'definitely-typed': Flag.optional(Flag.string('definitely-typed')).pipe(
+  'definitely-typed': Flag.String('definitely-typed').pipe(
+    Flag.optional,
     Flag.withDescription('Specify the version range of @types to use. Pass `false` to disable.'),
   ),
-  'format': Flag.choice('format', CliFormat).pipe(
+  'format': Flag.Literals('format', CliFormat).pipe(
     Flag.withAlias('f'),
     Flag.withDefault(defaultFormat),
   ),
-  'quiet': Flag.boolean('quiet').pipe(
+  'quiet': Flag.Boolean('quiet').pipe(
     Flag.withAlias('q'),
     Flag.withDefault(false),
     Flag.withDescription("Don't print anything to STDOUT (overrides all other options)"),
   ),
-  'entrypoints': Flag.optional(Flag.atLeast<string>(1)(Flag.string('entrypoints'))),
-  'include-entrypoints': Flag.optional(Flag.atLeast<string>(1)(Flag.string('include-entrypoints'))),
-  'exclude-entrypoints': Flag.optional(Flag.atLeast<string>(1)(Flag.string('exclude-entrypoints'))),
-  'include': Flag.optional(
-    Flag.atLeast<string>(1)(Flag.string('include')).pipe(
-      Flag.withDescription(
-        'Comma-separated envelope fields to restore: entrypoints, buildTools, programInfo, traces',
-      ),
+  'entrypoints': Flag.String('entrypoints').pipe(Flag.atLeast<string>(1), Flag.optional),
+  'include-entrypoints': Flag.String('include-entrypoints').pipe(Flag.atLeast<string>(1), Flag.optional),
+  'exclude-entrypoints': Flag.String('exclude-entrypoints').pipe(Flag.atLeast<string>(1), Flag.optional),
+  'include': Flag.String('include').pipe(
+    Flag.atLeast<string>(1),
+    Flag.withDescription(
+      'Comma-separated envelope fields to restore: entrypoints, buildTools, programInfo, traces',
     ),
+    Flag.optional,
   ),
-  'entrypoints-legacy': Flag.boolean('entrypoints-legacy').pipe(Flag.withDefault(false)),
-  'ignore-rules': Flag.optional(
-    Flag.atLeast<string>(1)(Flag.string('ignore-rules').pipe(Flag.withAlias('ignore-rule'))).pipe(
-      Flag.withFallbackConfig(Config.schema(Config.Array(Schema.String), 'ignoreRules')),
-    ),
+  'entrypoints-legacy': Flag.Boolean('entrypoints-legacy').pipe(Flag.withDefault(false)),
+  'ignore-rules': Flag.String('ignore-rules').pipe(
+    Flag.withAlias('ignore-rule'),
+    Flag.atLeast<string>(1),
+    Flag.withFallbackConfig(Config.Array(Schema.String, 'ignoreRules')),
+    Flag.optional,
   ),
-  'profile': Flag.choice('profile', CliProfile).pipe(Flag.withDefault(defaultProfile)),
-  'summary': Flag.boolean('summary').pipe(Flag.withDefault(true)),
-  'emoji': Flag.boolean('emoji').pipe(Flag.withDefault(true)),
-  'color': Flag.boolean('color').pipe(Flag.withDefault(true)),
-  'registry': Flag.string('registry').pipe(
+  'profile': Flag.Literals('profile', CliProfile).pipe(Flag.withDefault(defaultProfile)),
+  'summary': Flag.Boolean('summary').pipe(Flag.withDefault(true)),
+  'emoji': Flag.Boolean('emoji').pipe(Flag.withDefault(true)),
+  'color': Flag.Boolean('color').pipe(Flag.withDefault(true)),
+  'registry': Flag.String('registry').pipe(
     Flag.withDescription(
       'URL of the npm registry to read packages from with --from-npm (default: https://registry.npmjs.org)',
     ),
     Flag.withFallbackConfig(
-      Config.string('registry').pipe(Config.withDefault('https://registry.npmjs.org')),
+      Config.String('registry').pipe(Config.withDefault('https://registry.npmjs.org')),
     ),
   ),
 } as const
 
-const analyzeTarget = Argument.optional(Argument.string('file-directory-or-package-spec'))
+const analyzeTarget = Argument.optional(Argument.String('file-directory-or-package-spec'))
 
 const analyzeConfig = { ...analyzeFlags, target: analyzeTarget }
 
 type AnalyzeConfig = Command.Command.Config.Infer<typeof analyzeConfig>
+
+export const implementedFlags: readonly string[] = Object.keys(analyzeFlags)
+
+const isSchemaNode = (variant: unknown): variant is JsonSchema.JsonSchema => variant instanceof Object
+
+const schemaArray = (document: JsonSchema.Document<'draft-2020-12'>): readonly JsonSchema.JsonSchema[] => {
+  const variants = document.schema['anyOf']
+  return Array.isArray(variants) ? variants.filter(isSchemaNode) : []
+}
+
+const propertyNamesOf = (schema: JsonSchema.JsonSchema): readonly string[] => {
+  const properties = schema['properties']
+  if (properties instanceof Object) return Object.keys(properties)
+  return []
+}
+
+const documentedPropertyNames = (document: JsonSchema.Document<'draft-2020-12'>): readonly string[] => {
+  const variants = [...schemaArray(document), ...Object.values(document.definitions)]
+  const names = [
+    ...propertyNamesOf(document.schema),
+    ...variants.flatMap((variant) => propertyNamesOf(variant)),
+  ]
+  return names.filter((name, index) => names.indexOf(name) === index)
+}
+
+const publishedSchemaDocument = buildSchemaDocument(cliVersion)
+
+export const documentedFlags: readonly string[] = documentedPropertyNames(publishedSchemaDocument.input)
+
+export const documentedEnvelopeKeys: readonly string[] = documentedPropertyNames(publishedSchemaDocument.envelope)
 
 const unwrap = <A>(opt: Option.Option<A>): A | undefined => {
   if (Option.isSome(opt)) return opt.value
@@ -186,7 +221,7 @@ const showHelpUsageErrorCommand = (error: CliError.ShowHelp, isTty: boolean): Us
 }
 
 const usageErrorCommandOf = (error: CliError.CliError, isTty: boolean): UsageErrorCommand => {
-  if (error instanceof CliError.ShowHelp) return showHelpUsageErrorCommand(error, isTty)
+  if (Schema.is(CliError.ShowHelp)(error)) return showHelpUsageErrorCommand(error, isTty)
   return formattedUsageErrorCommand(error, isTty)
 }
 
@@ -210,7 +245,7 @@ const writeCaptured = (
   })
 
 const isBareShowHelp = (error: CliError.CliError): boolean =>
-  error instanceof CliError.ShowHelp && error.errors.length === 0
+  Schema.is(CliError.ShowHelp)(error) && error.errors.length === 0
 
 const handleCliError = (
   error: CliError.CliError,
@@ -228,27 +263,28 @@ const handleCliError = (
     })
   })
 
-const captureFrameworkLog = (captured: string[]): Console.Console =>
-  new Proxy(globalThis.console, {
-    get: (target, property) => {
-      if (property === 'log') {
-        return (...args: ReadonlyArray<unknown>): void => {
-          captured.push(args.map(String).join(' '))
-        }
-      }
-      const member: unknown = Reflect.get(target, property)
-      return member
-    },
-  })
+const captureFrameworkLog = (captured: string[]): Console.Console => ({
+  ...globalThis.console,
+  log: (...args: Parameters<Console.Console['log']>): void => {
+    captured.push(args.map(String).join(' '))
+  },
+})
 
-export const runCli = (
-  argv: ReadonlyArray<string>,
-  options: { readonly version: string },
-): Effect.Effect<void, never, Terminal | Filesystem | PackRunner | Command.Environment> => {
+export const runCli = Function.dual<
+  (
+    options: { readonly version: string },
+  ) => (
+    argv: ReadonlyArray<string>,
+  ) => Effect.Effect<void, never, Terminal | Filesystem | PackRunner | Command.Environment>,
+  (
+    argv: ReadonlyArray<string>,
+    options: { readonly version: string },
+  ) => Effect.Effect<void, never, Terminal | Filesystem | PackRunner | Command.Environment>
+>(2, (argv, options) => {
   const captured: string[] = []
   return Command.runWith(attwCommand, { version: options.version, renderErrors: false })(argv).pipe(
     Effect.tap(() => writeCaptured('stdout', captured)),
     Effect.catchIf(CliError.isCliError, (error) => handleCliError(error, captured)),
     Effect.provideService(Console.Console, captureFrameworkLog(captured)),
   )
-}
+})

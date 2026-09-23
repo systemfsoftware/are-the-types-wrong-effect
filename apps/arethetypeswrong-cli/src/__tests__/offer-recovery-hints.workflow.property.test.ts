@@ -1,6 +1,6 @@
 import { it } from '@effect/vitest'
-import { Match, Predicate, Result } from 'effect'
-import * as fc from 'effect/testing/FastCheck'
+import { Match, Predicate, Result, Schema } from 'effect'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import { CliInputSchema } from '../CliInput.schema.js'
 import type { MachineEnvelope } from '../decode-envelope-document.workflow.js'
@@ -13,6 +13,15 @@ import {
   RunHintsRequest,
 } from '../offer-recovery-hints.workflow.js'
 import type { RenderMode } from '../select-render-mode.workflow.js'
+
+const oneOf = <A>(values: readonly A[]): Arbitrary.Arbitrary<A> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 0, maximum: values.length - 1 })))),
+    (index) => Arbitrary.Constant(values[index]),
+  )
+
+const oneArbitrary = <A>(branches: ReadonlyArray<Arbitrary.Arbitrary<A>>): Arbitrary.Arbitrary<A> =>
+  oneOf(branches).pipe(Arbitrary.flatMap((branch) => branch))
 
 const escape = String.fromCharCode(27)
 
@@ -120,22 +129,26 @@ const expansionSituations = ['expansion', 'partialMask'] as const
 
 const renderModes = ['envelope', 'table', 'table-flipped', 'ascii', 'quiet'] as const satisfies readonly RenderMode[]
 
-const maskValue: fc.Arbitrary<EnvelopeMask> = fc.record({
-  entrypoints: fc.boolean(),
-  buildTools: fc.boolean(),
-  programInfo: fc.boolean(),
-  traces: fc.boolean(),
+const maskValue: Arbitrary.Arbitrary<EnvelopeMask> = Arbitrary.all({
+  entrypoints: Arbitrary.schema(Schema.Boolean),
+  buildTools: Arbitrary.schema(Schema.Boolean),
+  programInfo: Arbitrary.schema(Schema.Boolean),
+  traces: Arbitrary.schema(Schema.Boolean),
 })
 
-const includeTokens: fc.Arbitrary<string[]> = fc.array(fc.constantFrom(...EnvelopeMaskFields), { maxLength: 4 })
+const includeTokens: Arbitrary.Arbitrary<readonly EnvelopeMaskField[]> = Arbitrary.array(
+  Arbitrary.schema(Schema.Literals(EnvelopeMaskFields)),
+  { maxLength: 4 },
+)
 
-const hostileName: fc.Arbitrary<string> = fc
-  .tuple(
-    fc.constantFrom(`${escape}[31m`, `${escape}[1;32m`, `${escape}]0;`),
-    fc.stringMatching(/^[A-Za-z0-9@/._-]{1,12}$/),
-    fc.constantFrom(`${escape}[0m`, `${escape}[K`, '\u0007'),
-  )
-  .map(([prefix, body, suffix]) => `${prefix}${body}${suffix}`)
+const hostileName: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([
+    oneOf([`${escape}[31m`, `${escape}[1;32m`, `${escape}]0;`]),
+    Arbitrary.schema(Schema.String.pipe(Schema.check(Schema.isPattern(/^[A-Za-z0-9@/._-]{1,12}$/)))),
+    oneOf([`${escape}[0m`, `${escape}[K`, '\u0007']),
+  ]),
+  ([prefix, body, suffix]) => `${prefix}${body}${suffix}`,
+)
 
 interface HostileRunInputs {
   readonly packageName: string
@@ -145,10 +158,10 @@ interface HostileRunInputs {
   readonly mask: EnvelopeMask
 }
 
-const hostileRunInputs: fc.Arbitrary<HostileRunInputs> = fc.record({
+const hostileRunInputs: Arbitrary.Arbitrary<HostileRunInputs> = Arbitrary.all({
   packageName: hostileName,
-  untyped: fc.boolean(),
-  mode: fc.constantFrom(...renderModes),
+  untyped: Arbitrary.schema(Schema.Boolean),
+  mode: oneOf(renderModes),
   include: includeTokens,
   mask: maskValue,
 })
@@ -171,15 +184,19 @@ const runNamed = (inputs: HostileRunInputs, packageName: string): DecideHintsCom
 const flagTokensIn = (text: string): readonly string[] =>
   [...text.matchAll(/--[a-z][a-z-]*/g)].map((match) => match[0].slice(2))
 
-const nonFieldToken: fc.Arbitrary<string> = fc.oneof(
-  fc
-    .tuple(fc.constantFrom(...EnvelopeMaskFields), fc.stringMatching(/^[A-Za-z0-9.-]{1,4}$/))
-    .map(([field, suffix]) => `${field}${suffix}`),
-  fc.constantFrom('table', 'json', 'ascii', '-f', ''),
-)
+const nonFieldToken: Arbitrary.Arbitrary<string> = oneArbitrary([
+  Arbitrary.map(
+    Arbitrary.all([
+      Arbitrary.schema(Schema.Literals(EnvelopeMaskFields)),
+      Arbitrary.schema(Schema.String.pipe(Schema.check(Schema.isPattern(/^[A-Za-z0-9.-]{1,4}$/)))),
+    ]),
+    ([field, suffix]) => `${field}${suffix}`,
+  ),
+  oneOf(['table', 'json', 'ascii', '-f', '']),
+])
 
-const includeList: fc.Arbitrary<readonly EnvelopeMaskField[]> = fc.array(
-  fc.constantFrom(...EnvelopeMaskFields),
+const includeList: Arbitrary.Arbitrary<readonly EnvelopeMaskField[]> = Arbitrary.array(
+  Arbitrary.schema(Schema.Literals(EnvelopeMaskFields)),
   { maxLength: 4 },
 )
 
@@ -190,7 +207,7 @@ const joinedTokens = (fields: readonly EnvelopeMaskField[]): readonly string[] =
     Match.exhaustive,
   )
 
-it.prop('∀situation_Hints_=authoredTable', [fc.constantFrom(...situationNames)], ([situation]) => {
+it.prop('∀situation_Hints_=authoredTable', [oneOf(situationNames)], ([situation]) => {
   const spec = situationTable[situation]
   const ids = hintsOf(spec.state).map((hint) => hint.id)
   return ids.length === spec.hints.length && ids.every((id, index) => id === spec.hints[index])
@@ -209,7 +226,7 @@ it.prop('∀inputs_Hints_=nameIndependent∧∌ESC', [hostileRunInputs], ([input
 
 it.prop(
   '∀situation_HintFlagTokens_∈CliInputSchema',
-  [fc.constantFrom(...situationNames)],
+  [oneOf(situationNames)],
   ([situation]) =>
     hintsOf(situationTable[situation].state).every((hint) =>
       flagTokensIn(hint.text).every((flag) => flag in CliInputSchema.fields)
@@ -218,7 +235,7 @@ it.prop(
 
 it.prop(
   '∀situation_ExpansionHint_⊇EveryMaskField',
-  [fc.constantFrom(...expansionSituations)],
+  [oneOf(expansionSituations)],
   ([situation]) => {
     const texts = hintsOf(situationTable[situation].state).map((hint) => hint.text)
     return texts.some((text) => text.includes('--include')) &&

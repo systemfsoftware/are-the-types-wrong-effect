@@ -1,8 +1,14 @@
 import { it } from '@effect/vitest'
 import { Result, Schema } from 'effect'
-import * as fc from 'effect/testing/FastCheck'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import { DecideRenderModeCommand, type RenderMode, selectRenderMode } from '../select-render-mode.workflow.js'
+
+const oneOfValues = <T>(values: readonly T[]): Arbitrary.Arbitrary<T> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Literals(values.map((_value, index) => index))),
+    (index) => Arbitrary.Constant(values[index]),
+  )
 
 interface RenderPolicyRow {
   readonly isTty: boolean
@@ -52,13 +58,13 @@ const authoredRenderMode = (command: DecideRenderModeCommand): Result.Result<Ren
 
 it.prop(
   '∀row_RenderPolicy_=authoredMode',
-  [fc.constantFrom(...renderPolicy)],
+  [oneOfValues(renderPolicy)],
   ([row]) => modeOf(requestAt(row)) === row.expected,
 )
 
 it.prop(
   '∀command_RenderPolicyModel_=authoredMode',
-  [Schema.toArbitrary(DecideRenderModeCommand)(fc)],
+  [DecideRenderModeCommand],
   ([command]) =>
     Result.match(selectRenderMode(command), {
       onSuccess: (decision) =>

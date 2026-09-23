@@ -1,7 +1,7 @@
 import { it } from '@effect/vitest'
 import { type ParsedPackageSpec, ParsedPackageSpecSchema, parsePackageSpec } from '@systemfsoftware/arethetypeswrong'
 import { Match, Option, Predicate, Result, Schema } from 'effect'
-import * as fc from 'effect/testing/FastCheck'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import {
   buildManifestUrl,
@@ -94,34 +94,58 @@ const holdsSpecRow = (row: SpecRow): boolean =>
       ),
   })
 
-const nameHead = fc.stringMatching(/^[a-z]$/)
-const nameTail = fc.stringMatching(/^[a-z0-9._-]$/)
+const oneOf = <A>(values: readonly A[]): Arbitrary.Arbitrary<A> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 0, maximum: values.length - 1 })))),
+    (index) => Arbitrary.Constant(values[index]),
+  )
 
-const bareName: fc.Arbitrary<string> = fc
-  .tuple(nameHead, fc.array(nameTail, { maxLength: 24 }))
-  .map(([head, tail]) => head + tail.join(''))
+const oneArbitrary = <A>(branches: ReadonlyArray<Arbitrary.Arbitrary<A>>): Arbitrary.Arbitrary<A> =>
+  oneOf(branches).pipe(Arbitrary.flatMap((branch) => branch))
 
-const overlengthName: fc.Arbitrary<string> = fc
-  .tuple(nameHead, fc.array(nameTail, { minLength: 214, maxLength: 299 }))
-  .map(([head, tail]) => `${head}${tail.join('')}`)
+const intBetween = (minimum: number, maximum: number): Arbitrary.Arbitrary<number> =>
+  Arbitrary.schema(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum, maximum }))))
 
-const weldedSpec: fc.Arbitrary<string> = fc.oneof(
-  fc.constantFrom('demo?fields=name', 'demo#fragment', 'demo?a=1&b=2'),
-  fc
-    .tuple(fc.array(nameTail, { maxLength: 10 }), fc.constantFrom('?fields=name', '#fragment', '?a=1&b=2'))
-    .map(([prefix, welded]) => `p${prefix.join('')}kg${welded}`),
+const textMatching = (pattern: RegExp): Arbitrary.Arbitrary<string> =>
+  Arbitrary.schema(Schema.String.pipe(Schema.check(Schema.isPattern(pattern))))
+
+const nameHead = textMatching(/^[a-z]$/)
+const nameTail = textMatching(/^[a-z0-9._-]$/)
+
+const bareName: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([nameHead, Arbitrary.array(nameTail, { maxLength: 24 })]),
+  ([head, tail]) => head + tail.join(''),
 )
 
-const codeUnit = fc.integer({ min: 0, max: 0xff })
+const overlengthName: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([nameHead, Arbitrary.array(nameTail, { minLength: 214, maxLength: 299 })]),
+  ([head, tail]) => `${head}${tail.join('')}`,
+)
+
+const weldedWithPrefix: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([
+    Arbitrary.array(nameTail, { maxLength: 10 }),
+    oneOf(['?fields=name', '#fragment', '?a=1&b=2']),
+  ]),
+  ([prefix, welded]) => `p${prefix.join('')}kg${welded}`,
+)
+
+const weldedSpec: Arbitrary.Arbitrary<string> = oneArbitrary([
+  oneOf(['demo?fields=name', 'demo#fragment', 'demo?a=1&b=2']),
+  weldedWithPrefix,
+])
+
+const codeUnit = intBetween(0, 0xff)
 
 interface InjectedCodeUnit {
   readonly target: string
   readonly code: number
 }
 
-const injectedCodeUnit: fc.Arbitrary<InjectedCodeUnit> = fc
-  .tuple(bareName, codeUnit)
-  .map(([name, code]) => ({ target: `${name}${String.fromCharCode(code)}`, code }))
+const injectedCodeUnit: Arbitrary.Arbitrary<InjectedCodeUnit> = Arbitrary.map(
+  Arbitrary.all([bareName, codeUnit]),
+  ([name, code]) => ({ target: `${name}${String.fromCharCode(code)}`, code }),
+)
 
 const authoredControlRefusal = (code: number): boolean => code <= 0x1f || code === 0x7f
 
@@ -156,62 +180,61 @@ const registryUrlTable: ReadonlyArray<{ readonly raw: string; readonly expected:
   { raw: 'not a url', expected: 'refused' },
 ]
 
-const octet = fc.integer({ min: 0, max: 255 })
-const publicFirstOctet = fc.oneof(
-  fc.integer({ min: 0, max: 9 }),
-  fc.integer({ min: 11, max: 126 }),
-  fc.integer({ min: 128, max: 255 }),
+const octet = intBetween(0, 255)
+const publicFirstOctet = oneArbitrary([intBetween(0, 9), intBetween(11, 126), intBetween(128, 255)])
+const publicSecondOctet = oneArbitrary([intBetween(0, 15), intBetween(32, 167), intBetween(169, 255)])
+const publicIpv4 = Arbitrary.map(
+  Arbitrary.all([publicFirstOctet, publicSecondOctet, octet, octet]),
+  ([a, b, c, d]) => `${a}.${b}.${c}.${d}`,
 )
-const publicSecondOctet = fc.oneof(
-  fc.integer({ min: 0, max: 15 }),
-  fc.integer({ min: 32, max: 167 }),
-  fc.integer({ min: 169, max: 255 }),
+const publicHostname = Arbitrary.map(
+  Arbitrary.all([textMatching(/^[a-z][a-z0-9-]{0,12}$/), textMatching(/^[a-z]{2,8}\.[a-z]{2,8}$/)]),
+  ([label, suffix]) => `${label}.${suffix}`,
 )
-const publicIpv4 = fc
-  .tuple(publicFirstOctet, publicSecondOctet, octet, octet)
-  .map(([a, b, c, d]) => `${a}.${b}.${c}.${d}`)
-const publicHostname = fc
-  .tuple(fc.stringMatching(/^[a-z][a-z0-9-]{0,12}$/), fc.stringMatching(/^[a-z]{2,8}\.[a-z]{2,8}$/))
-  .map(([label, suffix]) => `${label}.${suffix}`)
-const publicHost = fc.oneof(publicIpv4, publicHostname)
+const publicHost: Arbitrary.Arbitrary<string> = oneArbitrary([publicIpv4, publicHostname])
 
-const loopbackIpv4 = fc.tuple(octet, octet, octet).map(([b, c, d]) => `127.${b}.${c}.${d}`)
-const privateClassA = fc.tuple(octet, octet, octet).map(([b, c, d]) => `10.${b}.${c}.${d}`)
-const privateClassB = fc
-  .tuple(fc.integer({ min: 16, max: 31 }), octet, octet)
-  .map(([b, c, d]) => `172.${b}.${c}.${d}`)
-const privateClassC = fc.tuple(octet, octet).map(([c, d]) => `192.168.${c}.${d}`)
-const localHost = fc.oneof(
-  fc.constant('localhost'),
-  fc.constant('[::1]'),
+const loopbackIpv4 = Arbitrary.map(Arbitrary.all([octet, octet, octet]), ([b, c, d]) => `127.${b}.${c}.${d}`)
+const privateClassA = Arbitrary.map(Arbitrary.all([octet, octet, octet]), ([b, c, d]) => `10.${b}.${c}.${d}`)
+const privateClassB = Arbitrary.map(
+  Arbitrary.all([intBetween(16, 31), octet, octet]),
+  ([b, c, d]) => `172.${b}.${c}.${d}`,
+)
+const privateClassC = Arbitrary.map(Arbitrary.all([octet, octet]), ([c, d]) => `192.168.${c}.${d}`)
+const localHost: Arbitrary.Arbitrary<string> = oneArbitrary([
+  Arbitrary.Constant('localhost'),
+  Arbitrary.Constant('[::1]'),
   loopbackIpv4,
   privateClassA,
   privateClassB,
   privateClassC,
+])
+
+const port = intBetween(1024, 65_535)
+const publicHostPort = Arbitrary.all({ host: publicHost, chosenPort: port })
+const localHostPort = Arbitrary.all({ host: localHost, chosenPort: port })
+
+const credentialLabel = textMatching(/^[a-z][a-z0-9]{0,8}$/)
+const credentialedUser: Arbitrary.Arbitrary<string> = oneArbitrary([
+  credentialLabel,
+  Arbitrary.map(Arbitrary.all([credentialLabel, credentialLabel]), ([user, pass]) => `${user}:${pass}`),
+])
+const anyHost: Arbitrary.Arbitrary<string> = oneArbitrary([publicHost, localHost])
+const credentialedUrl = Arbitrary.map(
+  Arbitrary.all([oneOf(['https', 'http']), credentialedUser, anyHost]),
+  ([scheme, credential, host]) => `${scheme}://${credential}@${host}/`,
 )
 
-const port = fc.integer({ min: 1024, max: 65_535 })
-const publicHostPort = fc.record({ host: publicHost, chosenPort: port })
-const localHostPort = fc.record({ host: localHost, chosenPort: port })
+const nonHttpScheme = textMatching(/^x[a-z]{1,4}$/)
+const nonHttpUrl = Arbitrary.map(
+  Arbitrary.all([nonHttpScheme, anyHost]),
+  ([scheme, host]) => `${scheme}://${host}/`,
+)
 
-const credentialLabel = fc.stringMatching(/^[a-z][a-z0-9]{0,8}$/)
-const credentialedUrl = fc
-  .tuple(
-    fc.constantFrom('https', 'http'),
-    fc.oneof(credentialLabel, fc.tuple(credentialLabel, credentialLabel).map(([user, pass]) => `${user}:${pass}`)),
-    fc.oneof(publicHost, localHost),
-  )
-  .map(([scheme, credential, host]) => `${scheme}://${credential}@${host}/`)
-
-const nonHttpScheme = fc.stringMatching(/^x[a-z]{1,4}$/)
-const nonHttpUrl = fc
-  .tuple(nonHttpScheme, fc.oneof(publicHost, localHost))
-  .map(([scheme, host]) => `${scheme}://${host}/`)
-
-const strippedCodeUnit = fc.oneof(fc.integer({ min: 0, max: 0x20 }), fc.constant(0x7f))
-const strippedUrl = fc
-  .tuple(fc.constantFrom('https', 'http'), fc.oneof(publicHost, localHost), strippedCodeUnit)
-  .map(([scheme, host, code]) => `${scheme}://${host}/${String.fromCharCode(code)}`)
+const strippedCodeUnit = oneArbitrary([intBetween(0, 0x20), Arbitrary.Constant(0x7f)])
+const strippedUrl = Arbitrary.map(
+  Arbitrary.all([oneOf(['https', 'http']), anyHost, strippedCodeUnit]),
+  ([scheme, host, code]) => `${scheme}://${host}/${String.fromCharCode(code)}`,
+)
 
 const registryDocumentLimit = 8_388_608
 const tarballLimit = 536_870_912
@@ -237,16 +260,16 @@ const payloadBoundaryTable: readonly PayloadRow[] = [
   { kind: 'tarball', byteLength: tarballLimit + 1, accepted: false },
 ]
 
-const payloadSize: fc.Arbitrary<{ readonly kind: PayloadKind; readonly byteLength: number }> = fc.record({
-  kind: fc.constantFrom<PayloadKind>('registry-document', 'tarball'),
-  byteLength: fc.oneof(
-    fc.integer({ min: 0, max: registryDocumentLimit }),
-    fc.integer({ min: registryDocumentLimit + 1, max: tarballLimit }),
-    fc.integer({ min: tarballLimit + 1, max: 2_147_483_647 }),
-  ),
+const payloadSize: Arbitrary.Arbitrary<{ readonly kind: PayloadKind; readonly byteLength: number }> = Arbitrary.all({
+  kind: oneOf<PayloadKind>(['registry-document', 'tarball']),
+  byteLength: oneArbitrary([
+    intBetween(0, registryDocumentLimit),
+    intBetween(registryDocumentLimit + 1, tarballLimit),
+    intBetween(tarballLimit + 1, 2_147_483_647),
+  ]),
 })
 
-const parsedSpec: fc.Arbitrary<ParsedPackageSpec> = Schema.toArbitrary(ParsedPackageSpecSchema)(fc)
+const parsedSpec: Arbitrary.Arbitrary<ParsedPackageSpec> = Arbitrary.schema(ParsedPackageSpecSchema)
 
 const holdsPayloadRow = (row: PayloadRow): boolean =>
   Result.match(decodePayloadSize(row.kind, row.byteLength), {
@@ -254,7 +277,7 @@ const holdsPayloadRow = (row: PayloadRow): boolean =>
     onFailure: (refusal) => !row.accepted && refusal.recovery.length > 0,
   })
 
-it.prop('∀row_SpecDisposition_=authoredTable', [fc.constantFrom(...specDispositionTable)], ([row]) => holdsSpecRow(row))
+it.prop('∀row_SpecDisposition_=authoredTable', [oneOf(specDispositionTable)], ([row]) => holdsSpecRow(row))
 
 it.prop('∀target_OverlengthSpec_⊥Accepted', [overlengthName], ([name]) =>
   Result.match(decisionOf(name, true), {
@@ -277,7 +300,7 @@ it.prop(
 
 it.prop(
   '∀row_RegistryUrlBoundary_=authoredDisposition',
-  [fc.constantFrom(...registryUrlTable)],
+  [oneOf(registryUrlTable)],
   ([row]) =>
     Match.value(row.expected).pipe(
       Match.when('accepted', () => Result.isSuccess(decodeRegistryUrl(row.raw))),
@@ -300,7 +323,7 @@ it.prop(
 
 it.prop(
   '∀host_HttpsHost_=HttpsBase',
-  [fc.oneof(publicHost, localHost)],
+  [anyHost],
   ([host]) =>
     Result.match(decodeRegistryUrl(`https://${host}/`), {
       onSuccess: (base) => base === `https://${host}`,
@@ -333,7 +356,7 @@ it.prop('∀spec_ManifestUrl_≡EncodedSegments', [parsedSpec], ([spec]) => {
 
 it.prop(
   '∀row_PayloadBoundary_=authoredLimit',
-  [fc.constantFrom(...payloadBoundaryTable)],
+  [oneOf(payloadBoundaryTable)],
   ([row]) => holdsPayloadRow(row),
 )
 

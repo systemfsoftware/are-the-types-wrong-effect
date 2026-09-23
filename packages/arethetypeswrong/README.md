@@ -75,12 +75,15 @@ const tree = {
 const contents = toDirectoryJSON(tree, 'demo')
 // `contents` is a plain `Record<string, string|Uint8Array>` keyed by
 // `/node_modules/demo/…`, e.g. `'/node_modules/demo/package.json'`
-const fs = MemoryFileSystem.make(contents)
+const filesystem = MemoryFileSystem.make(contents)
 
 const readManifest = Effect.gen(function*() {
+  const fs = yield* filesystem.effect
   const bytes = yield* fs.readFile('/node_modules/demo/package.json')
   return new TextDecoder().decode(bytes)
 })
+// `filesystem.effect` scopes the filesystem to one effect; provide `filesystem.layer`
+// instead when the whole program should mount the same tree.
 ```
 
 Check a real tarball on disk:

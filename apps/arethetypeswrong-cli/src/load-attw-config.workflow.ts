@@ -3,16 +3,16 @@ import { Match, Result } from 'effect'
 import * as S from 'effect/Schema'
 
 export const AttwConfigSchema = S.Struct({
-  ignoreRules: S.optional(S.Array(S.String)),
-  ignoreResolutions: S.optional(S.Array(S.Literals(['node10', 'node16-cjs', 'node16-esm', 'bundler']))),
+  ignoreRules: S.String.pipe(S.Array, S.optional),
+  ignoreResolutions: S.Literals(['node10', 'node16-cjs', 'node16-esm', 'bundler']).pipe(S.Array, S.optional),
   format: S.optional(S.Literals(['auto', 'table', 'table-flipped', 'ascii', 'json'])),
   quiet: S.optional(S.Boolean),
   summary: S.optional(S.Boolean),
   emoji: S.optional(S.Boolean),
   color: S.optional(S.Boolean),
-  entrypoints: S.optional(S.Array(S.String)),
-  includeEntrypoints: S.optional(S.Array(S.String)),
-  excludeEntrypoints: S.optional(S.Array(S.String)),
+  entrypoints: S.String.pipe(S.Array, S.optional),
+  includeEntrypoints: S.String.pipe(S.Array, S.optional),
+  excludeEntrypoints: S.String.pipe(S.Array, S.optional),
   entrypointsLegacy: S.optional(S.Boolean),
   fromNpm: S.optional(S.Boolean),
   pack: S.optional(S.Boolean),
@@ -50,7 +50,9 @@ export class AttwConfigFileAbsentCommand extends S.TaggedClass<AttwConfigFileAbs
 
 export class LoadAttwConfigCommand extends S.TaggedClass<LoadAttwConfigCommand>()('LoadAttwConfigCommand', {
   request: S.Union([AttwConfigTextCommand, AttwConfigFileAbsentCommand]),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 export class AttwConfigLoaded extends S.TaggedClass<AttwConfigLoaded>()('AttwConfigLoaded', {
   config: AttwConfigSchema,
@@ -72,13 +74,15 @@ const configInvalid = (filePath: string, issue: string): ConfigInvalid =>
 
 const decodeConfigText = (text: string, filePath: string): Result.Result<AttwConfig, ConfigInvalid> =>
   Result.mapError(
-    S.decodeUnknownResult(S.fromJsonString(AttwConfigSchema))(text),
+    S.decodeResult(S.fromJsonString(AttwConfigSchema))(text),
     (error) => configInvalid(filePath, oneLine(error.message)),
   )
 
-export const loadAttwConfig = Workflow.make(
-  LoadAttwConfigCommand,
-  (command): Result.Result<AttwConfigDecision, ConfigInvalid> =>
+export const loadAttwConfig = Workflow.make({
+  command: LoadAttwConfigCommand,
+  decision: S.Union([AttwConfigLoaded, AttwConfigAbsent]),
+  error: ConfigInvalid,
+  decide: (command): Result.Result<AttwConfigDecision, ConfigInvalid> =>
     Match.value(command.request).pipe(
       Match.tag('AttwConfigFileAbsentCommand', () => Result.succeed(new AttwConfigAbsent())),
       Match.tag('AttwConfigTextCommand', ({ text, filePath }) =>
@@ -86,4 +90,4 @@ export const loadAttwConfig = Workflow.make(
           new AttwConfigLoaded({ config }))),
       Match.exhaustive,
     ),
-)
+})

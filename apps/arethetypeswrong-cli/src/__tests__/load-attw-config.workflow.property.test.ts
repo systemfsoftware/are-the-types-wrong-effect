@@ -1,6 +1,6 @@
 import { it } from '@effect/vitest'
-import { Match, Predicate, Result } from 'effect'
-import * as fc from 'effect/testing/FastCheck'
+import { Match, Predicate, Result, Schema } from 'effect'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import {
   type AttwConfig,
@@ -9,6 +9,12 @@ import {
   loadAttwConfig,
   LoadAttwConfigCommand,
 } from '../load-attw-config.workflow.js'
+
+const oneOf = <A>(values: readonly A[]): Arbitrary.Arbitrary<A> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 0, maximum: values.length - 1 })))),
+    (index) => Arbitrary.Constant(values[index]),
+  )
 
 type ConfigValue = string | boolean | ReadonlyArray<string> | undefined
 
@@ -120,11 +126,9 @@ const refusedConfigDocuments: readonly string[] = [
   '{"pack":{}}',
 ]
 
-const nonJsonText: fc.Arbitrary<string> = fc.string({
-  unit: fc.stringMatching(/^[a-z]$/),
-  minLength: 1,
-  maxLength: 16,
-})
+const nonJsonText: Arbitrary.Arbitrary<string> = Arbitrary.schema(
+  Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-z]{1,16}$/))),
+)
 
 const loadText = (text: string) =>
   loadAttwConfig(new LoadAttwConfigCommand({ request: new AttwConfigTextCommand({ text, filePath: configPath }) }))
@@ -140,7 +144,7 @@ const refused = (text: string): boolean =>
 
 it.prop(
   '∀row_AttwConfigDecode_=authoredValues',
-  [fc.constantFrom(...configDocumentTable)],
+  [oneOf(configDocumentTable)],
   ([row]) =>
     Result.match(loadText(row.text), {
       onSuccess: (decision) =>
@@ -153,11 +157,11 @@ it.prop(
     }),
 )
 
-it.prop('∀text_NotAConfigDocument_⊥Load', [fc.constantFrom(...refusedConfigDocuments)], ([text]) => refused(text))
+it.prop('∀text_NotAConfigDocument_⊥Load', [oneOf(refusedConfigDocuments)], ([text]) => refused(text))
 
 it.prop('∀text_NonJsonText_⊥Load', [nonJsonText], ([text]) => refused(text))
 
-it.prop('∀path_ConfigFileAbsent_=Absent', [fc.string()], ([filePath]) =>
+it.prop('∀path_ConfigFileAbsent_=Absent', [Schema.String], ([filePath]) =>
   Result.match(
     loadAttwConfig(new LoadAttwConfigCommand({ request: new AttwConfigFileAbsentCommand({ filePath }) })),
     {

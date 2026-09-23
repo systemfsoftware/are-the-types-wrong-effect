@@ -19,10 +19,17 @@ export type RenderMode = S.Schema.Type<typeof RenderModeSchema>
 
 export class DecideRenderModeCommand extends S.TaggedClass<DecideRenderModeCommand>()('DecideRenderModeCommand', {
   isTty: S.Boolean,
-  terminalWidth: S.Number,
+  terminalWidth: S.Finite,
   requestedFormat: S.String,
   quiet: S.Boolean,
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {
+    isTty: 'app.attw.is.tty',
+    terminalWidth: 'app.attw.terminal.width',
+    requestedFormat: 'app.attw.requested.format',
+    quiet: 'app.attw.quiet',
+  } as const
+}
 
 export class RenderModeSelected extends S.TaggedClass<RenderModeSelected>()('RenderModeSelected', {
   mode: RenderModeSchema,
@@ -54,9 +61,11 @@ const requestedFormatClass = (raw: string): RequestedFormatClass =>
     onSome: (format) => format,
   })
 
-export const selectRenderMode = Workflow.make(
-  DecideRenderModeCommand,
-  (command): Result.Result<RenderModeDecision, RenderFormatUnusable> =>
+export const selectRenderMode = Workflow.make({
+  command: DecideRenderModeCommand,
+  decision: S.Union([RenderModeSelected, QuietRenderModeSelected]),
+  error: RenderFormatUnusable,
+  decide: (command): Result.Result<RenderModeDecision, RenderFormatUnusable> =>
     Match.value(command.quiet).pipe(
       Match.when(true, (): Result.Result<RenderModeDecision, RenderFormatUnusable> =>
         Result.succeed(new QuietRenderModeSelected({ mode: 'quiet' }))),
@@ -90,4 +99,4 @@ export const selectRenderMode = Workflow.make(
         )),
       Match.exhaustive,
     ),
-)
+})

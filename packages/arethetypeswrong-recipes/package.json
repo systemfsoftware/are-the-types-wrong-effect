@@ -23,7 +23,7 @@
     "@systemfsoftware/npm-package": "catalog:"
   },
   "devDependencies": {
-    "@systemfsoftware/all": "catalog:",
+    "@systemfsoftware/oxlint-config-recommended": "catalog:",
     "@systemfsoftware/tsconfig": "catalog:",
     "@types/node": "catalog:",
     "oxlint": "catalog:",

@@ -128,7 +128,12 @@ export class ResolveAcquisitionSourceCommand extends S.Class<ResolveAcquisitionS
   target: S.String,
   fromNpm: S.Boolean,
   parsed: S.Option(ParsedPackageSpecSchema),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {
+    target: 'app.attw.target',
+    fromNpm: 'app.attw.from.npm',
+  } as const
+}
 
 const registrySpecDecision = (
   command: ResolveAcquisitionSourceCommand,
@@ -192,13 +197,15 @@ const targetShape = (command: ResolveAcquisitionSourceCommand): TargetShape =>
     Match.exhaustive,
   )
 
-export const resolveAcquisitionSource = Workflow.make(
-  ResolveAcquisitionSourceCommand,
-  (command): Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable> =>
+export const resolveAcquisitionSource = Workflow.make({
+  command: ResolveAcquisitionSourceCommand,
+  decision: S.Union([ExistingTarball, RegistryPackage]),
+  error: S.Union([InvalidPackageSpec, TargetNotPackable]),
+  decide: (command): Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable> =>
     Match.value(targetShape(command)).pipe(
       Match.when('existingTarball', () => Result.succeed(new ExistingTarball())),
       Match.when('registryPackage', () => registrySpecDecision(command)),
       Match.when('notPackable', () => Result.fail(targetNotPackable())),
       Match.exhaustive,
     ),
-)
+})

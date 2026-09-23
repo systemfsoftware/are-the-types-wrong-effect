@@ -22,7 +22,9 @@ export class DetectFallbackConditionCommand extends S.Class<DetectFallbackCondit
   'DetectFallbackConditionCommand',
 )({
   observation: S.Union([ResolutionTracesUnavailable, ResolutionTracesCollected]),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 export class FallbackConditionDetected extends S.TaggedClass<FallbackConditionDetected>()(
   'FallbackConditionDetected',
@@ -90,9 +92,11 @@ const scanStep = (scan: ConditionalExportsScan, line: string): ConditionalExport
     Match.orElse(() => scan),
   )
 
-export const detectFallbackCondition = Workflow.make(
-  DetectFallbackConditionCommand,
-  (command): Result.Result<FallbackConditionDecision, ResolutionTraceUnavailable> =>
+export const detectFallbackCondition = Workflow.make({
+  command: DetectFallbackConditionCommand,
+  decision: S.Union([FallbackConditionDetected, FallbackConditionAbsent]),
+  error: ResolutionTraceUnavailable,
+  decide: (command): Result.Result<FallbackConditionDecision, ResolutionTraceUnavailable> =>
     Match.value(command.observation).pipe(
       Match.tag('ResolutionTracesUnavailable', () => Result.fail(new ResolutionTraceUnavailable())),
       Match.tag(
@@ -106,4 +110,4 @@ export const detectFallbackCondition = Workflow.make(
       ),
       Match.exhaustive,
     ),
-)
+})

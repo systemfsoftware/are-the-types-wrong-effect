@@ -20,6 +20,7 @@
   "devDependencies": {
     "@systemfsoftware/arethetypeswrong-recipes": "workspace:^",
     "@systemfsoftware/npm-package": "catalog:",
+    "@systemfsoftware/oxlint-config-recommended": "catalog:",
     "@systemfsoftware/tsconfig": "catalog:",
     "@types/node": "catalog:",
     "effect": "catalog:",

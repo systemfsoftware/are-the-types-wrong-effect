@@ -49,13 +49,13 @@ const specFor = (name: string, version: string): ParsedPackageSpec => ({
 })
 
 const checkedName = (name: string): Result.Result<string, PackageSpecParseError> => {
-  if (validatePackageName(name).errors) {
+  if (validatePackageName(name).errors !== undefined) {
     return Result.fail(new PackageSpecParseError({ message: 'Invalid package name' }))
   }
   return Result.succeed(name)
 }
 
-export const parsePackageSpec = (input: string): Result.Result<ParsedPackageSpec, PackageSpecParseError> => {
+const parseWellFormedSpec = (input: string): Result.Result<ParsedPackageSpec, PackageSpecParseError> => {
   const searchStart = separatorSearchStart(input)
   if (searchStart === undefined) {
     return Result.fail(new PackageSpecParseError({ message: 'Invalid package name' }))
@@ -63,3 +63,11 @@ export const parsePackageSpec = (input: string): Result.Result<ParsedPackageSpec
   const { name, version } = splitNameAndVersion(input, input.indexOf('@', searchStart))
   return Result.map(checkedName(name), (validName) => specFor(validName, version))
 }
+
+const wellFormedInput = Result.liftPredicate(
+  (input: string) => input.isWellFormed(),
+  () => new PackageSpecParseError({ message: 'Invalid package specifier' }),
+)
+
+export const parsePackageSpec = (input: string): Result.Result<ParsedPackageSpec, PackageSpecParseError> =>
+  wellFormedInput(input).pipe(Result.flatMap(parseWellFormedSpec))
