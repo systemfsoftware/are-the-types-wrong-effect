@@ -6,7 +6,7 @@ Analyzes a package tarball the way Node and TypeScript will actually resolve it:
 
 ## What it does
 
-A single `checkPackage` call returns a structured analysis or a set of diagnostics. Each entry point is checked under every relevant resolution kind:
+A single `Analysis.make(pkg).run` returns a structured report or a set of diagnostics. Each entry point is checked under every relevant resolution kind:
 
 - **Entrypoint resolution** — does every `exports` subpath, `main`, and `bin` target resolve to a file that exists, and are `null`-target exclusions pruned correctly?
 - **Module-kind agreement** — does the file's actual module kind (`commonjs` vs `ESM` vs `JSON`) match what the package's `type` and file extension imply?
@@ -31,10 +31,10 @@ Requires Node `>=24` and `typescript@^6.0.3` (the 6.x JS bridge — see [TypeScr
 
 ## Quick start
 
-Check an in-memory package. `checkPackage` returns an Effect, so yield it into your own program:
+Check an in-memory package. `Analysis.make` returns a spec whose `run` is an Effect, so yield it into your own program:
 
 ```ts
-import { checkPackage } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import { createPackage } from '@systemfsoftware/npm-package'
 import { Effect } from 'effect'
 
@@ -49,12 +49,12 @@ const pkg = createPackage(
 )
 
 const check = Effect.gen(function*() {
-  const result = yield* checkPackage(pkg)
+  const report = yield* Analysis.make(pkg).run
 
-  if ('entrypoints' in result) {
-    return Object.keys(result.entrypoints) // [ "." ]
+  if ('entrypoints' in report) {
+    return Object.keys(report.entrypoints) // [ "." ]
   }
-  // result.types === false — the package ships no type declarations
+  // report.types === false — the package ships no type declarations
   return []
 })
 ```
@@ -89,7 +89,7 @@ const readManifest = Effect.gen(function*() {
 Check a real tarball on disk:
 
 ```ts
-import { checkPackage } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import { createPackageFromTarballData } from '@systemfsoftware/npm-package'
 import { Effect } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
@@ -97,19 +97,19 @@ import * as FileSystem from 'effect/FileSystem'
 const checkTarball = Effect.gen(function*() {
   const fs = yield* FileSystem.FileSystem
   const data = yield* fs.readFile('./my-package-1.2.3.tgz')
-  return yield* checkPackage(createPackageFromTarballData(data))
+  return yield* Analysis.make(createPackageFromTarballData(data)).run
 })
-// `checkTarball` yields an `Analysis` (entrypoints + problems) or an `UntypedResult`
+// `checkTarball` yields a `Report` (entrypoints + problems) or an `UntypedReport`
 ```
 
-Filter entry points — still inside the same `Effect.gen`:
+Filter entry points — still inside the same `Effect.gen`. Each option is a combinator on the spec:
 
 ```ts
-const result = yield * checkPackage(pkg, {
-  includeEntrypoints: ['./utils'],
-  excludeEntrypoints: [/^.\/internal\//],
-  entrypoints: ['.', './cli'], // exhaustive override
-})
+const report = yield * Analysis.make(pkg).pipe(
+  Analysis.includeEntrypoints(['./utils']),
+  Analysis.excludeEntrypoints([/^\.\/internal\//]),
+  Analysis.withEntrypoints(['.', './cli']), // exhaustive override
+).run
 ```
 
 Prefer the CLI for one-off checks. Add it to the project so your lockfile pins it, then run it through your package manager:
@@ -134,19 +134,20 @@ Its flags and profiles are documented in the
 | `unexpectedModuleSyntax`    | ESM syntax in a CJS file or CJS syntax in an ESM file                    |
 | `internalResolutionError`   | TypeScript failed to resolve a specifier under a given `resolution-mode` |
 
-Each diagnostic includes `kind`, `entrypoint`, `resolutionKind` (`node10` / `node16` / `bundler`), and `pos`/`end` when applicable. See [`Problem.schema.ts`](./src/Problem.schema.ts) and [`Analysis.schema.ts`](./src/Analysis.schema.ts) for the full types.
+Each diagnostic includes `kind`, `entrypoint`, `resolutionKind` (`node10` / `node16` / `bundler`), and `pos`/`end` when applicable. See [`Problem.schema.ts`](./src/Problem.schema.ts) and [`Report.schema.ts`](./src/Report.schema.ts) for the full types.
 
 ## Configuration
 
-No configuration file is required. Options are passed per call:
+No configuration file is required. Every option is a combinator on the spec `Analysis.make` returns, and `spec.run` yields the report:
 
 ```ts
-type CheckPackageOptions = {
-  entrypoints?: string[] // exhaustive list, disables auto-discovery
-  includeEntrypoints?: string[] // added to discovered entry points
-  excludeEntrypoints?: (string | RegExp)[] // removed after discovery
-  entrypointsLegacy?: boolean // also consider all published files
-}
+const spec = Analysis.make(pkg).pipe(
+  Analysis.withEntrypoints(['.', './cli']), // exhaustive list, disables auto-discovery
+  Analysis.includeEntrypoints(['./utils']), // added to discovered entry points
+  Analysis.excludeEntrypoints([/^\.\/internal\//]), // removed after discovery
+  Analysis.withLegacyEntrypoints, // also consider all published files
+)
+// `spec.run` yields the `Report` (entrypoints + problems) or the `UntypedReport`
 ```
 
 Entrypoint discovery reads `package.json` `exports`, `main`, `bin`, and `types`/`typings`. Published files are those not excluded by `.npmignore` / `files` / `.gitignore` semantics.

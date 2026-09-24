@@ -1,4 +1,4 @@
-import { CheckResultSchema } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import * as S from 'effect/Schema'
 
 import { MachineEnvelopeSchema } from './decode-envelope-document.workflow.js'
@@ -15,7 +15,7 @@ export const EnvelopeMaskSchema = S.Struct({
 export type EnvelopeMask = S.Schema.Type<typeof EnvelopeMaskSchema>
 
 export class AnalyzedRun extends S.TaggedClass<AnalyzedRun>()('AnalyzedRun', {
-  result: CheckResultSchema,
+  result: Analysis.PackageReport,
   format: S.String,
   quiet: S.Boolean,
   color: S.Boolean,
@@ -28,7 +28,7 @@ export class AnalyzedRun extends S.TaggedClass<AnalyzedRun>()('AnalyzedRun', {
 }) {}
 
 export class RenderedRun extends S.TaggedClass<RenderedRun>()('RenderedRun', {
-  result: CheckResultSchema,
+  result: Analysis.PackageReport,
   format: S.String,
   quiet: S.Boolean,
   color: S.Boolean,

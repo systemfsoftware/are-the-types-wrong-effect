@@ -1,7 +1,7 @@
 import { Array, Function, Match, Option, Result } from 'effect'
 import * as S from 'effect/Schema'
 
-import type { PackageSpecVersionKind, ParsedPackageSpec } from '@systemfsoftware/arethetypeswrong'
+import type { PackageSpecVersionKind, ParsedPackageSpec } from './PackageSpec.schema.js'
 import { RegistryUrlSchema } from './RegistryUrl.schema.js'
 
 export interface RegistryUrlRefusal {

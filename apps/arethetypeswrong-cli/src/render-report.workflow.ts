@@ -1,10 +1,5 @@
-import type {
-  CheckResult,
-  LegacyAnalysis,
-  Problem,
-  ProblemKind,
-  UntypedResult,
-} from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
+import type { Problem, ProblemKind } from '@systemfsoftware/arethetypeswrong'
 import { Workflow } from '@systemfsoftware/effect-cell-types'
 import { Match, Option, Result } from 'effect'
 import * as S from 'effect/Schema'
@@ -159,7 +154,7 @@ const maskProblemOf = (problem: Problem, keepTraces: boolean): MaskedProblem =>
   )
 
 const visibleProblemsOf = (
-  analysis: LegacyAnalysis,
+  analysis: Analysis.Report,
   ignoredRules: readonly string[],
   ignoredResolutions: readonly string[],
   mask: EnvelopeMask,
@@ -192,7 +187,7 @@ interface EnvelopeFieldEntry {
   readonly field: Partial<OkEnvelope>
 }
 
-const envelopeFieldOf = (analysis: LegacyAnalysis, mask: EnvelopeMask): readonly EnvelopeFieldEntry[] => [
+const envelopeFieldOf = (analysis: Analysis.Report, mask: EnvelopeMask): readonly EnvelopeFieldEntry[] => [
   { keep: mask.entrypoints, field: { entrypoints: analysis.entrypoints } },
   { keep: mask.buildTools, field: { buildTools: analysis.buildTools } },
   { keep: mask.programInfo, field: { programInfo: analysis.programInfo } },
@@ -205,14 +200,14 @@ const keptFieldOf = (entry: EnvelopeFieldEntry): Partial<OkEnvelope> =>
     Match.exhaustive,
   )
 
-const expandedFieldsOf = (analysis: LegacyAnalysis, mask: EnvelopeMask): Partial<OkEnvelope> =>
+const expandedFieldsOf = (analysis: Analysis.Report, mask: EnvelopeMask): Partial<OkEnvelope> =>
   envelopeFieldOf(analysis, mask).reduce<Partial<OkEnvelope>>(
     (fields, entry) => ({ ...fields, ...keptFieldOf(entry) }),
     {},
   )
 
 const analysisDocumentOf = (
-  analysis: LegacyAnalysis,
+  analysis: Analysis.Report,
   problems: readonly MaskedProblem[],
   mask: EnvelopeMask,
 ): MachineEnvelope => ({
@@ -225,14 +220,14 @@ const analysisDocumentOf = (
   ...expandedFieldsOf(analysis, mask),
 })
 
-const untypedDocumentOf = (result: UntypedResult): MachineEnvelope => ({
+const untypedDocumentOf = (result: Analysis.UntypedReport): MachineEnvelope => ({
   status: 'untyped',
   packageName: result.packageName,
   packageVersion: result.packageVersion,
   types: false,
 })
 
-const analyzedDocumentOf = (result: CheckResult, view: AnalyzedRun): MachineEnvelope =>
+const analyzedDocumentOf = (result: Analysis.PackageReport, view: AnalyzedRun): MachineEnvelope =>
   Match.value(result).pipe(
     Match.when({ types: false }, (untyped): MachineEnvelope => untypedDocumentOf(untyped)),
     Match.orElse((analysis): MachineEnvelope =>

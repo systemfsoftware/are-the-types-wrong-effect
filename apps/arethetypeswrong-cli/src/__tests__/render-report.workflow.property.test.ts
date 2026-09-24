@@ -1,11 +1,5 @@
 import { it } from '@effect/vitest'
-import {
-  type CheckResult,
-  type LegacyAnalysis,
-  type Problem,
-  type ProblemKind,
-  ProblemSchema,
-} from '@systemfsoftware/arethetypeswrong'
+import { Analysis, type Problem, type ProblemKind, ProblemSchema } from '@systemfsoftware/arethetypeswrong'
 import { Match, Result, Schema } from 'effect'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 
@@ -87,7 +81,7 @@ const authoredCounts = (problems: readonly MaskedProblem[]): Record<string, numb
     {},
   )
 
-const analysisOf = (problems: readonly Problem[]): LegacyAnalysis => ({
+const analysisOf = (problems: readonly Problem[]): Analysis.Report => ({
   packageName: 'demo',
   packageVersion: '1.0.0',
   buildTools: {},
@@ -97,14 +91,14 @@ const analysisOf = (problems: readonly Problem[]): LegacyAnalysis => ({
   problems,
 })
 
-const untypedOf = (): CheckResult => ({ packageName: 'demo', packageVersion: '1.0.0', types: false })
+const untypedOf = (): Analysis.PackageReport => ({ packageName: 'demo', packageVersion: '1.0.0', types: false })
 
 interface IgnoreSet {
   readonly rules: readonly string[]
   readonly resolutions: readonly string[]
 }
 
-const authoredDocumentOf = (result: CheckResult, ignored: IgnoreSet, mask: EnvelopeMask): MachineEnvelope =>
+const authoredDocumentOf = (result: Analysis.PackageReport, ignored: IgnoreSet, mask: EnvelopeMask): MachineEnvelope =>
   Match.value(result).pipe(
     Match.when({ types: false }, (untyped): MachineEnvelope => ({
       status: 'untyped',
@@ -131,7 +125,7 @@ const authoredDocumentOf = (result: CheckResult, ignored: IgnoreSet, mask: Envel
   )
 
 interface RenderScene {
-  readonly result: CheckResult
+  readonly result: Analysis.PackageReport
   readonly format: string
   readonly quiet: boolean
   readonly isTty: boolean

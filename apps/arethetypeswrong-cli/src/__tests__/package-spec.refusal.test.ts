@@ -1,17 +1,10 @@
 import { Result } from 'effect'
 import { describe, expect, it } from 'vitest'
 
-import { parsePackageSpec as engineParsePackageSpec } from '@systemfsoftware/arethetypeswrong'
 import { verdictFor } from '../parse-package-spec.cell.js'
 import { parsePackageSpec } from '../parse-package-spec.workflow.js'
 
 const decided = (target: string) => parsePackageSpec(verdictFor(target))
-
-const tagsAgree = (target: string): boolean => {
-  const ours = decided(target)
-  const theirs = engineParsePackageSpec(target)
-  return Result.isSuccess(ours) === Result.isSuccess(theirs)
-}
 
 describe('Package spec refusal boundary', () => {
   it('refuses the empty string as an invalid name', () => {
@@ -42,24 +35,23 @@ describe('Package spec refusal boundary', () => {
     expect(decided('@scope/demo@next')).toMatchObject({ _tag: 'Success' })
   })
 
-  it('agrees with the engine parser on every pinned refusal', () => {
+  it('refuses every pinned malformed target', () => {
     for (const target of ['', '.demo', '_demo', '-demo', 'demo ', '@scope', '@/demo']) {
-      expect(tagsAgree(target)).toBe(true)
+      expect(Result.isFailure(decided(target))).toBe(true)
     }
   })
 
-  it('agrees with the engine parser on every pinned acceptance', () => {
+  it('accepts every pinned well-formed target', () => {
     for (const target of ['demo', 'demo@1.2.3', 'demo@^1.2.3', 'demo@next', '@scope/demo', '@scope/demo@1.2.3']) {
-      expect(tagsAgree(target)).toBe(true)
+      expect(Result.isSuccess(decided(target))).toBe(true)
     }
   })
 
-  it('names the malformed-scope refusal separately from the engine', () => {
+  it('names the malformed-scope refusal', () => {
     const refusalTag = Result.match(decided('@scope'), {
       onFailure: (refusal) => refusal._tag,
       onSuccess: () => 'unexpected-success',
     })
     expect(refusalTag).toBe('MalformedScope')
-    expect(Result.isFailure(engineParsePackageSpec('@scope'))).toBe(true)
   })
 })

@@ -1,7 +1,8 @@
-import { type ParsedPackageSpec, ParsedPackageSpecSchema } from '@systemfsoftware/arethetypeswrong'
 import { Workflow } from '@systemfsoftware/effect-cell-types'
 import { Array, Match, Option, Predicate, Result } from 'effect'
 import * as S from 'effect/Schema'
+
+import { type ParsedPackageSpec, ParsedPackageSpecSchema } from './PackageSpec.schema.js'
 
 const acceptedSpecShape = 'Expected `pkg`, `pkg@1.2.3`, `pkg@^1.2.3`, `pkg@next`, or `@scope/pkg`.'
 

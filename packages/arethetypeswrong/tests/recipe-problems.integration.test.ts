@@ -2,7 +2,6 @@ import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import type {
   EntrypointInfo,
   EntrypointResolutionAnalysis,
-  LegacyAnalysis,
   Problem,
   ProblemKind,
   ResolutionKind,
@@ -147,7 +146,7 @@ const cellsAt = (
   entrypoint: EntrypointInfo,
 ): Record<ResolutionKind, EntrypointResolutionAnalysis> => entrypoint.resolutions
 
-const cellsShowing = (analysed: LegacyAnalysis, kind: ProblemKind): readonly ResolutionKind[] => {
+const cellsShowing = (analysed: Analysis.Report, kind: ProblemKind): readonly ResolutionKind[] => {
   const cells = cellsAt(analysed.entrypoints['.'])
   const showing: ResolutionKind[] = []
   for (const resolutionKind of allResolutionKinds) {
@@ -157,7 +156,7 @@ const cellsShowing = (analysed: LegacyAnalysis, kind: ProblemKind): readonly Res
   return showing
 }
 
-const problemKindOf = (analysed: LegacyAnalysis, index: number): ProblemKind => analysed.problems[index].kind
+const problemKindOf = (analysed: Analysis.Report, index: number): ProblemKind => analysed.problems[index].kind
 
 const placementsOf = (problems: readonly Problem[], kind: ProblemKind): readonly string[] => {
   const placements: string[] = []

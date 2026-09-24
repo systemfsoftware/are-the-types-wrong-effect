@@ -1,7 +1,6 @@
 import { it } from '@effect/vitest'
 import { Equal, Result } from 'effect'
 import * as Match from 'effect/Match'
-import * as S from 'effect/Schema'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import {
@@ -190,15 +189,13 @@ const INTENDED_VERDICTS: ReadonlyArray<readonly [ExportDefaultDisagreementObserv
   [observation({}), noProblem],
 ]
 
-const intendedRowArbitrary: Arbitrary.Arbitrary<(typeof INTENDED_VERDICTS)[number]> = Arbitrary.flatMap(
-  Arbitrary.schema(S.Int.pipe(S.check(S.isBetween({ minimum: 0, maximum: INTENDED_VERDICTS.length - 1 })))),
-  (index) => Arbitrary.Constant(INTENDED_VERDICTS[index]),
-)
+const allIntendedVerdicts: Arbitrary.Arbitrary<typeof INTENDED_VERDICTS> = Arbitrary.Constant(INTENDED_VERDICTS)
 
-it.prop('∀observation_ExportDefaultDisagreement_≡IntendedVerdictTable', [intendedRowArbitrary], ([row]) => {
-  const [candidate, intended] = row
-  return Equal.equals(observedProblems(candidate), intended)
-})
+it.prop(
+  '∀observation_ExportDefaultDisagreement_≡IntendedVerdictTable',
+  [allIntendedVerdicts],
+  ([rows]) => rows.every(([candidate, intended]) => Equal.equals(observedProblems(candidate), intended)),
+)
 
 const signaturesMismatch = (observation: ExportDefaultDisagreementObservation): boolean =>
   (observation.implementation.exportEqualsIsExportDefault &&

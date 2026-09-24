@@ -1,7 +1,6 @@
 import { it } from '@effect/vitest'
 import { Result } from 'effect'
 import * as Match from 'effect/Match'
-import * as S from 'effect/Schema'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import { ConditionalExportsScript } from '../../tests/__fixtures__/conditional-exports.schema.js'
@@ -127,16 +126,15 @@ const INTENDED_FALLBACK_VERDICTS: readonly (readonly [ConditionalExportsLines, b
   [[ENTERED, FAILED_UNDER_REQUIRE, AT_IN_RESOLVER, EXITED, RESOLVED_UNDER_IMPORT], false],
 ]
 
-const intendedVerdictRowArbitrary: Arbitrary.Arbitrary<readonly [ConditionalExportsLines, boolean | null]> = Arbitrary
-  .flatMap(
-    Arbitrary.schema(S.Int.pipe(S.check(S.isBetween({ minimum: 0, maximum: INTENDED_FALLBACK_VERDICTS.length - 1 })))),
-    (index) => Arbitrary.Constant(INTENDED_FALLBACK_VERDICTS[index]),
-  )
+const allIntendedVerdicts: Arbitrary.Arbitrary<typeof INTENDED_FALLBACK_VERDICTS> = Arbitrary.Constant(
+  INTENDED_FALLBACK_VERDICTS,
+)
 
-it.prop('∀script_FallbackCondition_≡IntendedVerdictTable', [intendedVerdictRowArbitrary], ([row]) => {
-  const [script, intended] = row
-  return observedVerdict(script) === intended
-})
+it.prop(
+  '∀script_FallbackCondition_≡IntendedVerdictTable',
+  [allIntendedVerdicts],
+  ([rows]) => rows.every(([script, intended]) => observedVerdict(script) === intended),
+)
 
 it.prop('∀script_FallbackCondition_≡ReferenceScan', [scriptArbitrary], ([script]) => {
   const verdict = observedVerdict(script)

@@ -1,6 +1,6 @@
 import { it } from '@effect/vitest'
 import {
-  type CheckResult,
+  Analysis,
   type ModuleKind,
   type Problem,
   type ProblemKind,
@@ -51,7 +51,7 @@ const authoredVisible = (
   !ignoredRules.includes(authoredFlagOfKind[problem.kind]) &&
   !('resolutionKind' in problem && ignoredResolutions.includes(problem.resolutionKind))
 
-const authoredExitCode = (result: CheckResult, ignored: IgnoreSet): number =>
+const authoredExitCode = (result: Analysis.PackageReport, ignored: IgnoreSet): number =>
   Match.value(result).pipe(
     Match.when({ types: false }, () => 0),
     Match.orElse((analysis) => (analysis.problems.some((problem) =>
@@ -67,7 +67,7 @@ interface IgnoreSet {
   readonly resolutions: readonly string[]
 }
 
-const analysisOf = (problems: readonly Problem[]): CheckResult => ({
+const analysisOf = (problems: readonly Problem[]): Analysis.PackageReport => ({
   packageName: 'demo',
   packageVersion: '1.0.0',
   buildTools: {},
@@ -77,9 +77,9 @@ const analysisOf = (problems: readonly Problem[]): CheckResult => ({
   problems,
 })
 
-const untypedOf = (): CheckResult => ({ packageName: 'demo', packageVersion: '1.0.0', types: false })
+const untypedOf = (): Analysis.PackageReport => ({ packageName: 'demo', packageVersion: '1.0.0', types: false })
 
-const envelopeOf = (result: CheckResult): MachineEnvelope =>
+const envelopeOf = (result: Analysis.PackageReport): MachineEnvelope =>
   Match.value(result).pipe(
     Match.when({ types: false }, (untyped): MachineEnvelope => ({
       status: 'untyped',
@@ -97,7 +97,7 @@ const envelopeOf = (result: CheckResult): MachineEnvelope =>
     })),
   )
 
-const renderedOf = (result: CheckResult, ignored: IgnoreSet): RenderedRun =>
+const renderedOf = (result: Analysis.PackageReport, ignored: IgnoreSet): RenderedRun =>
   new RenderedRun({
     result,
     format: 'json',

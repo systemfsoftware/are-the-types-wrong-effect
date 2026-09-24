@@ -3,7 +3,6 @@ import type { Package } from '@systemfsoftware/npm-package'
 import { Effect, Match, Option, Result, Schema } from 'effect'
 import ts from 'typescript'
 
-import { BuildToolSchema } from './Analysis.schema.js'
 import { ManifestUnreadable } from './AnalysisError.schema.js'
 import {
   DiscoverEntrypoints,
@@ -247,7 +246,25 @@ const buildToolsOf = (manifest: PackageManifest): Record<string, string> =>
     onSome: (devDependencies) => selectBuildTools(devDependencies),
   })
 
-const buildToolNames: ReadonlyArray<string> = BuildToolSchema.literals
+const buildToolNames: ReadonlyArray<string> = [
+  '@systemfsoftware/arethetypeswrong-cli',
+  'typescript',
+  'rollup',
+  '@rollup/plugin-typescript',
+  '@rollup/plugin-typescript2',
+  'webpack',
+  'esbuild',
+  'parcel-bundler',
+  '@preconstruct/cli',
+  'vite',
+  'snowpack',
+  'microbundle',
+  '@microsoft/api-extractor',
+  'tshy',
+  '@rspack/cli',
+  'tsup',
+  'tsdown',
+]
 
 const selectBuildTools = (devDependencies: Record<string, string>): Record<string, string> =>
   Object.fromEntries(Object.entries(devDependencies).filter(([name]) => buildToolNames.includes(name)))

@@ -2,14 +2,12 @@ import { it } from '@effect/vitest'
 import { Array, Match, Option, Result, Schema } from 'effect'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 
-import { parsePackageSpec as engineParsePackageSpec } from '@systemfsoftware/arethetypeswrong'
 import { verdictFor } from '../parse-package-spec.cell.js'
 import {
   IllFormedUnicode,
   InvalidPackageName,
   MalformedScope,
   parsePackageSpec,
-  ParsePackageSpecCommand,
 } from '../parse-package-spec.workflow.js'
 
 type PackageSpecKind = 'none' | 'exact' | 'range' | 'tag'
@@ -25,6 +23,9 @@ const tagOf = (target: string): string =>
 interface SpecRow {
   readonly target: string
   readonly expected: string
+  readonly name?: string
+  readonly version?: string
+  readonly versionKind?: PackageSpecKind
 }
 
 const oneOf = <T>(values: readonly T[]): Arbitrary.Arbitrary<T> =>
@@ -95,26 +96,42 @@ const kindOf = (target: string): Option.Option<PackageSpecKind> =>
   })
 
 const specRowTable: ReadonlyArray<SpecRow> = [
-  { target: 'demo', expected: 'PackageSpecParsed' },
-  { target: 'demo@1.2.3', expected: 'PackageSpecParsed' },
-  { target: 'demo@^1.2.3', expected: 'PackageSpecParsed' },
-  { target: 'demo@~1.2', expected: 'PackageSpecParsed' },
-  { target: 'demo@1.2', expected: 'PackageSpecParsed' },
-  { target: 'demo@*', expected: 'PackageSpecParsed' },
-  { target: 'demo@next', expected: 'PackageSpecParsed' },
-  { target: 'demo@latest', expected: 'PackageSpecParsed' },
-  { target: '@scope/demo', expected: 'PackageSpecParsed' },
-  { target: '@scope/demo@1.2.3', expected: 'PackageSpecParsed' },
-  { target: '@scope/demo@next', expected: 'PackageSpecParsed' },
+  { target: 'demo', expected: 'PackageSpecParsed', name: 'demo', version: '', versionKind: 'none' },
+  { target: 'demo@1.2.3', expected: 'PackageSpecParsed', name: 'demo', version: '1.2.3', versionKind: 'exact' },
+  { target: 'demo@^1.2.3', expected: 'PackageSpecParsed', name: 'demo', version: '^1.2.3', versionKind: 'range' },
+  { target: 'demo@~1.2', expected: 'PackageSpecParsed', name: 'demo', version: '~1.2', versionKind: 'range' },
+  { target: 'demo@>=1.2.3', expected: 'PackageSpecParsed', name: 'demo', version: '>=1.2.3', versionKind: 'range' },
+  { target: 'demo@1.2', expected: 'PackageSpecParsed', name: 'demo', version: '1.2', versionKind: 'range' },
+  { target: 'demo@*', expected: 'PackageSpecParsed', name: 'demo', version: '*', versionKind: 'range' },
+  { target: 'demo@next', expected: 'PackageSpecParsed', name: 'demo', version: 'next', versionKind: 'tag' },
+  { target: 'demo@latest', expected: 'PackageSpecParsed', name: 'demo', version: 'latest', versionKind: 'tag' },
+  { target: '@scope/demo', expected: 'PackageSpecParsed', name: '@scope/demo', version: '', versionKind: 'none' },
+  {
+    target: '@scope/demo@1.2.3',
+    expected: 'PackageSpecParsed',
+    name: '@scope/demo',
+    version: '1.2.3',
+    versionKind: 'exact',
+  },
+  {
+    target: '@scope/demo@next',
+    expected: 'PackageSpecParsed',
+    name: '@scope/demo',
+    version: 'next',
+    versionKind: 'tag',
+  },
   { target: '@scope', expected: 'MalformedScope' },
   { target: '@/demo', expected: 'MalformedScope' },
-  { target: 'demo@', expected: 'PackageSpecParsed' },
+  { target: 'demo@', expected: 'PackageSpecParsed', name: 'demo', version: '', versionKind: 'none' },
   { target: '', expected: 'InvalidPackageName' },
   { target: '.demo', expected: 'InvalidPackageName' },
   { target: '_demo', expected: 'InvalidPackageName' },
   { target: '-demo', expected: 'InvalidPackageName' },
   { target: 'demo ', expected: 'InvalidPackageName' },
   { target: 'node_modules', expected: 'InvalidPackageName' },
+  { target: 'demo?fields=name', expected: 'InvalidPackageName' },
+  { target: 'demo#fragment', expected: 'InvalidPackageName' },
+  { target: 'demo%20name', expected: 'InvalidPackageName' },
   { target: `demo${String.fromCharCode(0xd800)}`, expected: 'IllFormedUnicode' },
 ]
 
@@ -161,7 +178,19 @@ const holdsRefusalTarget = (target: string): boolean =>
     onSuccess: () => false,
   })
 
+const holdsSpecSpectrum = (row: SpecRow): boolean =>
+  Result.match(decisionOf(row.target), {
+    onFailure: () => row.expected !== 'PackageSpecParsed',
+    onSuccess: (decided) =>
+      row.expected === 'PackageSpecParsed' &&
+      decided.spec.name === row.name &&
+      decided.spec.version === row.version &&
+      decided.spec.versionKind === row.versionKind,
+  })
+
 it.prop('∀row_SpecParity_=authoredTag', [oneOf(specRowTable)], ([row]) => tagOf(row.target) === row.expected)
+
+it.prop('∀row_SpecParse_=authoredSpectrum', [oneOf(specRowTable)], ([row]) => holdsSpecSpectrum(row))
 
 it.prop('∀target_VersionedSpec_∃Kind', [versionedSpec], ([target]) => Option.isSome(expectedKind(target)))
 
@@ -178,61 +207,6 @@ it.prop(
 )
 
 it.prop('∀target_RefusalCarriesTarget', [controlCodeUnitTarget], ([target]) => holdsRefusalTarget(target))
-
-it.prop('∀target_FactsParity_≡EngineVerdict', [oneOf(specRowTable)], ([row]) => {
-  const facts = verdictFor(row.target)
-  const ours = parsePackageSpec(new ParsePackageSpecCommand({ ...facts }))
-  const theirs = engineParsePackageSpec(row.target)
-  return Result.match(ours, {
-    onFailure: () => Result.isFailure(theirs),
-    onSuccess: () => Result.isSuccess(theirs),
-  })
-})
-
-it.prop('∀target_ScopedVersioned_≡EngineParse', [versionedSpec], ([target]) => {
-  const facts = verdictFor(target)
-  const ours = parsePackageSpec(new ParsePackageSpecCommand({ ...facts }))
-  const theirs = engineParsePackageSpec(target)
-  return Result.match(ours, {
-    onFailure: () => Result.isFailure(theirs),
-    onSuccess: (decided) =>
-      Result.match(theirs, {
-        onFailure: () => false,
-        onSuccess: (engine) =>
-          decided.spec.name === engine.name &&
-          decided.spec.version === engine.version &&
-          decided.spec.versionKind === engine.versionKind,
-      }),
-  })
-})
-
-it.prop('∀target_ControlParity_≡EngineRefusal', [controlCodeUnitTarget], ([target]) => {
-  const facts = verdictFor(target)
-  const ours = parsePackageSpec(new ParsePackageSpecCommand({ ...facts }))
-  const theirs = engineParsePackageSpec(target)
-  return Result.isFailure(ours) === Result.isFailure(theirs)
-})
-
-it.prop('∀target_MalformedParity_≡EngineRefusal', [malformedScopeTarget], ([target]) => {
-  const facts = verdictFor(target)
-  const ours = parsePackageSpec(new ParsePackageSpecCommand({ ...facts }))
-  const theirs = engineParsePackageSpec(target)
-  return Result.isFailure(ours) === Result.isFailure(theirs)
-})
-
-it.prop('∀target_InvalidNameParity_≡EngineRefusal', [invalidNameTarget], ([target]) => {
-  const facts = verdictFor(target)
-  const ours = parsePackageSpec(new ParsePackageSpecCommand({ ...facts }))
-  const theirs = engineParsePackageSpec(target)
-  return Result.isFailure(ours) === Result.isFailure(theirs)
-})
-
-it.prop('∀target_IllFormedParity_≡EngineRefusal', [illFormedTarget], ([target]) => {
-  const facts = verdictFor(target)
-  const ours = parsePackageSpec(new ParsePackageSpecCommand({ ...facts }))
-  const theirs = engineParsePackageSpec(target)
-  return Result.isFailure(ours) && Result.isFailure(theirs)
-})
 
 void Array
 void IllFormedUnicode

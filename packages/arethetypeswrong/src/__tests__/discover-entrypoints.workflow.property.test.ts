@@ -1,7 +1,6 @@
 import { it } from '@effect/vitest'
 import { Equal, Result } from 'effect'
 import * as Match from 'effect/Match'
-import * as S from 'effect/Schema'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 import {
   DiscoverEntrypoints,
@@ -109,6 +108,7 @@ const entrypoint = (subpath: string, isWildcard = false): PlainEntrypoint => ({ 
 
 const INTENDED_VERDICTS: ReadonlyArray<readonly [DiscoverEntrypoints, PlainDecision]> = [
   [command({ entrypoints: ['pkg-suffix', 'other'] }), discovered([entrypoint('./pkg-suffix'), entrypoint('./other')])],
+  [command({ entrypoints: ['.'] }), discovered([entrypoint('.')])],
   [
     command({ entrypoints: ['one', 'pkg/two', 'pkg'] }),
     discovered([
@@ -353,15 +353,12 @@ const INTENDED_VERDICTS: ReadonlyArray<readonly [DiscoverEntrypoints, PlainDecis
     { status: 'notDeclared' },
   ],
 ]
-const intendedRowArbitrary: Arbitrary.Arbitrary<(typeof INTENDED_VERDICTS)[number]> = Arbitrary.flatMap(
-  Arbitrary.schema(S.Int.pipe(S.check(S.isBetween({ minimum: 0, maximum: INTENDED_VERDICTS.length - 1 })))),
-  (index) => Arbitrary.Constant(INTENDED_VERDICTS[index]),
-)
+const allIntendedVerdicts: Arbitrary.Arbitrary<typeof INTENDED_VERDICTS> = Arbitrary.Constant(INTENDED_VERDICTS)
 
 it.prop(
   '∀command_DiscoverEntrypoints_≡IntendedVerdictTable',
-  [intendedRowArbitrary],
-  ([row]) => Equal.equals(observedDecision(row[0]), row[1]),
+  [allIntendedVerdicts],
+  ([rows]) => rows.every(([candidate, intended]) => Equal.equals(observedDecision(candidate), intended)),
 )
 
 const legacyExtensions: ReadonlyArray<string> = ['.jsx', '.tsx', '.js', '.ts', '.mjs', '.cjs', '.mts']
@@ -434,10 +431,8 @@ const referenceProxies = (command: DiscoverEntrypoints): ReadonlyArray<string> =
 }
 
 const referenceDecision = (command: DiscoverEntrypoints): PlainDecision => {
-  const format = (path: string): PlainEntrypoint => {
-    const subpath = referenceFormat(path, command.packageName)
-    return { subpath, isWildcard: subpath.includes('*') }
-  }
+  const asEntrypoint = (subpath: string): PlainEntrypoint => ({ subpath, isWildcard: subpath.includes('*') })
+  const format = (path: string): PlainEntrypoint => asEntrypoint(referenceFormat(path, command.packageName))
   if (command.entrypoints !== null) {
     return discovered(command.entrypoints.map(format))
   }
@@ -460,7 +455,7 @@ const referenceDecision = (command: DiscoverEntrypoints): PlainDecision => {
     ...command.include.map((path) => referenceFormat(path, command.packageName)),
   ]
   const included = gathered.filter((name, index) => gathered.indexOf(name) === index)
-  return discovered(included.filter((entrypoint) => !exclusions.includes(entrypoint)).map(format))
+  return discovered(included.filter((entrypoint) => !exclusions.includes(entrypoint)).map(asEntrypoint))
 }
 
 it.prop(

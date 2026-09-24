@@ -1,9 +1,4 @@
-import {
-  type CheckResult,
-  CheckResultSchema,
-  type LegacyAnalysis,
-  type Problem,
-} from '@systemfsoftware/arethetypeswrong'
+import { Analysis, type Problem } from '@systemfsoftware/arethetypeswrong'
 import { Function, Match, Schema as S } from 'effect'
 
 import type { MachineEnvelope } from './decode-envelope-document.workflow.js'
@@ -27,7 +22,7 @@ export interface RenderOptions {
 
 type ModeOptions = Omit<RenderOptions, 'format'>
 
-const visibleProblems = (analysis: LegacyAnalysis, ignoreRules: readonly string[]): readonly Problem[] =>
+const visibleProblems = (analysis: Analysis.Report, ignoreRules: readonly string[]): readonly Problem[] =>
   analysis.problems.filter((p) => !ignoreRules.includes(problemFlagForKind(p.kind)))
 
 const groupProblem = (grouped: Record<string, Problem[]>, p: Problem): void => {
@@ -51,7 +46,7 @@ const renderSummary = (problems: readonly Problem[]): string => {
 }
 
 const renderFormatted = (
-  analysis: LegacyAnalysis,
+  analysis: Analysis.Report,
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
@@ -78,14 +73,14 @@ const renderFormatted = (
 }
 
 const summarizedAnalysis = (
-  analysis: LegacyAnalysis,
+  analysis: Analysis.Report,
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => renderSummary(visible) + '\n' + renderAnalysis(analysis, { ...options, summary: false }, annotations)
 
 const renderEntrypointAnalysis = (
-  analysis: LegacyAnalysis,
+  analysis: Analysis.Report,
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => {
@@ -95,13 +90,13 @@ const renderEntrypointAnalysis = (
 }
 
 const narrowAnalysis = (
-  result: LegacyAnalysis,
+  result: Analysis.Report,
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => renderEntrypointAnalysis(result, options, annotations)
 
 const renderedAnalysis = (
-  result: CheckResult,
+  result: Analysis.PackageReport,
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => {
@@ -115,22 +110,22 @@ const renderedAnalysis = (
   return narrowAnalysis(result, options, annotations)
 }
 
-const argsBeginWithCheckResult = (args: IArguments): boolean => S.is(CheckResultSchema)(args[0])
+const argsBeginWithPackageReport = (args: IArguments): boolean => S.is(Analysis.PackageReport)(args[0])
 
 export const renderAnalysis: {
   (
     options: RenderOptions,
     annotations?: Record<string, AnsiAnnotation>,
-  ): (result: CheckResult) => string
+  ): (result: Analysis.PackageReport) => string
   (
-    result: CheckResult,
+    result: Analysis.PackageReport,
     options: RenderOptions,
     annotations?: Record<string, AnsiAnnotation>,
   ): string
 } = Function.dual(
-  argsBeginWithCheckResult,
+  argsBeginWithPackageReport,
   (
-    result: CheckResult,
+    result: Analysis.PackageReport,
     options: RenderOptions,
     annotations: Record<string, AnsiAnnotation> = {},
   ): string => renderedAnalysis(result, options, annotations),
@@ -141,9 +136,9 @@ export const renderAnalysisForMode: {
     mode: RenderMode,
     options: ModeOptions,
     envelope: MachineEnvelope,
-  ): (result: CheckResult) => string
+  ): (result: Analysis.PackageReport) => string
   (
-    result: CheckResult,
+    result: Analysis.PackageReport,
     mode: RenderMode,
     options: ModeOptions,
     envelope: MachineEnvelope,
@@ -151,7 +146,7 @@ export const renderAnalysisForMode: {
 } = Function.dual(
   4,
   (
-    result: CheckResult,
+    result: Analysis.PackageReport,
     mode: RenderMode,
     options: ModeOptions,
     envelope: MachineEnvelope,

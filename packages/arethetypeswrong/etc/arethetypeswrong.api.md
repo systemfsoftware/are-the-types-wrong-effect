@@ -4,337 +4,12 @@
 
 ```ts
 
-import { Context } from 'effect';
-import { Effect } from 'effect';
-import { Layer } from 'effect';
-import { Package } from '@systemfsoftware/npm-package';
-import { Result } from 'effect';
-import * as Schema$1 from 'effect/Schema';
 import { Schema } from 'effect';
-import ts from 'typescript';
-import { YieldableError } from 'effect/Cause';
 
 // @public (undocumented)
 export namespace Analysis {
-    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withModes, withTypesCompanion$1 as withTypesCompanion };
+    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, PackageTypes, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withModes, withTypesCompanion };
 }
-
-// @public (undocumented)
-export const AnalysisSchema: Schema.Struct<{
-    readonly packageName: Schema.String;
-    readonly packageVersion: Schema.String;
-    readonly buildTools: Schema.$Record<Schema.String, Schema.String>;
-    readonly types: Schema.Union<readonly [Schema.Struct<{
-        readonly kind: Schema.Literal<"included">;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"@types">;
-        readonly packageName: Schema.String;
-        readonly packageVersion: Schema.String;
-        readonly definitelyTypedUrl: Schema.optional<Schema.String>;
-    }>]>;
-    readonly entrypoints: Schema.$Record<Schema.String, Schema.Struct<{
-        readonly subpath: Schema.String;
-        readonly resolutions: Schema.$Record<Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>, Schema.suspend<Schema.Struct<{
-            readonly name: Schema.String;
-            readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-            readonly isWildcard: Schema.optional<Schema.Boolean>;
-            readonly resolution: Schema.optional<Schema.Struct<{
-                readonly fileName: Schema.String;
-                readonly isTypeScript: Schema.Boolean;
-                readonly isJson: Schema.Boolean;
-                readonly trace: Schema.$Array<Schema.String>;
-            }>>;
-            readonly implementationResolution: Schema.optional<Schema.Struct<{
-                readonly fileName: Schema.String;
-                readonly isTypeScript: Schema.Boolean;
-                readonly isJson: Schema.Boolean;
-                readonly trace: Schema.$Array<Schema.String>;
-            }>>;
-            readonly files: Schema.optional<Schema.$Array<Schema.String>>;
-            readonly visibleProblems: Schema.optional<Schema.$Array<Schema.Number>>;
-        }>>>;
-        readonly hasTypes: Schema.Boolean;
-        readonly isWildcard: Schema.Boolean;
-    }>>;
-    readonly programInfo: Schema.$Record<Schema.Literals<readonly ["node10", "node16", "bundler"]>, Schema.Struct<{
-        readonly moduleKinds: Schema.optional<Schema.$Record<Schema.String, Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>>>;
-    }>>;
-    readonly problems: Schema.$Array<Schema.Union<readonly [Schema.Struct<{
-        readonly kind: Schema.Literal<"NoResolution">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"UntypedResolution">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FalseESM">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-        readonly typesModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-        readonly implementationModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FalseCJS">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-        readonly typesModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-        readonly implementationModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"CJSResolvesToESM">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"NamedExports">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-        readonly isMissingAllNamed: Schema.Boolean;
-        readonly missing: Schema.$Array<Schema.String>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FallbackCondition">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FalseExportDefault">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"MissingExportEquals">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"InternalResolutionError">;
-        readonly fileName: Schema.String;
-        readonly pos: Schema.Number;
-        readonly end: Schema.Number;
-        readonly resolutionOption: Schema.Literals<readonly ["node10", "node16", "bundler"]>;
-        readonly moduleSpecifier: Schema.String;
-        readonly resolutionMode: Schema.optional<Schema.Number>;
-        readonly trace: Schema.$Array<Schema.String>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"UnexpectedModuleSyntax">;
-        readonly fileName: Schema.String;
-        readonly pos: Schema.Number;
-        readonly end: Schema.Number;
-        readonly syntax: Schema.Literals<readonly [1, 99]>;
-        readonly moduleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"CJSOnlyExportsDefault">;
-        readonly fileName: Schema.String;
-        readonly pos: Schema.Number;
-        readonly end: Schema.Number;
-    }>]>>;
-}>;
-
-// @public (undocumented)
-export const AnalysisTypesSchema: Schema.Union<readonly [Schema.Struct<{
-    readonly kind: Schema.Literal<"included">;
-}>, Schema.Struct<{
-    readonly kind: Schema.Literal<"@types">;
-    readonly packageName: Schema.String;
-    readonly packageVersion: Schema.String;
-    readonly definitelyTypedUrl: Schema.optional<Schema.String>;
-}>]>;
-
-// @public (undocumented)
-export type BuildTool = Schema.Schema.Type<typeof BuildToolSchema>;
-
-// @public (undocumented)
-export const BuildToolSchema: Schema.Literals<readonly ["@systemfsoftware/arethetypeswrong-cli", "typescript", "rollup", "@rollup/plugin-typescript", "@rollup/plugin-typescript2", "webpack", "esbuild", "parcel-bundler", "@preconstruct/cli", "vite", "snowpack", "microbundle", "@microsoft/api-extractor", "tshy", "@rspack/cli", "tsup", "tsdown"]>;
-
-// Warning: (ae-forgotten-export) The symbol "CheckPackage_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class CheckPackage extends CheckPackage_base {
-    // (undocumented)
-    static readonly layer: Layer.Layer<CheckPackage, never, PackageStore>;
-}
-
-// Warning: (ae-forgotten-export) The symbol "CheckResult$1" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export const checkPackage: (input: Package | PackageWithCompanion, options?: CheckPackageOptions) => Effect.Effect<CheckResult$1, Error>;
-
-// @public (undocumented)
-export const CheckPackageLive: Layer.Layer<CheckPackage, never, PackageStore>;
-
-// @public (undocumented)
-export interface CheckPackageOptions {
-    // (undocumented)
-    entrypoints?: string[];
-    // (undocumented)
-    entrypointsLegacy?: boolean;
-    // (undocumented)
-    excludeEntrypoints?: (string | RegExp)[];
-    // (undocumented)
-    includeEntrypoints?: string[];
-}
-
-// @public (undocumented)
-export interface CheckPackageService {
-    // (undocumented)
-    readonly execute: (pkgSpec: string, options?: CheckPackageOptions) => Effect.Effect<CheckResult, Error, PackageStore>;
-}
-
-// @public (undocumented)
-export type CheckResult = Schema.Schema.Type<typeof CheckResultSchema>;
-
-// @public (undocumented)
-export const CheckResultSchema: Schema.Union<readonly [Schema.Struct<{
-    readonly packageName: Schema.String;
-    readonly packageVersion: Schema.String;
-    readonly buildTools: Schema.$Record<Schema.String, Schema.String>;
-    readonly types: Schema.Union<readonly [Schema.Struct<{
-        readonly kind: Schema.Literal<"included">;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"@types">;
-        readonly packageName: Schema.String;
-        readonly packageVersion: Schema.String;
-        readonly definitelyTypedUrl: Schema.optional<Schema.String>;
-    }>]>;
-    readonly entrypoints: Schema.$Record<Schema.String, Schema.Struct<{
-        readonly subpath: Schema.String;
-        readonly resolutions: Schema.$Record<Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>, Schema.suspend<Schema.Struct<{
-            readonly name: Schema.String;
-            readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-            readonly isWildcard: Schema.optional<Schema.Boolean>;
-            readonly resolution: Schema.optional<Schema.Struct<{
-                readonly fileName: Schema.String;
-                readonly isTypeScript: Schema.Boolean;
-                readonly isJson: Schema.Boolean;
-                readonly trace: Schema.$Array<Schema.String>;
-            }>>;
-            readonly implementationResolution: Schema.optional<Schema.Struct<{
-                readonly fileName: Schema.String;
-                readonly isTypeScript: Schema.Boolean;
-                readonly isJson: Schema.Boolean;
-                readonly trace: Schema.$Array<Schema.String>;
-            }>>;
-            readonly files: Schema.optional<Schema.$Array<Schema.String>>;
-            readonly visibleProblems: Schema.optional<Schema.$Array<Schema.Number>>;
-        }>>>;
-        readonly hasTypes: Schema.Boolean;
-        readonly isWildcard: Schema.Boolean;
-    }>>;
-    readonly programInfo: Schema.$Record<Schema.Literals<readonly ["node10", "node16", "bundler"]>, Schema.Struct<{
-        readonly moduleKinds: Schema.optional<Schema.$Record<Schema.String, Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>>>;
-    }>>;
-    readonly problems: Schema.$Array<Schema.Union<readonly [Schema.Struct<{
-        readonly kind: Schema.Literal<"NoResolution">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"UntypedResolution">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FalseESM">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-        readonly typesModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-        readonly implementationModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FalseCJS">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-        readonly typesModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-        readonly implementationModuleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"CJSResolvesToESM">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"NamedExports">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-        readonly isMissingAllNamed: Schema.Boolean;
-        readonly missing: Schema.$Array<Schema.String>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FallbackCondition">;
-        readonly entrypoint: Schema.String;
-        readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"FalseExportDefault">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"MissingExportEquals">;
-        readonly typesFileName: Schema.String;
-        readonly implementationFileName: Schema.String;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"InternalResolutionError">;
-        readonly fileName: Schema.String;
-        readonly pos: Schema.Number;
-        readonly end: Schema.Number;
-        readonly resolutionOption: Schema.Literals<readonly ["node10", "node16", "bundler"]>;
-        readonly moduleSpecifier: Schema.String;
-        readonly resolutionMode: Schema.optional<Schema.Number>;
-        readonly trace: Schema.$Array<Schema.String>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"UnexpectedModuleSyntax">;
-        readonly fileName: Schema.String;
-        readonly pos: Schema.Number;
-        readonly end: Schema.Number;
-        readonly syntax: Schema.Literals<readonly [1, 99]>;
-        readonly moduleKind: Schema.Struct<{
-            readonly detectedKind: Schema.Literals<readonly [1, 99]>;
-            readonly detectedReason: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-            readonly reasonFileName: Schema.String;
-        }>;
-    }>, Schema.Struct<{
-        readonly kind: Schema.Literal<"CJSOnlyExportsDefault">;
-        readonly fileName: Schema.String;
-        readonly pos: Schema.Number;
-        readonly end: Schema.Number;
-    }>]>>;
-}>, Schema.Struct<{
-    readonly packageName: Schema.String;
-    readonly packageVersion: Schema.String;
-    readonly types: Schema.Literal<false>;
-}>]>;
 
 // @public (undocumented)
 export type CJSOnlyExportsDefaultProblem = Schema.Schema.Type<typeof CJSOnlyExportsDefaultProblemSchema>;
@@ -356,36 +31,6 @@ export const CJSResolvesToESMProblemSchema: Schema.Struct<{
     readonly entrypoint: Schema.String;
     readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
 }>;
-
-// @public (undocumented)
-export const CommonJSModuleKind: 1;
-
-// @public (undocumented)
-export function containsTypes(pkg: Package, directory?: string): boolean;
-
-// Warning: (ae-forgotten-export) The symbol "Workflow_d_exports" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export const detectFallbackCondition: Workflow_d_exports.MadeWorkflow<typeof DetectFallbackConditionCommand, Schema$1.Union<readonly [typeof FallbackConditionDetected, typeof FallbackConditionAbsent]>, typeof ResolutionTraceUnavailable>;
-
-// Warning: (ae-forgotten-export) The symbol "DetectFallbackConditionCommand_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class DetectFallbackConditionCommand extends DetectFallbackConditionCommand_base {
-    // (undocumented)
-    static readonly [Workflow_d_exports.InstrumentationBrand]: {};
-}
-
-// @public (undocumented)
-export const detectModuleKindDisagreement: Workflow_d_exports.MadeWorkflow<typeof DetectModuleKindDisagreementCommand, Schema$1.Union<readonly [typeof FalseEsmDeclared, typeof FalseCjsDeclared, typeof ModuleKindsAgree]>, typeof ModuleKindObservationUnavailable>;
-
-// Warning: (ae-forgotten-export) The symbol "DetectModuleKindDisagreementCommand_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class DetectModuleKindDisagreementCommand extends DetectModuleKindDisagreementCommand_base {
-    // (undocumented)
-    static readonly [Workflow_d_exports.InstrumentationBrand]: {};
-}
 
 // @public (undocumented)
 export type EntrypointInfo = Schema.Schema.Type<typeof EntrypointInfoSchema>;
@@ -441,30 +86,6 @@ export const EntrypointResolutionAnalysisSchema: Schema.Struct<{
 }>;
 
 // @public (undocumented)
-export const ESNextModuleKind: 99;
-
-// Warning: (ae-forgotten-export) The symbol "FallbackConditionAbsent_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class FallbackConditionAbsent extends FallbackConditionAbsent_base {
-    // Warning: (ae-forgotten-export) The symbol "FallbackConditionDecisionTypeId" needs to be exported by the entry point mod.d.ts
-    //
-    // (undocumented)
-    readonly [FallbackConditionDecisionTypeId]: symbol;
-}
-
-// @public (undocumented)
-export type FallbackConditionDecision = FallbackConditionDetected | FallbackConditionAbsent;
-
-// Warning: (ae-forgotten-export) The symbol "FallbackConditionDetected_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class FallbackConditionDetected extends FallbackConditionDetected_base {
-    // (undocumented)
-    readonly [FallbackConditionDecisionTypeId]: symbol;
-}
-
-// @public (undocumented)
 export type FallbackConditionProblem = Schema.Schema.Type<typeof FallbackConditionProblemSchema>;
 
 // @public (undocumented)
@@ -473,19 +94,6 @@ export const FallbackConditionProblemSchema: Schema.Struct<{
     readonly entrypoint: Schema.String;
     readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
 }>;
-
-// @public (undocumented)
-export type FallbackTraceObservation = ResolutionTracesUnavailable | ResolutionTracesCollected;
-
-// Warning: (ae-forgotten-export) The symbol "FalseCjsDeclared_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class FalseCjsDeclared extends FalseCjsDeclared_base {
-    // Warning: (ae-forgotten-export) The symbol "ModuleKindDisagreementDecisionTypeId" needs to be exported by the entry point mod.d.ts
-    //
-    // (undocumented)
-    readonly [ModuleKindDisagreementDecisionTypeId]: symbol;
-}
 
 // @public (undocumented)
 export type FalseCJSProblem = Schema.Schema.Type<typeof FalseCJSProblemSchema>;
@@ -506,14 +114,6 @@ export const FalseCJSProblemSchema: Schema.Struct<{
         readonly reasonFileName: Schema.String;
     }>;
 }>;
-
-// Warning: (ae-forgotten-export) The symbol "FalseEsmDeclared_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class FalseEsmDeclared extends FalseEsmDeclared_base {
-    // (undocumented)
-    readonly [ModuleKindDisagreementDecisionTypeId]: symbol;
-}
 
 // @public (undocumented)
 export type FalseESMProblem = Schema.Schema.Type<typeof FalseESMProblemSchema>;
@@ -546,11 +146,6 @@ export const FalseExportDefaultProblemSchema: Schema.Struct<{
 }>;
 
 // @public (undocumented)
-export const IncludedTypesSchema: Schema.Struct<{
-    readonly kind: Schema.Literal<"included">;
-}>;
-
-// @public (undocumented)
 export type InternalResolutionErrorProblem = Schema.Schema.Type<typeof InternalResolutionErrorProblemSchema>;
 
 // @public (undocumented)
@@ -564,11 +159,6 @@ export const InternalResolutionErrorProblemSchema: Schema.Struct<{
     readonly resolutionMode: Schema.optional<Schema.Number>;
     readonly trace: Schema.$Array<Schema.String>;
 }>;
-
-// Warning: (ae-forgotten-export) The symbol "Analysis$1" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export type LegacyAnalysis = Analysis$1;
 
 // @public (undocumented)
 export type MissingExportEqualsProblem = Schema.Schema.Type<typeof MissingExportEqualsProblemSchema>;
@@ -584,39 +174,10 @@ export const MissingExportEqualsProblemSchema: Schema.Struct<{
 export type ModuleKind = Schema.Schema.Type<typeof ModuleKindSchema>;
 
 // @public (undocumented)
-export type ModuleKindDisagreementDecision = FalseEsmDeclared | FalseCjsDeclared | ModuleKindsAgree;
-
-// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationComplete_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ModuleKindObservationComplete extends ModuleKindObservationComplete_base {}
-
-// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationMissing_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ModuleKindObservationMissing extends ModuleKindObservationMissing_base {}
-
-// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationUnavailable_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ModuleKindObservationUnavailable extends ModuleKindObservationUnavailable_base {
-    // (undocumented)
-    readonly [ModuleKindDisagreementDecisionTypeId]: symbol;
-}
-
-// @public (undocumented)
 export type ModuleKindReason = Schema.Schema.Type<typeof ModuleKindReasonSchema>;
 
 // @public (undocumented)
 export const ModuleKindReasonSchema: Schema.Literals<readonly ["extension", "type", "no:type"]>;
-
-// Warning: (ae-forgotten-export) The symbol "ModuleKindsAgree_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ModuleKindsAgree extends ModuleKindsAgree_base {
-    // (undocumented)
-    readonly [ModuleKindDisagreementDecisionTypeId]: symbol;
-}
 
 // @public (undocumented)
 export const ModuleKindSchema: Schema.Struct<{
@@ -652,87 +213,6 @@ export const NoResolutionProblemSchema: Schema.Struct<{
     readonly entrypoint: Schema.String;
     readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
 }>;
-
-// Warning: (ae-forgotten-export) The symbol "PackageNotFoundError_base" needs to be exported by the entry point mod.d.ts
-//
-// @public
-export class PackageNotFoundError extends PackageNotFoundError_base {}
-
-// Warning: (ae-forgotten-export) The symbol "PackageSpecParseError_base" needs to be exported by the entry point mod.d.ts
-//
-// @public
-export class PackageSpecParseError extends PackageSpecParseError_base {}
-
-// @public (undocumented)
-export type PackageSpecVersionKind = Schema.Schema.Type<typeof PackageSpecVersionKindSchema>;
-
-// @public (undocumented)
-export const PackageSpecVersionKindSchema: Schema.Literals<readonly ["none", "exact", "range", "tag"]>;
-
-// Warning: (ae-forgotten-export) The symbol "PackageStore_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class PackageStore extends PackageStore_base {}
-
-// Warning: (ae-forgotten-export) The symbol "PackageStoreError_base" needs to be exported by the entry point mod.d.ts
-//
-// @public
-export class PackageStoreError extends PackageStoreError_base {}
-
-// @public (undocumented)
-export const PackageStoreLive: Layer.Layer<PackageStore, never, never>;
-
-// @public (undocumented)
-export interface PackageStoreOptions {
-    // (undocumented)
-    readonly allowDeprecated?: boolean;
-    // (undocumented)
-    readonly before?: Date;
-    // (undocumented)
-    readonly registryBaseUrl?: string;
-}
-
-// @public (undocumented)
-export interface PackageStoreService {
-    // (undocumented)
-    readonly fetchTarball: (tarballUrl: string) => Effect.Effect<Uint8Array, PackageStoreError>;
-    // (undocumented)
-    readonly resolveTarballRef: (specs: readonly ParsedPackageSpec[], options?: PackageStoreOptions) => Effect.Effect<PackageStoreTarballRef, PackageNotFoundError | PackageStoreError>;
-}
-
-// @public (undocumented)
-export const PackageStoreStub: (ref: PackageStoreTarballRef, tarball: Uint8Array) => Layer.Layer<PackageStore, never, never>;
-
-// @public (undocumented)
-export interface PackageStoreTarballRef {
-    // (undocumented)
-    readonly packageName: string;
-    // (undocumented)
-    readonly packageVersion: string;
-    // (undocumented)
-    readonly tarballUrl: string;
-}
-
-// @public (undocumented)
-export interface PackageWithCompanion {
-    // (undocumented)
-    readonly companion: TypesCompanionInfo;
-    // (undocumented)
-    readonly pkg: Package;
-}
-
-// @public (undocumented)
-export type ParsedPackageSpec = Schema.Schema.Type<typeof ParsedPackageSpecSchema>;
-
-// @public (undocumented)
-export const ParsedPackageSpecSchema: Schema.Struct<{
-    readonly name: Schema.String;
-    readonly versionKind: Schema.Literals<readonly ["none", "exact", "range", "tag"]>;
-    readonly version: Schema.String;
-}>;
-
-// @public (undocumented)
-export const parsePackageSpec: (input: string) => Result.Result<ParsedPackageSpec, PackageSpecParseError>;
 
 // @public (undocumented)
 export type Problem = Schema.Schema.Type<typeof ProblemSchema>;
@@ -864,42 +344,6 @@ export const ResolutionSchema: Schema.Struct<{
     readonly trace: Schema.$Array<Schema.String>;
 }>;
 
-// Warning: (ae-forgotten-export) The symbol "ResolutionTracesCollected_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ResolutionTracesCollected extends ResolutionTracesCollected_base {}
-
-// Warning: (ae-forgotten-export) The symbol "ResolutionTracesUnavailable_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ResolutionTracesUnavailable extends ResolutionTracesUnavailable_base {}
-
-// Warning: (ae-forgotten-export) The symbol "ResolutionTraceUnavailable_base" needs to be exported by the entry point mod.d.ts
-//
-// @public (undocumented)
-export class ResolutionTraceUnavailable extends ResolutionTraceUnavailable_base {
-    // (undocumented)
-    readonly [FallbackConditionDecisionTypeId]: symbol;
-}
-
-// @public (undocumented)
-export interface TypesCompanionInfo {
-    // (undocumented)
-    readonly packageName: string;
-    // (undocumented)
-    readonly packageVersion: string;
-    // (undocumented)
-    readonly resolvedUrl?: string;
-}
-
-// @public (undocumented)
-export const TypesPackageSchema: Schema.Struct<{
-    readonly kind: Schema.Literal<"@types">;
-    readonly packageName: Schema.String;
-    readonly packageVersion: Schema.String;
-    readonly definitelyTypedUrl: Schema.optional<Schema.String>;
-}>;
-
 // @public (undocumented)
 export type UnexpectedModuleSyntaxProblem = Schema.Schema.Type<typeof UnexpectedModuleSyntaxProblemSchema>;
 
@@ -926,19 +370,6 @@ export const UntypedResolutionProblemSchema: Schema.Struct<{
     readonly entrypoint: Schema.String;
     readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
 }>;
-
-// @public (undocumented)
-export type UntypedResult = Schema.Schema.Type<typeof UntypedResultSchema>;
-
-// @public (undocumented)
-export const UntypedResultSchema: Schema.Struct<{
-    readonly packageName: Schema.String;
-    readonly packageVersion: Schema.String;
-    readonly types: Schema.Literal<false>;
-}>;
-
-// @public (undocumented)
-export function withTypesCompanion(pkg: Package, typesPkg: Package): PackageWithCompanion;
 
 // (No @packageDocumentation comment for this package)
 

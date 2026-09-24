@@ -1,4 +1,5 @@
-import type { CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
+import type { Problem } from '@systemfsoftware/arethetypeswrong'
 import { Workflow } from '@systemfsoftware/effect-cell-types'
 import { Match, Result } from 'effect'
 import * as S from 'effect/Schema'
@@ -61,7 +62,7 @@ const visibleProblemCount = (request: VisibilityRequest): number =>
   ).length
 
 const hasVisibleProblem = (
-  result: CheckResult,
+  result: Analysis.PackageReport,
   ignoredRules: readonly string[],
   ignoredResolutions: readonly string[],
 ): boolean =>
@@ -104,7 +105,7 @@ const exitCodeForVisibleProblems = (visible: boolean): number =>
   )
 
 const exitCodeOf = (
-  result: CheckResult,
+  result: Analysis.PackageReport,
   ignoreRules: readonly string[],
   ignoreResolutions: readonly string[],
 ): number => exitCodeForVisibleProblems(hasVisibleProblem(result, ignoreRules, ignoreResolutions))

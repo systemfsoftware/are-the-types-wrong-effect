@@ -1,5 +1,5 @@
 import {
-  AnalysisTypesSchema,
+  Analysis,
   EntrypointInfoSchema,
   InternalResolutionErrorProblemSchema,
   ProblemSchema,
@@ -24,7 +24,7 @@ export const OkEnvelopeSchema = S.Struct({
   status: S.Literal('ok'),
   packageName: S.String,
   packageVersion: S.String,
-  types: AnalysisTypesSchema,
+  types: Analysis.PackageTypes,
   problems: S.Array(MaskedProblemSchema),
   problemCounts: S.Record(S.String, S.Finite),
   entrypoints: S.optionalKey(S.Record(S.String, EntrypointInfoSchema)),

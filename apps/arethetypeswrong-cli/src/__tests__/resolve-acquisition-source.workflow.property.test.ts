@@ -1,8 +1,8 @@
 import { it } from '@effect/vitest'
-import { type ParsedPackageSpec, ParsedPackageSpecSchema, parsePackageSpec } from '@systemfsoftware/arethetypeswrong'
 import { Match, Option, Predicate, Result, Schema } from 'effect'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 
+import { type ParsedPackageSpec, ParsedPackageSpecSchema } from '../PackageSpec.schema.js'
 import {
   buildManifestUrl,
   decodePayloadSize,
@@ -67,11 +67,19 @@ const specDispositionTable: readonly SpecRow[] = [
   { target: longName(215), fromNpm: true, expected: 'invalidSpec' },
 ]
 
+const parsedSpecTable: Readonly<Record<string, ParsedPackageSpec>> = {
+  demo: { name: 'demo', version: '', versionKind: 'none' },
+  'demo@1.2.3': { name: 'demo', version: '1.2.3', versionKind: 'exact' },
+  'demo@^1.2.3': { name: 'demo', version: '^1.2.3', versionKind: 'range' },
+  'demo@next': { name: 'demo', version: 'next', versionKind: 'tag' },
+  '@scope/demo': { name: '@scope/demo', version: '', versionKind: 'none' },
+  '@scope/demo@1.2.3': { name: '@scope/demo', version: '1.2.3', versionKind: 'exact' },
+  [longName(213)]: { name: longName(213), version: '', versionKind: 'none' },
+  [longName(214)]: { name: longName(214), version: '', versionKind: 'none' },
+}
+
 const parsedSpecOf = (target: string): Option.Option<ParsedPackageSpec> =>
-  Result.match(parsePackageSpec(target), {
-    onFailure: () => Option.none(),
-    onSuccess: (spec) => Option.some(spec),
-  })
+  Object.hasOwn(parsedSpecTable, target) ? Option.some(parsedSpecTable[target]) : Option.none()
 
 const decisionOf = (target: string, fromNpm: boolean, pack?: boolean) =>
   resolveAcquisitionSource(

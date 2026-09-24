@@ -1,4 +1,5 @@
-import type { CheckResult, Problem, ProblemKind, ResolutionKind } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
+import type { Problem, ProblemKind, ResolutionKind } from '@systemfsoftware/arethetypeswrong'
 import { Function } from 'effect'
 
 export const CliProblemFlags = [
@@ -92,23 +93,23 @@ export const isVisibleProblem: {
   ): boolean => !isIgnoredProblem(problem, ignoredRules, ignoredResolutions),
 )
 
-export const isUntypedResult = (result: CheckResult): result is Extract<CheckResult, { types: false }> =>
+export const isUntypedResult = (result: Analysis.PackageReport): result is Analysis.UntypedReport =>
   'types' in result && result.types === false
 
 export const hasVisibleProblem: {
   (
     ignoredRules: readonly string[],
     ignoredResolutions: readonly string[],
-  ): (result: CheckResult) => boolean
+  ): (result: Analysis.PackageReport) => boolean
   (
-    result: CheckResult,
+    result: Analysis.PackageReport,
     ignoredRules: readonly string[],
     ignoredResolutions: readonly string[],
   ): boolean
 } = Function.dual(
   3,
   (
-    result: CheckResult,
+    result: Analysis.PackageReport,
     ignoredRules: readonly string[],
     ignoredResolutions: readonly string[],
   ): boolean =>

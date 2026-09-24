@@ -12,7 +12,9 @@ import {
   ModuleKindObservationComplete,
   ModuleKindObservationMissing,
 } from '../detect-module-kind-disagreement.workflow.js'
-import { CommonJSModuleKind, ESNextModuleKind } from '../ModuleKind.js'
+import { ModuleKindSyntaxSchema } from '../Problem.schema.js'
+
+const [CommonJSModuleKind, ESNextModuleKind] = ModuleKindSyntaxSchema.literals
 
 type DecisionChannel = 'refusal' | 'agreement' | 'FalseESM' | 'FalseCJS'
 
