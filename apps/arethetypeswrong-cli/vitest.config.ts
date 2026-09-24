@@ -2,6 +2,18 @@ import { inlineSchemaTests } from '@systemfsoftware/effect-schema-vite'
 import { defaultClientConditions, defaultServerConditions } from 'vite'
 import { defineConfig } from 'vitest/config'
 
+import { readFileSync } from 'node:fs'
+
+import { Result, Schema } from 'effect'
+
+const ManifestVersion = Schema.fromJsonString(Schema.Struct({ version: Schema.String }))
+const { version } = Result.getOrThrow(
+  Schema.decodeResult(ManifestVersion)(readFileSync(new URL('./package.json', import.meta.url), 'utf8')),
+)
+const cliVersionDefine = {
+  __ATTW_CLI_VERSION__: Result.getOrThrow(Schema.encodeResult(Schema.fromJsonString(Schema.String))(version)),
+}
+
 const sourceCondition = '@systemfsoftware/source'
 
 // Ported from the monorepo's `@systemfsoftware/vitest-config`.
@@ -35,6 +47,7 @@ const sharedConfig = {
 
 export default defineConfig({
   ...sharedConfig,
+  define: cliVersionDefine,
   resolve: {
     conditions: [...defaultClientConditions, sourceCondition],
   },
