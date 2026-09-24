@@ -9,3 +9,9 @@ name = "worktrunk-scripts"
 url = "https://github.com/systemfsoftware/worktrunk-scripts"
 description = "Deno worktree hooks for worktrunk automating environment setup, warm-copy indexing, and path isolation"
 branch = "main"
+
+[[repos]]
+name = "effect"
+url = "https://github.com/Effect-TS/effect"
+description = "Typed functional effects, Schema, Layer, and Stream for TypeScript"
+tag_prefix = "effect@4.0.0-rc."
