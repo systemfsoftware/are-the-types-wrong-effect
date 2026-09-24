@@ -44,7 +44,7 @@ const spawnedPack = (
 ): Effect.Effect<string, PackRunnerSpawnRefused> =>
   Effect.mapError(
     spawner.string(
-      ChildProcess.make('npm', ['pack', '--ignore-scripts', directory]).pipe(
+      ChildProcess.make('npm', ['pack', '--ignore-scripts', workspace.path.resolve(directory)]).pipe(
         ChildProcess.setCwd(workspace.temporary),
       ),
     ),
