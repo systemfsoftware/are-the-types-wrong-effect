@@ -1,4 +1,4 @@
-import { checkPackage } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import { Gherkin, Given, it, layer, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { createPackage } from '@systemfsoftware/npm-package'
 import { Effect, Schema } from 'effect'
@@ -37,7 +37,7 @@ Feature('Package trees constructed from authored files').body(({ scenarioOutline
           'pkg',
           () => authoredTree(row.name).pipe(Effect.map((tree) => createPackage(tree, row.name, '1.0.0'))),
         ),
-        When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+        When('the package is analysed')('analysed', ({ pkg }) => Analysis.make(pkg).run),
         Then('the analysis names the package and resolves its declaration file')(({ analysed }) => {
           expect(analysed.packageName).toBe(row.name)
           expect(analysed.packageVersion).toBe('1.0.0')

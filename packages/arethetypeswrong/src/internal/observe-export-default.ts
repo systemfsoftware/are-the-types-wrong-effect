@@ -1,3 +1,4 @@
+import './typescript-internals.js'
 import { Effect, Option } from 'effect'
 import ts from 'typescript'
 import { moduleSourcesOf } from '../compiled-package.handle.js'

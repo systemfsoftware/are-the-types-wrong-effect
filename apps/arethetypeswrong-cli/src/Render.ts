@@ -1,4 +1,4 @@
-import type { Analysis, CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
+import type { CheckResult, LegacyAnalysis, Problem } from '@systemfsoftware/arethetypeswrong'
 import { Match } from 'effect'
 
 import type { MachineEnvelope } from './decode-envelope-document.workflow.js'
@@ -22,7 +22,7 @@ export interface RenderOptions {
 
 type ModeOptions = Omit<RenderOptions, 'format'>
 
-const visibleProblems = (analysis: Analysis, ignoreRules: readonly string[]): readonly Problem[] =>
+const visibleProblems = (analysis: LegacyAnalysis, ignoreRules: readonly string[]): readonly Problem[] =>
   analysis.problems.filter((p) => !ignoreRules.includes(problemFlagForKind(p.kind)))
 
 const groupProblem = (grouped: Record<string, Problem[]>, p: Problem): void => {
@@ -46,7 +46,7 @@ const renderSummary = (problems: readonly Problem[]): string => {
 }
 
 const renderFormatted = (
-  analysis: Analysis,
+  analysis: LegacyAnalysis,
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
@@ -73,14 +73,14 @@ const renderFormatted = (
 }
 
 const summarizedAnalysis = (
-  analysis: Analysis,
+  analysis: LegacyAnalysis,
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => renderSummary(visible) + '\n' + renderAnalysis(analysis, { ...options, summary: false }, annotations)
 
 const renderEntrypointAnalysis = (
-  analysis: Analysis,
+  analysis: LegacyAnalysis,
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => {

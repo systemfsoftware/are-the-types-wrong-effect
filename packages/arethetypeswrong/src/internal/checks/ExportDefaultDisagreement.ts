@@ -1,3 +1,4 @@
+import '../typescript-internals.js'
 import { Effect } from 'effect'
 import ts from 'typescript'
 import type { ModuleKind, Problem, Resolution, ResolutionKind } from '../../Types.js'

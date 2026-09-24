@@ -1,7 +1,7 @@
 import type {
-  Analysis,
   CheckResult,
   InternalResolutionErrorProblem,
+  LegacyAnalysis,
   Problem,
   UntypedResult,
 } from '@systemfsoftware/arethetypeswrong'
@@ -50,7 +50,7 @@ const countByKind = (problems: readonly MaskedProblem[]): Record<string, number>
   }, {})
 
 const visibleProblems = (
-  analysis: Analysis,
+  analysis: LegacyAnalysis,
   ignoredRules: readonly string[],
   ignoredResolutions: readonly string[],
   mask: EnvelopeMask,
@@ -61,21 +61,21 @@ const visibleProblems = (
 
 const optionalFields: ReadonlyArray<{
   readonly keep: (mask: EnvelopeMask) => boolean
-  readonly field: (analysis: Analysis) => Partial<OkEnvelope>
+  readonly field: (analysis: LegacyAnalysis) => Partial<OkEnvelope>
 }> = [
   { keep: (mask) => mask.entrypoints, field: (analysis) => ({ entrypoints: analysis.entrypoints }) },
   { keep: (mask) => mask.buildTools, field: (analysis) => ({ buildTools: analysis.buildTools }) },
   { keep: (mask) => mask.programInfo, field: (analysis) => ({ programInfo: analysis.programInfo }) },
 ]
 
-const expandedFields = (analysis: Analysis, mask: EnvelopeMask): Partial<OkEnvelope> =>
+const expandedFields = (analysis: LegacyAnalysis, mask: EnvelopeMask): Partial<OkEnvelope> =>
   optionalFields.reduce<Partial<OkEnvelope>>((fields, entry) => {
     if (entry.keep(mask)) return { ...fields, ...entry.field(analysis) }
     return fields
   }, {})
 
 const analysisDocument = (
-  analysis: Analysis,
+  analysis: LegacyAnalysis,
   problems: readonly MaskedProblem[],
   mask: EnvelopeMask,
 ): MachineEnvelope => ({

@@ -143,11 +143,12 @@ const resolvedEntrypointOf = (
 ): Effect.Effect<ResolvedEntrypoint> =>
   Effect.gen(function*() {
     const pair = resolveModulePair(self, query)
-    return yield* attachProgramFiles(self, pair)
+    return yield* attachProgramFiles(self, query.resolutionKind, pair)
   })
 
 const attachProgramFiles = (
   self: CompiledPackage,
+  resolutionKind: ResolutionKind,
   pair: ResolvedModulePair,
 ): Effect.Effect<ResolvedEntrypoint> => {
   const typesFileName = typesFileNameOf(pair)
@@ -155,7 +156,7 @@ const attachProgramFiles = (
     return Effect.succeed({ ...pair, files: undefined })
   }
   return Effect.map(
-    hostOf(self, 'node16').createPrimaryProgram(typesFileName),
+    hostOf(self, resolutionOptionOf(resolutionKind)).createPrimaryProgram(typesFileName),
     (program): ResolvedEntrypoint => ({ ...pair, files: program.getSourceFiles().map((file) => file.fileName) }),
   )
 }

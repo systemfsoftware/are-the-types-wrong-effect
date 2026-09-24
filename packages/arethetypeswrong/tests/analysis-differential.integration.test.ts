@@ -1,9 +1,10 @@
 import { effect, it } from '@effect/vitest'
-import { CheckResultSchema } from '@systemfsoftware/arethetypeswrong'
-import type { Analysis, CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
+import { Analysis, checkPackage, CheckResultSchema, type LegacyAnalysis } from '@systemfsoftware/arethetypeswrong'
+import type { CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
 import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
+import type { Package } from '@systemfsoftware/npm-package'
 import { createPackage } from '@systemfsoftware/npm-package'
-import { Effect, Result, Schema } from 'effect'
+import { Effect, Exit, Result, Schema } from 'effect'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 import { expect } from 'vitest'
 
@@ -49,7 +50,21 @@ const canonicalOutcome = (
       })),
   })
 
-const fixtureAnalysis: Analysis = {
+const agreeOn = (pkg: Package): Effect.Effect<void> =>
+  Effect.gen(function*() {
+    const legacy = yield* Effect.exit(checkPackage(pkg))
+    const rebuilt = yield* Effect.exit(Analysis.make(pkg).run)
+    if (Exit.isFailure(legacy) || Exit.isFailure(rebuilt)) {
+      expect(Exit.isFailure(rebuilt), 'the old engine and Analysis disagree on the failure class').toBe(true)
+      expect(Exit.isFailure(legacy), 'the old engine and Analysis disagree on the failure class').toBe(true)
+      return
+    }
+    const legacyCanonical = yield* Effect.orDie(canonicalText(legacy.value))
+    const rebuiltCanonical = yield* Effect.orDie(canonicalText(rebuilt.value))
+    expect(rebuiltCanonical, 'the rebuilt Analysis diverged from the old engine').toBe(legacyCanonical)
+  })
+
+const fixtureAnalysis: LegacyAnalysis = {
   packageName: 'fixture',
   packageVersion: '1.0.0',
   buildTools: {},
@@ -136,11 +151,31 @@ it.prop('every generated tree is mounted whole under its own package name', [pla
   }
 })
 
-for (const recipe of Object.keys(Recipe)) {
-  it.runIf(false)(`the old engine and the Analysis builder agree on the ${recipe} fixture package`, () => {
-    expect(recipe).toBe('sentinel-never-matching-a-recipe')
-  })
+for (const [recipe, make] of Object.entries(Recipe)) {
+  effect(`the old engine and the Analysis builder agree on the ${recipe} fixture package`, () => agreeOn(make()))
 }
-it.runIf(false)('the old engine and the Analysis builder agree on every generated package tree', () => {
-  expect('sentinel-never-matching-a-tree').toBe('sentinel-never-overlapping')
-})
+
+it.effect.prop(
+  'the old engine and the Analysis builder agree on every generated package tree',
+  [planArbitrary],
+  ([plan]) => {
+    const { packageName, files } = treeFiles(plan)
+    return agreeOn(createPackage(files, packageName, '1.0.0'))
+  },
+)
+
+effect('the pipe and data-first combinator forms yield equal specs', () =>
+  Effect.sync(() => {
+    const { packageName, files } = treeFiles({
+      nameVariant: 0,
+      moduleType: 'absent',
+      entrypointStyle: 'exports-conditions',
+      implementationSyntax: 'esm',
+      declarationSyntax: 'esm',
+      shipsDeclarations: true,
+    })
+    const pkg = createPackage(files, packageName, '1.0.0')
+    const piped = Analysis.make(pkg).pipe(Analysis.excludeEntrypoints(['./private']))
+    const direct = Analysis.excludeEntrypoints(Analysis.make(pkg), ['./private'])
+    expect(piped.request).toEqual(direct.request)
+  }))

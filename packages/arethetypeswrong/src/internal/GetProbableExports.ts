@@ -1,3 +1,4 @@
+import './typescript-internals.js'
 import ts from 'typescript'
 import {
   accessExpressionNameNode,

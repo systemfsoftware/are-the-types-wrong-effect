@@ -1,4 +1,5 @@
 import type { Package } from '@systemfsoftware/npm-package'
+import './internal/typescript-internals.js'
 import ts from 'typescript'
 
 export function containsTypes(pkg: Package, directory = '/'): boolean {

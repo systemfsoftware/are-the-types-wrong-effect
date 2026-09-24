@@ -1,3 +1,4 @@
+import '../typescript-internals.js'
 import ts from 'typescript'
 import type { Problem, ResolutionKind } from '../../Types.js'
 import { isNonEmptyString } from '../../Utils.js'

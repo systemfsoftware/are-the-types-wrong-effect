@@ -1,3 +1,4 @@
+import '../typescript-internals.js'
 import ts from 'typescript'
 import type { ModuleKind, Problem } from '../../Types.js'
 import { type CheckExecutionContext, defineCheck } from '../DefineCheck.js'

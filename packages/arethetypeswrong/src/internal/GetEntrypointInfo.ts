@@ -1,3 +1,4 @@
+import './typescript-internals.js'
 import type { Package } from '@systemfsoftware/npm-package'
 import { Effect, Match } from 'effect'
 import ts from 'typescript'

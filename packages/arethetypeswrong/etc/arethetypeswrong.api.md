@@ -15,25 +15,9 @@ import ts from 'typescript';
 import { YieldableError } from 'effect/Cause';
 
 // @public (undocumented)
-export const allBuildTools: readonly BuildTool[];
-
-// @public (undocumented)
-export const allProblemKinds: readonly ProblemKind[];
-
-// @public (undocumented)
-export const allResolutionKinds: readonly ResolutionKind[];
-
-// @public (undocumented)
-export const allResolutionOptions: readonly ResolutionOption[];
-
-// @public (undocumented)
-export type Analysis = Schema.Schema.Type<typeof AnalysisSchema>;
-
-// @public (undocumented)
-export type Analysis_ = Analysis & {
-    entrypoints: Record<string, EntrypointInfo>;
-    problems: readonly Problem[];
-};
+export namespace Analysis {
+    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withModes, withTypesCompanion$1 as withTypesCompanion };
+}
 
 // @public (undocumented)
 export const AnalysisSchema: Schema.Struct<{
@@ -166,9 +150,6 @@ export const AnalysisSchema: Schema.Struct<{
 }>;
 
 // @public (undocumented)
-export type AnalysisTypes = Schema.Schema.Type<typeof AnalysisTypesSchema>;
-
-// @public (undocumented)
 export const AnalysisTypesSchema: Schema.Union<readonly [Schema.Struct<{
     readonly kind: Schema.Literal<"included">;
 }>, Schema.Struct<{
@@ -184,7 +165,7 @@ export type BuildTool = Schema.Schema.Type<typeof BuildToolSchema>;
 // @public (undocumented)
 export const BuildToolSchema: Schema.Literals<readonly ["@systemfsoftware/arethetypeswrong-cli", "typescript", "rollup", "@rollup/plugin-typescript", "@rollup/plugin-typescript2", "webpack", "esbuild", "parcel-bundler", "@preconstruct/cli", "vite", "snowpack", "microbundle", "@microsoft/api-extractor", "tshy", "@rspack/cli", "tsup", "tsdown"]>;
 
-// Warning: (ae-forgotten-export) The symbol "CheckPackage_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "CheckPackage_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class CheckPackage extends CheckPackage_base {
@@ -192,7 +173,7 @@ export class CheckPackage extends CheckPackage_base {
     static readonly layer: Layer.Layer<CheckPackage, never, PackageStore>;
 }
 
-// Warning: (ae-forgotten-export) The symbol "CheckResult$1" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "CheckResult$1" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export const checkPackage: (input: Package | PackageWithCompanion, options?: CheckPackageOptions) => Effect.Effect<CheckResult$1, Error>;
@@ -382,15 +363,12 @@ export const CommonJSModuleKind: 1;
 // @public (undocumented)
 export function containsTypes(pkg: Package, directory?: string): boolean;
 
-// @public (undocumented)
-export const detectEntrypointResolutions: (input: EntrypointResolutionsInput) => readonly Problem[];
-
-// Warning: (ae-forgotten-export) The symbol "Workflow_d_exports" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Workflow_d_exports" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export const detectFallbackCondition: Workflow_d_exports.MadeWorkflow<typeof DetectFallbackConditionCommand, Schema$1.Union<readonly [typeof FallbackConditionDetected, typeof FallbackConditionAbsent]>, typeof ResolutionTraceUnavailable>;
 
-// Warning: (ae-forgotten-export) The symbol "DetectFallbackConditionCommand_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "DetectFallbackConditionCommand_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class DetectFallbackConditionCommand extends DetectFallbackConditionCommand_base {
@@ -401,7 +379,7 @@ export class DetectFallbackConditionCommand extends DetectFallbackConditionComma
 // @public (undocumented)
 export const detectModuleKindDisagreement: Workflow_d_exports.MadeWorkflow<typeof DetectModuleKindDisagreementCommand, Schema$1.Union<readonly [typeof FalseEsmDeclared, typeof FalseCjsDeclared, typeof ModuleKindsAgree]>, typeof ModuleKindObservationUnavailable>;
 
-// Warning: (ae-forgotten-export) The symbol "DetectModuleKindDisagreementCommand_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "DetectModuleKindDisagreementCommand_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class DetectModuleKindDisagreementCommand extends DetectModuleKindDisagreementCommand_base {
@@ -463,23 +441,13 @@ export const EntrypointResolutionAnalysisSchema: Schema.Struct<{
 }>;
 
 // @public (undocumented)
-export interface EntrypointResolutionsInput {
-    // (undocumented)
-    readonly entrypoint: EntrypointResolutionAnalysis;
-    // (undocumented)
-    readonly node16ModuleKinds: Record<string, ModuleKind> | undefined;
-    // (undocumented)
-    readonly subpath: string;
-}
-
-// @public (undocumented)
 export const ESNextModuleKind: 99;
 
-// Warning: (ae-forgotten-export) The symbol "FallbackConditionAbsent_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "FallbackConditionAbsent_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class FallbackConditionAbsent extends FallbackConditionAbsent_base {
-    // Warning: (ae-forgotten-export) The symbol "FallbackConditionDecisionTypeId" needs to be exported by the entry point index.d.ts
+    // Warning: (ae-forgotten-export) The symbol "FallbackConditionDecisionTypeId" needs to be exported by the entry point mod.d.ts
     //
     // (undocumented)
     readonly [FallbackConditionDecisionTypeId]: symbol;
@@ -488,7 +456,7 @@ export class FallbackConditionAbsent extends FallbackConditionAbsent_base {
 // @public (undocumented)
 export type FallbackConditionDecision = FallbackConditionDetected | FallbackConditionAbsent;
 
-// Warning: (ae-forgotten-export) The symbol "FallbackConditionDetected_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "FallbackConditionDetected_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class FallbackConditionDetected extends FallbackConditionDetected_base {
@@ -509,11 +477,11 @@ export const FallbackConditionProblemSchema: Schema.Struct<{
 // @public (undocumented)
 export type FallbackTraceObservation = ResolutionTracesUnavailable | ResolutionTracesCollected;
 
-// Warning: (ae-forgotten-export) The symbol "FalseCjsDeclared_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "FalseCjsDeclared_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class FalseCjsDeclared extends FalseCjsDeclared_base {
-    // Warning: (ae-forgotten-export) The symbol "ModuleKindDisagreementDecisionTypeId" needs to be exported by the entry point index.d.ts
+    // Warning: (ae-forgotten-export) The symbol "ModuleKindDisagreementDecisionTypeId" needs to be exported by the entry point mod.d.ts
     //
     // (undocumented)
     readonly [ModuleKindDisagreementDecisionTypeId]: symbol;
@@ -539,7 +507,7 @@ export const FalseCJSProblemSchema: Schema.Struct<{
     }>;
 }>;
 
-// Warning: (ae-forgotten-export) The symbol "FalseEsmDeclared_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "FalseEsmDeclared_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class FalseEsmDeclared extends FalseEsmDeclared_base {
@@ -578,36 +546,6 @@ export const FalseExportDefaultProblemSchema: Schema.Struct<{
 }>;
 
 // @public (undocumented)
-export const filterProblems: (problems: readonly Problem[], analysis: Analysis, filter: ProblemFilter) => readonly Problem[];
-
-// @public (undocumented)
-export const formatEntrypointString: (path: string, packageName: string) => string;
-
-// @public (undocumented)
-export const getBuildTools: (packageJson: {
-    devDependencies?: Record<string, string>;
-}) => Partial<Record<BuildTool, string>>;
-
-// @public (undocumented)
-export const getResolutionKinds: (option: ResolutionOption) => readonly ResolutionKind[];
-
-// @public (undocumented)
-export const getResolutionOption: (kind: ResolutionKind) => ResolutionOption;
-
-// @public (undocumented)
-export const getSubpaths: (exportsObject: unknown) => readonly string[];
-
-// @public (undocumented)
-export const groupProblemsByKind: <K extends ProblemKind>(problems: readonly (Problem & {
-    kind: K;
-})[]) => Partial<Record<K, readonly (Problem & {
-    kind: K;
-})[]>>;
-
-// @public (undocumented)
-export const hasExportTarget: (exportsObject: unknown) => boolean;
-
-// @public (undocumented)
 export const IncludedTypesSchema: Schema.Struct<{
     readonly kind: Schema.Literal<"included">;
 }>;
@@ -627,14 +565,10 @@ export const InternalResolutionErrorProblemSchema: Schema.Struct<{
     readonly trace: Schema.$Array<Schema.String>;
 }>;
 
+// Warning: (ae-forgotten-export) The symbol "Analysis$1" needs to be exported by the entry point mod.d.ts
+//
 // @public (undocumented)
-export const isDefined: <T>(value: T | undefined) => value is T;
-
-// @public (undocumented)
-export const isResolutionKind: (value: string) => value is ResolutionKind;
-
-// @public (undocumented)
-export const isResolutionOption: (value: string) => value is ResolutionOption;
+export type LegacyAnalysis = Analysis$1;
 
 // @public (undocumented)
 export type MissingExportEqualsProblem = Schema.Schema.Type<typeof MissingExportEqualsProblemSchema>;
@@ -652,17 +586,17 @@ export type ModuleKind = Schema.Schema.Type<typeof ModuleKindSchema>;
 // @public (undocumented)
 export type ModuleKindDisagreementDecision = FalseEsmDeclared | FalseCjsDeclared | ModuleKindsAgree;
 
-// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationComplete_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationComplete_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ModuleKindObservationComplete extends ModuleKindObservationComplete_base {}
 
-// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationMissing_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationMissing_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ModuleKindObservationMissing extends ModuleKindObservationMissing_base {}
 
-// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationUnavailable_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ModuleKindObservationUnavailable_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ModuleKindObservationUnavailable extends ModuleKindObservationUnavailable_base {
@@ -676,7 +610,7 @@ export type ModuleKindReason = Schema.Schema.Type<typeof ModuleKindReasonSchema>
 // @public (undocumented)
 export const ModuleKindReasonSchema: Schema.Literals<readonly ["extension", "type", "no:type"]>;
 
-// Warning: (ae-forgotten-export) The symbol "ModuleKindsAgree_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ModuleKindsAgree_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ModuleKindsAgree extends ModuleKindsAgree_base {
@@ -719,12 +653,12 @@ export const NoResolutionProblemSchema: Schema.Struct<{
     readonly resolutionKind: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
 }>;
 
-// Warning: (ae-forgotten-export) The symbol "PackageNotFoundError_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "PackageNotFoundError_base" needs to be exported by the entry point mod.d.ts
 //
 // @public
 export class PackageNotFoundError extends PackageNotFoundError_base {}
 
-// Warning: (ae-forgotten-export) The symbol "PackageSpecParseError_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "PackageSpecParseError_base" needs to be exported by the entry point mod.d.ts
 //
 // @public
 export class PackageSpecParseError extends PackageSpecParseError_base {}
@@ -735,12 +669,12 @@ export type PackageSpecVersionKind = Schema.Schema.Type<typeof PackageSpecVersio
 // @public (undocumented)
 export const PackageSpecVersionKindSchema: Schema.Literals<readonly ["none", "exact", "range", "tag"]>;
 
-// Warning: (ae-forgotten-export) The symbol "PackageStore_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "PackageStore_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class PackageStore extends PackageStore_base {}
 
-// Warning: (ae-forgotten-export) The symbol "PackageStoreError_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "PackageStoreError_base" needs to be exported by the entry point mod.d.ts
 //
 // @public
 export class PackageStoreError extends PackageStoreError_base {}
@@ -804,38 +738,7 @@ export const parsePackageSpec: (input: string) => Result.Result<ParsedPackageSpe
 export type Problem = Schema.Schema.Type<typeof ProblemSchema>;
 
 // @public (undocumented)
-export interface ProblemFilter {
-    // (undocumented)
-    readonly entrypoint?: string;
-    // (undocumented)
-    readonly kind?: readonly ProblemKind[];
-    // (undocumented)
-    readonly resolutionKind?: ResolutionKind;
-    // (undocumented)
-    readonly resolutionOption?: ResolutionOption;
-}
-
-// @public (undocumented)
 export type ProblemKind = Schema.Schema.Type<typeof ProblemKindSchema>;
-
-// @public (undocumented)
-export interface ProblemKindInfo {
-    // (undocumented)
-    readonly description: string;
-    // (undocumented)
-    readonly details?: string;
-    // (undocumented)
-    readonly docsUrl: string;
-    // (undocumented)
-    readonly emoji: string;
-    // (undocumented)
-    readonly shortDescription: string;
-    // (undocumented)
-    readonly title: string;
-}
-
-// @public (undocumented)
-export const problemKindInfo: Record<ProblemKind, ProblemKindInfo>;
 
 // @public (undocumented)
 export const ProblemKindSchema: Schema.Literals<readonly ["NoResolution", "UntypedResolution", "FalseESM", "FalseCJS", "CJSResolvesToESM", "NamedExports", "FallbackCondition", "FalseExportDefault", "MissingExportEquals", "UnexpectedModuleSyntax", "InternalResolutionError", "CJSOnlyExportsDefault"]>;
@@ -948,16 +851,10 @@ export type ResolutionKind = Schema.Schema.Type<typeof ResolutionKindSchema>;
 export const ResolutionKindSchema: Schema.Literals<readonly ["node10", "node16-cjs", "node16-esm", "bundler"]>;
 
 // @public (undocumented)
-export const _resolutionKindsUsed: readonly ResolutionKind[];
-
-// @public (undocumented)
 export type ResolutionOption = Schema.Schema.Type<typeof ResolutionOptionSchema>;
 
 // @public (undocumented)
 export const ResolutionOptionSchema: Schema.Literals<readonly ["node10", "node16", "bundler"]>;
-
-// @public (undocumented)
-export const _resolutionOptionsUsed: readonly ResolutionOption[];
 
 // @public (undocumented)
 export const ResolutionSchema: Schema.Struct<{
@@ -967,17 +864,17 @@ export const ResolutionSchema: Schema.Struct<{
     readonly trace: Schema.$Array<Schema.String>;
 }>;
 
-// Warning: (ae-forgotten-export) The symbol "ResolutionTracesCollected_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ResolutionTracesCollected_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ResolutionTracesCollected extends ResolutionTracesCollected_base {}
 
-// Warning: (ae-forgotten-export) The symbol "ResolutionTracesUnavailable_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ResolutionTracesUnavailable_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ResolutionTracesUnavailable extends ResolutionTracesUnavailable_base {}
 
-// Warning: (ae-forgotten-export) The symbol "ResolutionTraceUnavailable_base" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "ResolutionTraceUnavailable_base" needs to be exported by the entry point mod.d.ts
 //
 // @public (undocumented)
 export class ResolutionTraceUnavailable extends ResolutionTraceUnavailable_base {

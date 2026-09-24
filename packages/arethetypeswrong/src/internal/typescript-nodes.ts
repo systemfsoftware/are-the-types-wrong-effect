@@ -1,3 +1,4 @@
+import './typescript-internals.js'
 import { Option } from 'effect'
 import ts from 'typescript'
 

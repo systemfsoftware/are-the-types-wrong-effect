@@ -43,7 +43,11 @@ export const AnalysisSchema = Schema.Struct({
   programInfo: Schema.Record(ResolutionOptionSchema, ProgramInfoSchema),
   problems: Schema.Array(ProblemSchema),
 })
-export type Analysis = Schema.Schema.Type<typeof AnalysisSchema>
+export type Analysis = Schema.Schema.Type<typeof AnalysisSchema> & {
+  entrypoints: Record<string, EntrypointInfo>
+  problems: readonly Problem[]
+}
+export type LegacyAnalysis = Analysis
 
 export const UntypedResultSchema = Schema.Struct({
   packageName: Schema.String,
@@ -54,8 +58,3 @@ export type UntypedResult = Schema.Schema.Type<typeof UntypedResultSchema>
 
 export const CheckResultSchema = Schema.Union([AnalysisSchema, UntypedResultSchema])
 export type CheckResult = Schema.Schema.Type<typeof CheckResultSchema>
-
-export type Analysis_ = Analysis & {
-  entrypoints: Record<string, EntrypointInfo>
-  problems: readonly Problem[]
-}

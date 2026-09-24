@@ -1,12 +1,12 @@
-import { Effect } from 'effect'
+import './typescript-internals.js'
+import { Effect, Option } from 'effect'
 import ts from 'typescript'
-import { esmNamespaceOf, moduleKindOf, resolveModulePair, typesProgramOf } from '../compiled-package.handle.js'
 import type { BoundTypesProgram, CompiledPackage, ResolvedModulePair } from '../compiled-package.handle.js'
+import { esmNamespaceOf, moduleKindOf, resolveModulePair, typesProgramOf } from '../compiled-package.handle.js'
 import type { NamedExportsObservation } from '../Observation.schema.js'
-import type { ModuleKind, ResolutionOption } from '../Problem.schema.js'
+import type { ModuleKind } from '../Problem.schema.js'
 import type { ObservationQuery } from './entrypoint-observation.js'
 import { isNonEmptyText, nullOrModuleKind, nullOrText, viewFileName } from './entrypoint-observation.js'
-import { resolutionOptionOf } from './resolution-option.js'
 import { getSourceFileSymbol } from './typescript-nodes.js'
 /** @internal */
 export const observeNamedExports = (query: ObservationQuery): Effect.Effect<NamedExportsObservation> =>
@@ -30,62 +30,27 @@ interface GatheredNamedExports {
 
 const nameFieldsOf = (query: ObservationQuery): NameFields => {
   const pair = resolveModulePair(query.self, query)
-  const resolutionOption = resolutionOptionOf(query.resolutionKind)
-  return kindedNameFields(query, pair, resolutionOption)
+  return kindedNameFields(query, pair)
 }
-
 const kindedNameFields = (
   query: ObservationQuery,
   pair: ResolvedModulePair,
-  resolutionOption: ResolutionOption,
-): NameFields => {
-  const typesFileName = typesFileNameForNamedExports(pair)
-  const implementationFileName = viewFileName(pair.implementation)
-  return kindedNamesOf(query, typesFileName, implementationFileName, resolutionOption)
-}
-
-const kindedNamesOf = (
-  query: ObservationQuery,
-  typesFileName: string | undefined,
-  implementationFileName: string | undefined,
-  resolutionOption: ResolutionOption,
 ): NameFields => ({
-  typesFileName,
-  implementationFileName,
-  typesModuleKind: typesModuleKindFor(query, typesFileName, resolutionOption),
-  implementationModuleKind: implementationModuleKindFor(query, implementationFileName, resolutionOption),
+  typesFileName: typesFileNameForNamedExports(pair),
+  implementationFileName: viewFileName(pair.implementation),
+  typesModuleKind: typesModuleKindFor(query, typesFileNameForNamedExports(pair)),
+  implementationModuleKind: implementationModuleKindFor(query, viewFileName(pair.implementation)),
 })
 
 const typesModuleKindFor = (
   query: ObservationQuery,
   typesFileName: string | undefined,
-  resolutionOption: ResolutionOption,
-): ModuleKind | undefined =>
-  moduleKindOf(query.self, { fileName: typesFileName, resolutionOption: typesResolutionOption(resolutionOption) })
-
-const typesResolutionOption = (resolutionOption: ResolutionOption): ResolutionOption => {
-  if (resolutionOption === 'bundler') {
-    return 'node16'
-  }
-  return resolutionOption
-}
+): ModuleKind | undefined => moduleKindOf(query.self, { fileName: typesFileName, resolutionOption: 'node16' })
 
 const implementationModuleKindFor = (
   query: ObservationQuery,
   implementationFileName: string | undefined,
-  resolutionOption: ResolutionOption,
-): ModuleKind | undefined =>
-  moduleKindOf(query.self, {
-    fileName: implementationFileName,
-    resolutionOption: implementationResolutionOption(resolutionOption),
-  })
-
-const implementationResolutionOption = (resolutionOption: ResolutionOption): ResolutionOption => {
-  if (resolutionOption === 'node10') {
-    return 'bundler'
-  }
-  return resolutionOption
-}
+): ModuleKind | undefined => moduleKindOf(query.self, { fileName: implementationFileName, resolutionOption: 'node16' })
 const typesFileNameForNamedExports = (pair: ResolvedModulePair): string | undefined => scriptFileNameOf(pair.types)
 
 const scriptFileNameOf = (view: ResolvedModulePair['types']): string | undefined => {
@@ -149,21 +114,10 @@ const gatherableOrUndefined = (
   resolutionKind: ObservationQuery['resolutionKind'],
   self: CompiledPackage,
 ): Effect.Effect<GatheredNamedExports | undefined> =>
-  Effect.suspend(() => gatheredFromFields(self, gatherableFields(fields, resolutionKind)))
-
-const gatheredFromFields = (
-  self: CompiledPackage,
-  gatherable: GatheredNameFields | undefined,
-): Effect.Effect<GatheredNamedExports | undefined> => {
-  if (gatherable === undefined) {
-    return missingGathered()
-  }
-  return gatheredFromHost(self, gatherable)
-}
-
-const missingValue: undefined = undefined
-
-const missingGathered = (): Effect.Effect<undefined, never, never> => Effect.succeed(missingValue)
+  Option.match(Option.fromNullishOr(gatherableFields(fields, resolutionKind)), {
+    onNone: () => Effect.undefined,
+    onSome: (present) => gatheredFromHost(self, present),
+  })
 
 const gatherableFields = (
   fields: NameFields,
@@ -174,36 +128,32 @@ const gatherableFields = (
   }
   return fields
 }
+const hasGatherableFileNames = (fields: NameFields): boolean =>
+  isNonEmptyText(fields.implementationFileName) && isNonEmptyText(fields.typesFileName)
 
 const isGatherableNamedExports = (
   resolutionKind: ObservationQuery['resolutionKind'],
   fields: NameFields,
-): fields is GatheredNameFields => hasGatherableFileNames(fields) && isNode16EsmCommonJsPair(resolutionKind, fields)
-
-const hasGatherableFileNames = (fields: NameFields): boolean =>
-  isNonEmptyText(fields.implementationFileName) && isNonEmptyText(fields.typesFileName)
+): fields is GatheredNameFields =>
+  hasGatherableFileNames(fields) &&
+  isNode16EsmCommonJsPair(resolutionKind, fields.typesModuleKind, fields.implementationModuleKind)
 
 const isNode16EsmCommonJsPair = (
   resolutionKind: ObservationQuery['resolutionKind'],
-  fields: NameFields,
-): boolean => {
-  if (resolutionKind !== 'node16-esm') {
-    return false
-  }
-  return detectsCommonJsPair(fields.typesModuleKind, fields.implementationModuleKind)
-}
+  typesModuleKind: ModuleKind | undefined,
+  implementationModuleKind: ModuleKind | undefined,
+): boolean => resolutionKind === 'node16-esm' && detectsCommonJsPair(typesModuleKind, implementationModuleKind)
 
 const detectsCommonJsPair = (
   typesModuleKind: ModuleKind | undefined,
   implementationModuleKind: ModuleKind | undefined,
 ): boolean => detectsCommonJs(typesModuleKind) && detectsCommonJs(implementationModuleKind)
 
-const detectsCommonJs = (moduleKind: ModuleKind | undefined): boolean => {
-  if (moduleKind === undefined) {
-    return false
-  }
-  return moduleKind.detectedKind === ts.ModuleKind.CommonJS
-}
+const detectsCommonJs = (moduleKind: ModuleKind | undefined): boolean =>
+  Option.match(Option.fromNullishOr(moduleKind), {
+    onNone: () => false,
+    onSome: (kind) => kind.detectedKind === ts.ModuleKind.CommonJS,
+  })
 
 const gatheredFromHost = (
   self: CompiledPackage,
@@ -214,13 +164,8 @@ const gatheredFromHost = (
 const gatheredFromBound = (
   self: CompiledPackage,
   bound: BoundTypesProgram | undefined,
-): GatheredNamedExports | undefined => {
-  if (bound === undefined) {
-    return undefined
-  }
-  return namedExportsGathered(self, bound)
-}
-
+): GatheredNamedExports | undefined =>
+  Option.getOrUndefined(Option.map(Option.fromNullishOr(bound), (present) => namedExportsGathered(self, present)))
 const namedExportsGathered = (
   self: CompiledPackage,
   bound: BoundTypesProgram,
@@ -231,11 +176,19 @@ const namedExportsGathered = (
 })
 
 const packageSpecifierOf = (self: CompiledPackage): string => self.packageName
-const isArrayLikeModule = (checker: ts.TypeChecker, typesSourceFile: ts.SourceFile): boolean => {
-  const moduleType = checker.getTypeOfSymbol(checker.resolveExternalModuleSymbol(typesSourceFile.symbol))
+const isArrayLikeModule = (checker: ts.TypeChecker, typesSourceFile: ts.SourceFile): boolean =>
+  Option.match(
+    Option.fromNullishOr(getSourceFileSymbol(typesSourceFile) ?? typesSourceFile.symbol),
+    {
+      onNone: () => false,
+      onSome: (moduleSymbol) => arrayLikeOfSymbol(checker, moduleSymbol),
+    },
+  )
+
+const arrayLikeOfSymbol = (checker: ts.TypeChecker, moduleSymbol: ts.Symbol): boolean => {
+  const moduleType = checker.getTypeOfSymbol(checker.resolveExternalModuleSymbol(moduleSymbol))
   return checker.isArrayLikeType(moduleType) || checker.getPropertyOfType(moduleType, '0') !== undefined
 }
-
 const expectedExportNames = (checker: ts.TypeChecker, typesSourceFile: ts.SourceFile): readonly string[] => {
   const moduleSymbol = getSourceFileSymbol(typesSourceFile)
   if (moduleSymbol === undefined) {

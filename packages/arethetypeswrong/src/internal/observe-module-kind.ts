@@ -1,6 +1,5 @@
-import { Match } from 'effect'
-import { moduleKindOf, resolveModulePair } from '../compiled-package.handle.js'
-import type { CompiledPackage } from '../compiled-package.handle.js'
+import { Option } from 'effect'
+import { resolveModulePair } from '../compiled-package.handle.js'
 import type { ModuleKindObservation } from '../detect-module-kind-disagreement.workflow.js'
 import {
   ModuleKindObservationComplete,
@@ -9,44 +8,45 @@ import {
 import type { ModuleKind } from '../Problem.schema.js'
 import type { ObservationQuery } from './entrypoint-observation.js'
 import { viewFileName } from './entrypoint-observation.js'
-import { resolutionOptionOf } from './resolution-option.js'
 
 /** @internal */
 export const observeModuleKind = (query: ObservationQuery): ModuleKindObservation =>
-  observationOf(rawObservationOf(query.self, query.entrypoint, query.resolutionKind))
+  Option.match(completeObservationOf(query), {
+    onNone: () => new ModuleKindObservationMissing(),
+    onSome: (observation) => observation,
+  })
 
-interface RawModuleKindObservation {
-  readonly typesFileName: string | undefined
-  readonly implementationFileName: string | undefined
-  readonly typesModuleKind: ModuleKind | undefined
-  readonly implementationModuleKind: ModuleKind | undefined
-}
-
-const observationOf = (raw: RawModuleKindObservation): ModuleKindObservation =>
-  Match.value(raw).pipe(
-    Match.when(
-      {
-        typesFileName: Match.nonEmptyString,
-        implementationFileName: Match.nonEmptyString,
-        typesModuleKind: Match.defined,
-        implementationModuleKind: Match.defined,
-      },
-      (complete) => new ModuleKindObservationComplete(complete),
-    ),
-    Match.orElse(() => new ModuleKindObservationMissing()),
-  )
-
-const rawObservationOf = (
-  self: CompiledPackage,
-  entrypoint: string,
-  resolutionKind: ObservationQuery['resolutionKind'],
-): RawModuleKindObservation => {
-  const pair = resolveModulePair(self, { entrypoint, resolutionKind })
-  const resolutionOption = resolutionOptionOf(resolutionKind)
-  return {
-    typesFileName: viewFileName(pair.types),
-    implementationFileName: viewFileName(pair.implementation),
-    typesModuleKind: moduleKindOf(self, { fileName: viewFileName(pair.types), resolutionOption }),
-    implementationModuleKind: moduleKindOf(self, { fileName: viewFileName(pair.implementation), resolutionOption }),
+const completeObservationOf = (query: ObservationQuery): Option.Option<ModuleKindObservationComplete> => {
+  if (query.resolutionOption !== 'node16') {
+    return Option.none()
   }
+  const planModuleKinds = query.node16ModuleKinds
+  const pair = resolveModulePair(query.self, { entrypoint: query.entrypoint, resolutionKind: query.resolutionKind })
+  return Option.flatMap(
+    Option.all({
+      kinds: Option.fromNullishOr(planModuleKinds),
+      typesFileName: Option.fromNullishOr(viewFileName(pair.types)),
+      implementationFileName: Option.fromNullishOr(viewFileName(pair.implementation)),
+    }),
+    completeOf,
+  )
 }
+
+const completeOf = (table: {
+  readonly kinds: Record<string, ModuleKind>
+  readonly typesFileName: string
+  readonly implementationFileName: string
+}): Option.Option<ModuleKindObservationComplete> =>
+  Option.map(
+    Option.all({
+      typesModuleKind: Option.fromNullishOr(table.kinds[table.typesFileName]),
+      implementationModuleKind: Option.fromNullishOr(table.kinds[table.implementationFileName]),
+    }),
+    ({ typesModuleKind, implementationModuleKind }) =>
+      new ModuleKindObservationComplete({
+        typesFileName: table.typesFileName,
+        implementationFileName: table.implementationFileName,
+        typesModuleKind,
+        implementationModuleKind,
+      }),
+  )

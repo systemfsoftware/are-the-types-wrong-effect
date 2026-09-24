@@ -1,11 +1,14 @@
 import type { CompiledPackage, ResolvedModuleView } from '../compiled-package.handle.js'
-import type { ModuleKind, ResolutionKind } from '../Problem.schema.js'
+import type { ModuleKind, ResolutionKind, ResolutionOption } from '../Problem.schema.js'
 
 /** @internal */
 export interface ObservationQuery {
   readonly self: CompiledPackage
   readonly entrypoint: string
   readonly resolutionKind: ResolutionKind
+  readonly resolutionOption: ResolutionOption
+  readonly fileName: string | undefined
+  readonly node16ModuleKinds?: Record<string, ModuleKind> | undefined
 }
 
 /** @internal */

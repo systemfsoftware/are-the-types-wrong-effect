@@ -1,3 +1,4 @@
+import './typescript-internals.js'
 import * as cjs from '@loaderkit/resolve/cjs'
 import * as esm from '@loaderkit/resolve/esm'
 import type { FileSystemSync } from '@loaderkit/resolve/fs'

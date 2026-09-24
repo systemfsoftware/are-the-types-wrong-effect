@@ -1,7 +1,7 @@
 import { Context, Effect, Layer, Schema } from 'effect'
 
 import { createPackageFromTarballData } from '@systemfsoftware/npm-package'
-import { type CheckResult, CheckResultSchema } from './Analysis.schema.js'
+import { type CheckResult as ExecutorCheckResult, CheckResultSchema } from './Analysis.schema.js'
 import { checkPackage, type CheckPackageOptions } from './CheckPackage.js'
 import { PackageStore } from './PackageStoreAdapter.js'
 import type { ResolutionKind, ResolutionOption } from './Problem.schema.js'
@@ -10,7 +10,7 @@ export interface CheckPackageService {
   readonly execute: (
     pkgSpec: string,
     options?: CheckPackageOptions,
-  ) => Effect.Effect<CheckResult, Error, PackageStore>
+  ) => Effect.Effect<ExecutorCheckResult, Error, PackageStore>
 }
 
 export class CheckPackage extends Context.Service<CheckPackage, CheckPackageService>()(

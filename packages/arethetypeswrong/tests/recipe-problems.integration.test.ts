@@ -1,16 +1,13 @@
-import {
-  allResolutionKinds,
-  type Analysis,
-  checkPackage,
-  type EntrypointInfo,
-  type EntrypointResolutionAnalysis,
-  type Problem,
-  type ProblemKind,
-  ProblemKindSchema,
-  type ResolutionKind,
-  ResolutionKindSchema,
-  withTypesCompanion,
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
+import type {
+  EntrypointInfo,
+  EntrypointResolutionAnalysis,
+  LegacyAnalysis,
+  Problem,
+  ProblemKind,
+  ResolutionKind,
 } from '@systemfsoftware/arethetypeswrong'
+import { ProblemKindSchema, ResolutionKindSchema } from '@systemfsoftware/arethetypeswrong'
 import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
 import { Gherkin, Given, it, layer, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { createPackage } from '@systemfsoftware/npm-package'
@@ -19,6 +16,8 @@ import * as Match from 'effect/Match'
 import { expect } from 'vitest'
 
 const Feature = makeFeature({ it, layer })
+
+const allResolutionKinds = [...ResolutionKindSchema.literals]
 
 const encodeJsonText = Schema.encodeUnknownEffect(Schema.fromJsonString(Schema.Unknown))
 
@@ -148,7 +147,7 @@ const cellsAt = (
   entrypoint: EntrypointInfo,
 ): Record<ResolutionKind, EntrypointResolutionAnalysis> => entrypoint.resolutions
 
-const cellsShowing = (analysed: Analysis, kind: ProblemKind): readonly ResolutionKind[] => {
+const cellsShowing = (analysed: LegacyAnalysis, kind: ProblemKind): readonly ResolutionKind[] => {
   const cells = cellsAt(analysed.entrypoints['.'])
   const showing: ResolutionKind[] = []
   for (const resolutionKind of allResolutionKinds) {
@@ -158,7 +157,7 @@ const cellsShowing = (analysed: Analysis, kind: ProblemKind): readonly Resolutio
   return showing
 }
 
-const problemKindOf = (analysed: Analysis, index: number): ProblemKind => analysed.problems[index].kind
+const problemKindOf = (analysed: LegacyAnalysis, index: number): ProblemKind => analysed.problems[index].kind
 
 const placementsOf = (problems: readonly Problem[], kind: ProblemKind): readonly string[] => {
   const placements: string[] = []
@@ -177,7 +176,7 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
     (row) =>
       Gherkin.Do.pipe(
         Given(`the ${row.recipe} synthetic package`)('pkg', () => Effect.sync(() => Recipe[row.recipe]())),
-        When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+        When('the package is analysed')('analysed', ({ pkg }) => Analysis.make(pkg).run),
         Then(`the analysis reports the ${row.kind} problem and nothing else`)(({ analysed }) => {
           if (!('entrypoints' in analysed)) {
             throw new Error('expected the analysis of a package carrying declarations')
@@ -219,7 +218,7 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
         'pkg',
         () => Effect.sync(() => Recipe.WellFormed()),
       ),
-      When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+      When('the package is analysed')('analysed', ({ pkg }) => Analysis.make(pkg).run),
       Then('no problem is reported under any resolution kind of any entrypoint')(({ analysed }) => {
         if (!('entrypoints' in analysed)) {
           throw new Error('expected the analysis of a package carrying declarations')
@@ -239,7 +238,7 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
         'pkg',
         () => Effect.sync(() => Recipe.TypesCompanion()),
       ),
-      When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+      When('the package is analysed')('analysed', ({ pkg }) => Analysis.make(pkg).run),
       Then('the analysis is the untyped result naming the package')(({ analysed }) => {
         expect(analysed).toEqual({ packageName: 'types-companion', packageVersion: '1.0.0', types: false })
       }),
@@ -251,9 +250,10 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
     Gherkin.Do.pipe(
       Given('the JavaScript-only synthetic package paired with its companion types package')(
         'pkg',
-        () => Effect.sync(() => withTypesCompanion(Recipe.TypesCompanion(), Recipe.TypesCompanionTypes())),
+        () =>
+          Effect.sync(() => Analysis.make(Recipe.TypesCompanion()).withTypesCompanion(Recipe.TypesCompanionTypes())),
       ),
-      When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+      When('the package is analysed')('analysed', ({ pkg }) => pkg.run),
       Then('the analysis names the companion package as the types source')(({ analysed }) => {
         if (!('entrypoints' in analysed)) {
           throw new Error('expected the analysis of a package carrying declarations')
@@ -288,7 +288,7 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
               return yield* generatedPackageTree(variant, row.placement)
             }),
         ),
-        When('the generated package is analysed')('analysed', ({ generated }) => checkPackage(generated.subject)),
+        When('the generated package is analysed')('analysed', ({ generated }) => Analysis.make(generated.subject).run),
         Then(`the analysed package is reported as ${row.verdict}`)(({ analysed, generated }) => {
           expect(analysed.packageName).toBe(generated.packageName)
           Match.value(row.verdict).pipe(
@@ -323,24 +323,20 @@ Feature('The problems a synthetic package was authored to produce').body(({ scen
         'outcomes',
         ({ packages }) =>
           Effect.forEach(packages, (entry) =>
-            checkPackage(entry.pkg).pipe(
-              Effect.exit,
-              Effect.map((exit) => ({
-                name: entry.name,
-                outcome: Match.value(exit).pipe(
-                  Match.tag('Success', () => 'analysed' as const),
-                  Match.tag('Failure', () => 'refused' as const),
-                  Match.exhaustive,
-                ),
-              })),
-            )),
+            Effect.match(Analysis.make(entry.pkg).run, {
+              onFailure: (refusal) => ({ name: entry.name, outcome: 'refused' as const, refusal }),
+              onSuccess: () => ({ name: entry.name, outcome: 'analysed' as const, refusal: undefined }),
+            })),
       ),
-      Then('exactly the known-bad package is refused and every other package is analysed')(({ outcomes }) => {
-        const refused = outcomes.filter((entry) => entry.outcome === 'refused').map((entry) => entry.name)
-        const analysed = outcomes.filter((entry) => entry.outcome === 'analysed')
-        expect(refused).toEqual(['KnownBad'])
-        expect(analysed.length).toBe(recipeCount - 1)
-      }),
+      Then('exactly the known-bad package is refused with an unreadable manifest and every other package is analysed')(
+        ({ outcomes }) => {
+          const refused = outcomes.filter((entry) => entry.outcome === 'refused').map((entry) => entry.name)
+          const analysed = outcomes.filter((entry) => entry.outcome === 'analysed')
+          expect(refused).toEqual(['KnownBad'])
+          expect(outcomes.find((entry) => entry.name === 'KnownBad')?.refusal?._tag).toBe('ManifestUnreadable')
+          expect(analysed.length).toBe(recipeCount - 1)
+        },
+      ),
     ),
   )
 })

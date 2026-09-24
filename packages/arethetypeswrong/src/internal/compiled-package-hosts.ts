@@ -1,5 +1,6 @@
+import './typescript-internals.js'
 import type { Package } from '@systemfsoftware/npm-package'
-import { Effect, MutableHashMap, Option } from 'effect'
+import { Effect, Match, MutableHashMap, Option } from 'effect'
 import ts from 'typescript'
 import { CompilerFailed } from '../AnalysisError.schema.js'
 import type { ModuleKind, ModuleKindReason } from '../Problem.schema.js'
@@ -29,6 +30,11 @@ export interface CompilerHost {
     moduleSpecifier: string,
     resolutionMode: ts.ModuleKind.ESNext | ts.ModuleKind.CommonJS | undefined,
   ) => readonly string[] | undefined
+  readonly resolveSpecifier: (
+    fromFileName: string,
+    moduleSpecifier: string,
+    resolutionMode: ts.ResolutionMode,
+  ) => ts.ResolvedModuleWithFailedLookupLocations
   readonly getResolvedModule: (
     sourceFile: ts.SourceFile,
     moduleName: string,
@@ -132,6 +138,15 @@ const makeCompilerHost = (
   return finishCompilerHost(state)
 }
 
+const resolutionModeToModuleKind = (
+  resolutionMode: ts.ResolutionMode,
+): ts.ModuleKind.ESNext | ts.ModuleKind.CommonJS | undefined =>
+  Match.value(resolutionMode).pipe(
+    Match.when(ts.ModuleKind.ESNext, () => ts.ModuleKind.ESNext as const),
+    Match.when(ts.ModuleKind.CommonJS, () => ts.ModuleKind.CommonJS as const),
+    Match.orElse(() => undefined),
+  )
+
 const finishCompilerHost = (state: HostState): CompilerHost => {
   const options = state.compilerOptions
   state.host = createCompilerHostObject(state)
@@ -146,6 +161,9 @@ const finishCompilerHost = (state: HostState): CompilerHost => {
       getTrace(state, fromFileName, moduleSpecifier, resolutionMode),
     getResolvedModule: (sourceFile, moduleName, resolutionMode) =>
       getResolvedModule(state, sourceFile, moduleName, resolutionMode),
+    resolveSpecifier: (fromFileName, moduleSpecifier, resolutionMode) =>
+      resolveModuleName(state, moduleSpecifier, fromFileName, resolutionModeToModuleKind(resolutionMode), undefined)
+        .resolution,
     createPrimaryProgram: (rootName) => Effect.sync(() => getProgram(state, [rootName])),
     createAuxiliaryProgram: (rootNames) => Effect.sync(() => getProgram(state, rootNames)),
   }
@@ -212,16 +230,28 @@ const moduleKey = (
 const recordKey = (containingFile: string, moduleKeyText: string): string =>
   `${containingFile}${keySeparator}${moduleKeyText}`
 
+const noDtsOptions = (
+  compilerOptions: ts.CompilerOptions,
+  allowJs: boolean | undefined,
+): { readonly options: ts.CompilerOptions } =>
+  Option.match(Option.fromNullishOr(allowJs), {
+    onNone: () => ({ options: { ...compilerOptions, noDtsResolution: true } }),
+    onSome: (value) => ({ options: { ...compilerOptions, noDtsResolution: true, allowJs: value } }),
+  })
+
 const resolutionContext = (
   state: HostState,
   noDtsResolution: boolean | undefined,
   allowJs: boolean | undefined,
-): { readonly options: ts.CompilerOptions; readonly cache: ts.ModuleResolutionCache } => {
-  if (noDtsResolution === true) {
-    return { options: { ...state.compilerOptions, noDtsResolution: true, allowJs }, cache: state.noDtsCache }
-  }
-  return { options: state.compilerOptions, cache: state.normalCache }
-}
+): { readonly options: ts.CompilerOptions; readonly cache: ts.ModuleResolutionCache } =>
+  Match.value(noDtsResolution === true).pipe(
+    Match.when(true, (): { readonly options: ts.CompilerOptions; readonly cache: ts.ModuleResolutionCache } => ({
+      ...noDtsOptions(state.compilerOptions, allowJs),
+      cache: state.noDtsCache,
+    })),
+    Match.when(false, () => ({ options: state.compilerOptions, cache: state.normalCache })),
+    Match.exhaustive,
+  )
 
 const resolveModuleName = (
   state: HostState,

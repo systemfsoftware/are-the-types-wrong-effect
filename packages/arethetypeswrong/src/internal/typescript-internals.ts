@@ -4,9 +4,38 @@ declare module 'typescript' {
   /** @internal */
   export type GetCanonicalFileName = (fileName: string) => string
   /** @internal */
-  export function createGetCanonicalFileName(useCaseSensitiveFileNames: boolean): ts.GetCanonicalFileName
+  export enum Comparison {
+    LessThan = -1,
+    EqualTo = 0,
+    GreaterThan = 1,
+  }
+  /** @internal */
+  export function combinePaths(path: string, ...paths: (string | undefined)[]): string
+  /** @internal */
+  export function ensureTrailingDirectorySeparator(path: string): string
+  /** @internal */
+  export function comparePathsCaseInsensitive(a: string, b: string): Comparison
+  /** @internal */
+  export function forEachAncestorDirectory<T>(
+    directory: string,
+    callback: (directory: string) => T | undefined,
+  ): T | undefined
+  /** @internal */
+  export function toPath(
+    fileName: string,
+    basePath: string | undefined,
+    getCanonicalFileName: GetCanonicalFileName,
+  ): ts.Path
+  /** @internal */
+  export function createGetCanonicalFileName(useCaseSensitiveFileNames: boolean): GetCanonicalFileName
   /** @internal */
   export function getAnyExtensionFromPath(path: string): string
+  /** @internal */
+  export function getAnyExtensionFromPath(
+    path: string,
+    extensions: string | readonly string[],
+    ignoreCase: boolean,
+  ): string
   /** @internal */
   export function hasTSFileExtension(fileName: string): boolean
   /** @internal */
@@ -14,18 +43,23 @@ declare module 'typescript' {
   /** @internal */
   export function isDeclarationFileName(fileName: string): boolean
   /** @internal */
+  export function pathIsRelative(path: string): boolean
+  /** @internal */
+  export function getTypesPackageName(packageName: string): string
+  /** @internal */
+  export function unmangleScopedPackageName(packageName: string): string
+  /** @internal */
   export function bindSourceFile(file: ts.SourceFile, options: ts.CompilerOptions): void
-
   /** @internal */
   export function getTemporaryModuleResolutionState(
     packageJsonInfoCache: ts.PackageJsonInfoCache | undefined,
     host: ts.ModuleResolutionHost,
     options: ts.CompilerOptions,
-  ): ts.ModuleResolutionState
+  ): ModuleResolutionState
   /** @internal */
   export function getPackageScopeForPath(
     directory: string,
-    state: ts.ModuleResolutionState,
+    state: ModuleResolutionState,
   ): ts.PackageJsonInfo | undefined
   /** @internal */
   export interface ModuleResolutionState {
@@ -44,7 +78,6 @@ declare module 'typescript' {
       type?: string
     }
   }
-
   /** @internal */
   export interface SourceFile {
     symbol: ts.Symbol
@@ -55,14 +88,12 @@ declare module 'typescript' {
     path: ts.Path
     scriptKind: ts.ScriptKind
   }
-
   /** @internal */
   export interface TypeChecker {
     resolveExternalModuleSymbol(symbol: ts.Symbol): ts.Symbol
     getExportsAndPropertiesOfModule(moduleSymbol: ts.Symbol): ts.Symbol[]
     getSymbolFlags(symbol: ts.Symbol, excludeTypeOnlyMeanings: boolean): ts.SymbolFlags
   }
-
   /** @internal */
   export interface CompilerOptions {
     noDtsResolution?: boolean

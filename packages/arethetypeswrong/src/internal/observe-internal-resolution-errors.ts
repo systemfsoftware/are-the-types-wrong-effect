@@ -1,7 +1,8 @@
+import './typescript-internals.js'
 import { Effect, Option } from 'effect'
 import ts from 'typescript'
 import { boundSourceOf, hostFor, resolveEntrypoint } from '../compiled-package.handle.js'
-import type { CompiledPackage } from '../compiled-package.handle.js'
+import type { CompiledPackage, ResolvedEntrypoint } from '../compiled-package.handle.js'
 import type { InternalResolutionErrorObservation } from '../Observation.schema.js'
 import type { CompilerHost } from './compiled-package-hosts.js'
 import type { ObservationQuery } from './entrypoint-observation.js'
@@ -14,39 +15,61 @@ export const observeInternalResolutionErrors = (
   Effect.map(
     Effect.suspend(() => resolveEntrypoint(query.self, query)),
     (resolved) =>
-      Option.match(Option.fromNullishOr(resolved.files), {
+      Option.match(filesOf(resolved, query), {
         onNone: () => [],
-        onSome: (files) => errorsInFiles(query, enumerationFiles(files, resolved.implementation?.fileName)),
+        onSome: (files) => errorsInFiles(query, files),
       }),
+  )
+const filesOf = (
+  resolved: ResolvedEntrypoint,
+  query: ObservationQuery,
+): Option.Option<readonly string[]> =>
+  Option.map(
+    Option.fromNullishOr(resolved.files),
+    (files) => enumerationFiles(files, resolved.implementation?.fileName, query.fileName),
   )
 
 const enumerationFiles = (
   programFiles: readonly string[],
   implementationFileName: string | undefined,
-): readonly string[] => {
-  const candidates = implementationFileName === undefined ? programFiles : [...programFiles, implementationFileName]
-  return candidates.filter((fileName) => ts.hasTSFileExtension(fileName))
-}
+  runFileName: string | undefined,
+): readonly string[] => scopedCandidates(programFiles, implementationFileName, runFileName)
 
+const scopedCandidates = (
+  programFiles: readonly string[],
+  implementationFileName: string | undefined,
+  runFileName: string | undefined,
+): readonly string[] => withFile(withFile(programFiles, runFileName), implementationFileName)
+
+const withFile = (files: readonly string[], fileName: string | undefined): readonly string[] =>
+  Option.getOrElse(appendedFileOption(files, fileName), () => files)
+
+const appendedFileOption = (
+  files: readonly string[],
+  fileName: string | undefined,
+): Option.Option<readonly string[]> =>
+  Option.flatMap(Option.fromNullishOr(fileName), (name) => appendedFile(files, name))
+
+const appendedFile = (files: readonly string[], fileName: string): Option.Option<readonly string[]> =>
+  Option.filter(
+    Option.some([...files, fileName]),
+    () => !files.includes(fileName) && ts.hasTSFileExtension(fileName),
+  )
 const errorsInFiles = (query: ObservationQuery, fileNames: readonly string[]): InternalResolutionErrorObservation[] =>
   fileNames.flatMap((fileName) => errorsInFile(query, fileName))
 
-const errorsInFile = (query: ObservationQuery, fileName: string): InternalResolutionErrorObservation[] => {
-  const host = hostFor(query.self, resolutionOptionOf(query.resolutionKind))
-  const sourceFile = boundSourceOf(query.self, fileName)
-  return errorsForFileSources(query, host, fileName, sourceFile)
-}
+const errorsInFile = (query: ObservationQuery, fileName: string): InternalResolutionErrorObservation[] =>
+  Option.match(sourceOf(query, fileName), {
+    onNone: () => [],
+    onSome: (sources) => importErrorsOf(query, sources.host, sources.sourceFile, fileName),
+  })
 
-const errorsForFileSources = (
+const sourceOf = (
   query: ObservationQuery,
-  host: CompilerHost,
   fileName: string,
-  sourceFile: ts.SourceFile | undefined,
-): InternalResolutionErrorObservation[] => {
-  if (sourceFile === undefined) {
-    return []
-  }
-  return importErrorsOf(query, host, sourceFile, fileName)
+): Option.Option<{ readonly host: CompilerHost; readonly sourceFile: ts.SourceFile }> => {
+  const host = hostFor(query.self, query.resolutionOption)
+  return Option.map(Option.fromNullishOr(boundSourceOf(query.self, fileName)), (sourceFile) => ({ host, sourceFile }))
 }
 
 const importErrorsOf = (
@@ -105,19 +128,16 @@ const unresolvedReferenceObservation = (
   moduleSpecifier: ts.StringLiteralLike,
 ): Option.Option<InternalResolutionErrorObservation> => {
   const resolutionMode = ts.getModeForUsageLocation(sourceFile, moduleSpecifier, host.getCompilerOptions())
-  return Option.flatMap(
-    resolutionOf(host, sourceFile, moduleSpecifier, resolutionMode),
-    (resolution) => unresolvedModuleObservation(query, host, fileName, moduleSpecifier, resolutionMode, resolution),
-  )
+  const resolution = resolvedReference(host, sourceFile, moduleSpecifier, resolutionMode)
+  return unresolvedModuleObservation(query, host, fileName, moduleSpecifier, resolutionMode, resolution)
 }
-
-const resolutionOf = (
+const resolvedReference = (
   host: CompilerHost,
   sourceFile: ts.SourceFile,
   moduleSpecifier: ts.StringLiteralLike,
   resolutionMode: ts.ResolutionMode,
-): Option.Option<ts.ResolvedModuleWithFailedLookupLocations> =>
-  Option.fromNullishOr(host.getResolvedModule(sourceFile, moduleSpecifier.text, resolutionMode))
+): ts.ResolvedModuleWithFailedLookupLocations =>
+  host.resolveSpecifier(sourceFile.fileName, moduleSpecifier.text, resolutionMode)
 
 const unresolvedModuleObservation = (
   query: ObservationQuery,
