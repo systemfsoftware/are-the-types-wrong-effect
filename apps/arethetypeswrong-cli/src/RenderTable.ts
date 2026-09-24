@@ -85,8 +85,6 @@ const isRowOfCells = (value: unknown): value is ReadonlyArray<ReadonlyArray<stri
 
 const argsBeginWithHeader = (args: IArguments): boolean => !isRowOfCells(args[0])
 
-const isTableDataFirst = argsBeginWithHeader
-
 export const renderTable: {
   (
     rows: ReadonlyArray<ReadonlyArray<Cell>>,
@@ -98,7 +96,7 @@ export const renderTable: {
     gap?: number,
   ): string
 } = Function.dual(
-  isTableDataFirst,
+  argsBeginWithHeader,
   (
     header: ReadonlyArray<string>,
     rows: ReadonlyArray<ReadonlyArray<Cell>>,
@@ -168,7 +166,7 @@ export const renderFlippedTable: {
     gap?: number,
   ): string
 } = Function.dual(
-  isTableDataFirst,
+  argsBeginWithHeader,
   (
     header: ReadonlyArray<string>,
     rows: ReadonlyArray<ReadonlyArray<Cell>>,

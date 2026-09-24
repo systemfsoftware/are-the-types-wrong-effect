@@ -25,41 +25,43 @@ export interface HttpRegistryOptions {
   readonly maxPayloadBytes?: number | undefined
 }
 
-const concatBytes = (chunks: ReadonlyArray<Uint8Array>): Uint8Array => {
-  const total = chunks.reduce((size, chunk) => size + chunk.byteLength, 0)
-  const merged = new Uint8Array(total)
-  chunks.reduce((offset, chunk) => {
+interface CollectedPayload {
+  readonly chunks: Array<Uint8Array>
+  readonly size: number
+}
+
+const emptyPayload = (): CollectedPayload => ({ chunks: [], size: 0 })
+
+const concatPayload = (payload: CollectedPayload): Uint8Array => {
+  const merged = new Uint8Array(payload.size)
+  payload.chunks.reduce((offset, chunk) => {
     merged.set(chunk, offset)
     return offset + chunk.byteLength
   }, 0)
   return merged
 }
 
-const measuredSize = (chunks: ReadonlyArray<Uint8Array>): number =>
-  chunks.reduce((size, chunk) => size + chunk.byteLength, 0)
-
 const chargedFor = (
-  collected: ReadonlyArray<Uint8Array>,
+  collected: CollectedPayload,
   chunk: Uint8Array,
   url: string,
   budgetBytes: number,
-): Effect.Effect<ReadonlyArray<Uint8Array>, RegistryPayloadOverBudget, never> => {
-  const grown = [...collected, chunk]
-  if (measuredSize(grown) > budgetBytes) {
-    return Effect.fail(
-      new RegistryPayloadOverBudget({ url, byteLength: measuredSize(grown), budgetBytes }),
-    )
+): Effect.Effect<CollectedPayload, RegistryPayloadOverBudget, never> => {
+  collected.chunks.push(chunk)
+  const size = collected.size + chunk.byteLength
+  if (size > budgetBytes) {
+    return Effect.fail(new RegistryPayloadOverBudget({ url, byteLength: size, budgetBytes }))
   }
-  return Effect.succeed(grown)
+  return Effect.succeed({ chunks: collected.chunks, size })
 }
 
 const boundedSink = (
   url: string,
   budgetBytes: number,
-): Sink.Sink<ReadonlyArray<Uint8Array>, Uint8Array, Uint8Array, RegistryPayloadOverBudget> =>
-  Sink.fold<ReadonlyArray<Uint8Array>, Uint8Array, RegistryPayloadOverBudget>(
-    (): ReadonlyArray<Uint8Array> => [],
-    (collected) => measuredSize(collected) <= budgetBytes,
+): Sink.Sink<CollectedPayload, Uint8Array, Uint8Array, RegistryPayloadOverBudget> =>
+  Sink.fold<CollectedPayload, Uint8Array, RegistryPayloadOverBudget>(
+    emptyPayload,
+    (collected) => collected.size <= budgetBytes,
     (collected, chunk) => chargedFor(collected, chunk, url, budgetBytes),
   )
 
@@ -67,7 +69,7 @@ const collectBounded = (
   stream: Stream.Stream<Uint8Array, HttpClientError>,
   url: string,
   budgetBytes: number,
-): Effect.Effect<ReadonlyArray<Uint8Array>, RegistryPayloadOverBudget | HttpClientError, Scope.Scope> =>
+): Effect.Effect<CollectedPayload, RegistryPayloadOverBudget | HttpClientError, Scope.Scope> =>
   Effect.scoped(Stream.run(stream, boundedSink(url, budgetBytes)))
 
 const readBoundedStream = (
@@ -77,7 +79,7 @@ const readBoundedStream = (
 ): Effect.Effect<Uint8Array, RegistryPayloadOverBudget | HttpClientError, Scope.Scope> =>
   Effect.map(
     collectBounded(incoming.stream, url, budgetBytes),
-    (chunks) => concatBytes(chunks),
+    concatPayload,
   )
 
 const declaredLength = (incoming: Response.HttpClientResponse): number =>

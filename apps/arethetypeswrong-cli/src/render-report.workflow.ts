@@ -150,13 +150,13 @@ const definedCountOf = (count: number | undefined): number =>
     Match.orElse((present): number => present),
   )
 
-const previousCountOf = (counts: Record<string, number>, problem: MaskedProblem): number =>
-  definedCountOf(countedKindOf(counts, problem.kind))
-
 const countedProblem = (
   counts: Record<string, number>,
   problem: MaskedProblem,
-): Record<string, number> => ({ ...counts, [problem.kind]: previousCountOf(counts, problem) + 1 })
+): Record<string, number> => ({
+  ...counts,
+  [problem.kind]: definedCountOf(countedKindOf(counts, problem.kind)) + 1,
+})
 
 const problemCountsOf = (problems: readonly MaskedProblem[]): Record<string, number> =>
   problems.reduce<Record<string, number>>(countedProblem, {})

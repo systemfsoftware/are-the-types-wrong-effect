@@ -77,7 +77,8 @@ const summarizedAnalysis = (
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
-): string => renderSummary(visible) + '\n' + renderAnalysis(analysis, { ...options, summary: false }, annotations)
+): string =>
+  renderSummary(visible) + '\n' + renderFormatted(analysis, visible, { ...options, summary: false }, annotations)
 
 const renderEntrypointAnalysis = (
   analysis: Analysis.Report,
@@ -88,12 +89,6 @@ const renderEntrypointAnalysis = (
   if (options.summary) return summarizedAnalysis(analysis, visible, options, annotations)
   return renderFormatted(analysis, visible, options, annotations)
 }
-
-const narrowAnalysis = (
-  result: Analysis.Report,
-  options: RenderOptions,
-  annotations: Record<string, AnsiAnnotation>,
-): string => renderEntrypointAnalysis(result, options, annotations)
 
 const renderedAnalysis = (
   result: Analysis.PackageReport,
@@ -107,7 +102,7 @@ const renderedAnalysis = (
       typesPackageName: null,
     })
   }
-  return narrowAnalysis(result, options, annotations)
+  return renderEntrypointAnalysis(result, options, annotations)
 }
 
 const argsBeginWithPackageReport = (args: IArguments): boolean => S.is(Analysis.PackageReport)(args[0])

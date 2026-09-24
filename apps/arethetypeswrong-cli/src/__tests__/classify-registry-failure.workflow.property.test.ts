@@ -11,7 +11,7 @@ import {
   RegistryStatusObserved,
   RegistryUnreadableShapeObserved,
 } from '../classify-registry-failure.workflow.js'
-import { type AttwFailure, FailureDocumentSchema } from '../Failure.schema.js'
+import { type AttwFailure, FailureDocumentJson } from '../Failure.schema.js'
 import { failureOutcome } from '../render-report.cell.js'
 
 type StatusClass = 'notFound' | 'answered' | 'badResponse'
@@ -157,7 +157,7 @@ const holdsRenderedDocument = (failure: AttwFailure, isTty: boolean): boolean =>
       body.includes(failure.message) && body.includes(failure.recovery)
   }
   return Result.match(
-    Schema.decodeResult(Schema.fromJsonString(FailureDocumentSchema), { onExcessProperty: 'error' })(outcome.document),
+    Schema.decodeResult(FailureDocumentJson, { onExcessProperty: 'error' })(outcome.document),
     {
       onSuccess: (document) =>
         Predicate.isTagged(failure, document.kind) &&

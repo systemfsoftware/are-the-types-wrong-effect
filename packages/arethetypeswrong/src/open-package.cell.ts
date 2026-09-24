@@ -154,17 +154,17 @@ const observedPackageJson = (pkg: Package, path: string): ObservedPackageJson =>
 
 const packageRootOf = (pkg: Package): string => `/node_modules/${pkg.packageName}`
 
-const packageJsonPaths = (pkg: Package): ReadonlyArray<string> => {
-  const root = packageRootOf(pkg)
-  return pkg.listFiles(root)
+const packageJsonPaths = (root: string, files: ReadonlyArray<string>): ReadonlyArray<string> =>
+  files
     .filter((file) => file.startsWith(root) && file.endsWith('/package.json'))
     .sort((left, right) => left.length - right.length)
-}
 
 const read = (request: AnalysisRequest): Effect.Effect<OpenRead, ManifestUnreadable> =>
   Effect.gen(function*() {
     const manifest = yield* readManifest(request.pkg)
     const companionManifest = yield* companionManifestOf(request)
+    const root = packageRootOf(request.pkg)
+    const files = [...request.pkg.listFiles(root)]
     return {
       packageName: request.pkg.packageName,
       manifest,
@@ -174,8 +174,8 @@ const read = (request: AnalysisRequest): Effect.Effect<OpenRead, ManifestUnreada
       request,
       companionManifest,
       legacy: request.entrypointsLegacy,
-      declaredFiles: [...request.pkg.listFiles(packageRootOf(request.pkg))].map(observedDeclaredFile),
-      packageJsonFiles: packageJsonPaths(request.pkg).map((path) => observedPackageJson(request.pkg, path)),
+      declaredFiles: files.map(observedDeclaredFile),
+      packageJsonFiles: packageJsonPaths(root, files).map((path) => observedPackageJson(request.pkg, path)),
     }
   })
 
@@ -217,8 +217,7 @@ const discoveryCommand = (command: OpenRead, manifest: PackageManifest): Discove
     packageJsonFiles: [...command.packageJsonFiles],
   })
 
-const uniqueTexts = (values: ReadonlyArray<string>): ReadonlyArray<string> =>
-  values.filter((value, index) => values.indexOf(value) === index)
+const uniqueTexts = (values: ReadonlyArray<string>): ReadonlyArray<string> => [...new Set(values)]
 
 const withoutRegexes = (regexes: ReadonlyArray<RegExp>, entrypoints: ReadonlyArray<string>): ReadonlyArray<string> =>
   regexes.reduce(

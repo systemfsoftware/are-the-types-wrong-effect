@@ -209,8 +209,6 @@ const isEntrypointArray = (value: unknown): value is ReadonlyArray<string> =>
 
 const argsBeginWithEntrypoints = (args: IArguments): boolean => isEntrypointArray(args[0])
 
-const isTypedDataFirst = argsBeginWithEntrypoints
-
 export const renderTypedAnalysis: {
   (
     problems: readonly Problem[],
@@ -224,7 +222,7 @@ export const renderTypedAnalysis: {
     annotations?: Record<string, AnsiAnnotation>,
   ): string
 } = Function.dual(
-  isTypedDataFirst,
+  argsBeginWithEntrypoints,
   (
     entrypoints: readonly string[],
     problems: readonly Problem[],
