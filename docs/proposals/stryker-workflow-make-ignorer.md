@@ -32,8 +32,8 @@ workflow-make ignorer has none (npm 404 for `stryker-ignorer-workflow-make*`).
 `apps/arethetypeswrong-cli/stryker.config.ts` and `packages/arethetypeswrong/stryker.config.ts`
 ignore `effect-schema-declarations` and `in-source-vitest-block`. Neither package has an
 `import.meta.vitest` block, so the net effect is that `Workflow.make` boundary mutants are graded
-rather than ignored. The gate is stricter than base: the engine scores 100 under it, and the CLI
-lane is blocked separately by `systemfsoftware/stryker-js-effect#91` (TS6307 in the checker).
+rather than ignored. The gate is stricter than base, and both packages score 100 under it: the
+surviving boundary mutants were instrumentation maps no tracer reads, and they were deleted.
 
 ## Ask
 
