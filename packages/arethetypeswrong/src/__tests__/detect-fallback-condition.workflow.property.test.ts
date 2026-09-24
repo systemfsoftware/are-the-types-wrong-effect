@@ -20,6 +20,7 @@ const FAILED_PREFIX = "Failed to resolve under condition '"
 const RESOLVED_PREFIX = "Resolved under condition '"
 const FAILED_UNDER_REQUIRE = `${FAILED_PREFIX}require'`
 const RESOLVED_UNDER_IMPORT = `${RESOLVED_PREFIX}import'`
+const AT_IN_RESOLVER = '    at resolveModuleName (node:internal/modules/cjs/loader:1105:14)'
 
 const scriptArbitrary: Arbitrary.Arbitrary<ConditionalExportsLines> = Arbitrary.schema(ConditionalExportsScript).pipe(
   Arbitrary.map(
@@ -119,6 +120,11 @@ const INTENDED_FALLBACK_VERDICTS: readonly (readonly [ConditionalExportsLines, b
   [[ENTERED, FAILED_UNDER_REQUIRE, RESOLVED_UNDER_IMPORT], true],
   [[ENTERED, EXITED, ENTERED, FAILED_UNDER_REQUIRE, RESOLVED_UNDER_IMPORT, EXITED], true],
   [[ENTERED, ENTERED, FAILED_UNDER_REQUIRE, EXITED, RESOLVED_UNDER_IMPORT, EXITED], false],
+  [
+    [ENTERED, ENTERED, ENTERED, FAILED_UNDER_REQUIRE, EXITED, EXITED, FAILED_UNDER_REQUIRE, RESOLVED_UNDER_IMPORT],
+    true,
+  ],
+  [[ENTERED, FAILED_UNDER_REQUIRE, AT_IN_RESOLVER, EXITED, RESOLVED_UNDER_IMPORT], false],
 ]
 
 const intendedVerdictRowArbitrary: Arbitrary.Arbitrary<readonly [ConditionalExportsLines, boolean | null]> = Arbitrary
