@@ -8,7 +8,8 @@ import {
 import { layer as nodeStdioLayer } from '@effect/platform-node-shared/NodeStdio'
 import { layer as nodeTerminalLayer } from '@effect/platform-node-shared/NodeTerminal'
 import { it } from '@effect/vitest'
-import { packTree } from '@systemfsoftware/npm-package'
+import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
+import { packPackage, packTree } from '@systemfsoftware/npm-package'
 import { Effect, Layer, Result, Schema as S } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
 import * as Path from 'effect/Path'
@@ -25,7 +26,7 @@ import * as NpmPackRunner from '../src/drivers/npm-pack-runner.js'
 import { CompactJson } from '../src/RenderJson.schema.js'
 import { runAttw } from '../src/run-attw.cell.js'
 import type { RunAttwFlags, RunAttwRequest } from '../src/run-attw.cell.js'
-import { analyzeFlags, runAttwCommand } from '../src/run-attw.command.js'
+import { analyzeFlags, runAttwCommand, runCli } from '../src/run-attw.command.js'
 import { Terminal } from '../src/terminal.service.js'
 import { TerminalObservations } from '../src/TerminalError.schema.js'
 import {
@@ -166,7 +167,27 @@ const noExportsTree: FixtureTree = {
   },
 }
 
-const fixtureTrees: readonly FixtureTree[] = [wellFormedTree, falseCjsTree, untypedTree, noExportsTree]
+const NODE10_ONLY_MANIFEST =
+  '{"name":"node10-only","version":"1.0.0","type":"module","exports":{".":{"import":{"types":"./dist/index.d.mts","default":"./dist/index.mjs"},"require":{"types":"./dist/index.d.cts","default":"./dist/index.cjs"}}}}'
+
+const node10OnlyTree: FixtureTree = {
+  name: 'node10-only',
+  files: {
+    'package.json': NODE10_ONLY_MANIFEST,
+    'dist/index.d.mts': 'export declare const foo: string;\n',
+    'dist/index.mjs': 'export const foo = "bar";\n',
+    'dist/index.d.cts': 'export declare const foo: string;\n',
+    'dist/index.cjs': '"use strict";\nmodule.exports = { foo: "bar" };\n',
+  },
+}
+
+const fixtureTrees: readonly FixtureTree[] = [
+  wellFormedTree,
+  falseCjsTree,
+  untypedTree,
+  noExportsTree,
+  node10OnlyTree,
+]
 
 const waiverText = Result.getOrThrow(S.encodeResult(Waiver)({ ignoreRules: ['false-cjs'] }))
 
@@ -187,6 +208,11 @@ const prepareFixtures = Effect.gen(function*() {
   for (const tree of fixtureTrees) {
     yield* fs.writeFile(path.join(dir, `${tree.name}.tgz`), packTree(tree.files, tree.name))
   }
+  for (const recipe of [Recipe.MultiEntrypoint, Recipe.UntypedResolution]) {
+    const pkg = recipe()
+    yield* fs.writeFile(path.join(dir, `${pkg.packageName}.tgz`), packPackage(pkg))
+  }
+  yield* fs.writeFileString(path.join(dir, 'corrupt.tgz'), 'not a tarball')
   yield* fs.writeFileString(path.join(dir, 'waiver.attw.json'), waiverText)
   registryTarball = packTree(registryTree.files, registryTree.name)
   const packDir = path.join(dir, 'packable')
@@ -238,6 +264,22 @@ const stripAnsi = (text: string): string => text.replace(ANSI_SGR, '')
 
 const HINT_FIELDS = ['--include', 'entrypoints', 'buildTools', 'programInfo', 'traces'] as const
 
+const asciiProblemCells = /^[X!-]+$/
+const untypedCells = /^◌+$/
+
+interface EnvelopeRowExpectation {
+  readonly form: 'envelope'
+  readonly exitCode: number
+  readonly status: 'ok' | 'untyped'
+  readonly packageName: string
+  readonly problemKinds: readonly string[]
+  readonly stderrIncludes: readonly string[]
+  readonly stderrEmpty?: boolean
+  readonly hintLineCount?: number
+  readonly restoredKeys?: readonly string[]
+  readonly compactStdout?: boolean
+}
+
 type RowExpectation =
   | {
     readonly form: 'table'
@@ -247,14 +289,7 @@ type RowExpectation =
     readonly cell: RegExp
   }
   | { readonly form: 'untyped-prose'; readonly exitCode: number; readonly packageName: string }
-  | {
-    readonly form: 'envelope'
-    readonly exitCode: number
-    readonly status: 'ok' | 'untyped'
-    readonly packageName: string
-    readonly problemKinds: readonly string[]
-    readonly stderrIncludes: readonly string[]
-  }
+  | EnvelopeRowExpectation
   | { readonly form: 'failure'; readonly exitCode: number; readonly failureKind: string }
 
 interface Scenario {
@@ -398,6 +433,104 @@ const localScenarios: readonly Scenario[] = [
   ),
 ]
 
+const authoredScenarios: readonly Scenario[] = [
+  scenario(
+    'table on an untyped-resolution package',
+    () => tarball('untyped-resolution'),
+    { format: 'table' },
+    tableExpectation(1, untypedCells, false),
+  ),
+  scenario(
+    'json on an untyped-resolution package',
+    () => tarball('untyped-resolution'),
+    { format: 'json' },
+    envelopeExpectation(1, 'ok', 'untyped-resolution', [
+      'UntypedResolution',
+      'UntypedResolution',
+      'UntypedResolution',
+      'UntypedResolution',
+    ], HINT_FIELDS),
+  ),
+  scenario(
+    'table on a multi-entrypoint package',
+    () => tarball('multi-entrypoint'),
+    { format: 'table' },
+    { form: 'table', exitCode: 1, header: TABLE_HEADER, labels: ['.', './macros', './utils'], cell: emojiProblemCells },
+  ),
+  scenario(
+    'entrypoints restricts the analysis to the selected entrypoints',
+    () => tarball('multi-entrypoint'),
+    { entrypoints: ['.'], format: 'table' },
+    { form: 'table', exitCode: 1, header: TABLE_HEADER, labels: ['.'], cell: emojiProblemCells },
+  ),
+  scenario(
+    'exclude-entrypoints drops the excluded entrypoint from the analysis',
+    () => tarball('multi-entrypoint'),
+    { excludeEntrypoints: ['macros'], format: 'table' },
+    { form: 'table', exitCode: 1, header: TABLE_HEADER, labels: ['.', './utils'], cell: emojiProblemCells },
+  ),
+  scenario(
+    'ascii without emoji on a package with problems',
+    () => tarball('false-cjs'),
+    { format: 'ascii', emoji: false },
+    { form: 'table', exitCode: 1, header: TABLE_HEADER, labels: ['.'], cell: asciiProblemCells },
+  ),
+  scenario(
+    'the default format on a package with problems',
+    () => tarball('false-cjs'),
+    {},
+    {
+      form: 'envelope',
+      exitCode: 1,
+      status: 'ok',
+      packageName: 'false-cjs',
+      problemKinds: ['FalseCJS'],
+      stderrIncludes: HINT_FIELDS,
+      compactStdout: true,
+      hintLineCount: 1,
+    },
+  ),
+  scenario(
+    'include restores a requested field and silences the hint',
+    () => tarball('false-cjs'),
+    { include: ['entrypoints'] },
+    {
+      form: 'envelope',
+      exitCode: 1,
+      status: 'ok',
+      packageName: 'false-cjs',
+      problemKinds: ['FalseCJS'],
+      stderrIncludes: [],
+      stderrEmpty: true,
+      restoredKeys: ['entrypoints'],
+    },
+  ),
+  scenario(
+    'a node16 profile silences every problem',
+    () => tarball('node10-only'),
+    { profile: 'node16' },
+    {
+      form: 'envelope',
+      exitCode: 0,
+      status: 'ok',
+      packageName: 'node10-only',
+      problemKinds: [],
+      stderrIncludes: [],
+    },
+  ),
+  scenario('a corrupt tarball', () => `${fixtureDir}/corrupt.tgz`, {}, {
+    form: 'failure',
+    exitCode: 1,
+    failureKind: 'AnalysisFailed',
+  }),
+  scenario(
+    'an unreachable registry',
+    () => 'attw-never-resolves',
+    { fromNpm: true, registry: 'http://127.0.0.1:9' },
+    { form: 'failure', exitCode: 1, failureKind: 'RegistryUnreachable' },
+  ),
+]
+
 const isJsonObject = (value: S.Json | undefined): value is S.JsonObject =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -422,6 +555,11 @@ const decodedEnvelopeOf = (stdout: string): DecodedEnvelope => {
     packageName: envelope.packageName,
     problemKinds: (envelope.problems ?? []).map((problem) => problem.kind),
   }
+}
+
+const envelopeKeysOf = (stdout: string): readonly string[] => {
+  const parsed = jsonOf(stdout, `attw printed no envelope object: ${stdout}`)
+  return isJsonObject(parsed) ? Object.keys(parsed) : []
 }
 
 interface HumanTable {
@@ -479,6 +617,26 @@ const expectRow = (tested: Scenario, captured: Capture, exitCode: number, leg: s
   for (const fragment of expectation.stderrIncludes) {
     expect(stderr, `${tested.name} (${leg}): stderr hint`).toContain(fragment)
   }
+  if (expectation.stderrEmpty === true) {
+    expect(stderr, `${tested.name} (${leg}): stderr is silent`).toBe('')
+  }
+  if (expectation.hintLineCount !== undefined) {
+    expect(
+      stderr.split('\n').filter((line) => line !== ''),
+      `${tested.name} (${leg}): stderr hint lines`,
+    ).toHaveLength(expectation.hintLineCount)
+  }
+  if (expectation.restoredKeys !== undefined) {
+    const keys = envelopeKeysOf(stdout)
+    for (const key of expectation.restoredKeys) {
+      expect(keys, `${tested.name} (${leg}): restored envelope key`).toContain(key)
+    }
+  }
+  if (expectation.compactStdout === true) {
+    expect(stdout.endsWith('\n'), `${tested.name} (${leg}): stdout ends with a newline`).toBe(true)
+    expect(stdout.trimEnd().includes('\n'), `${tested.name} (${leg}): stdout is one line`).toBe(false)
+    expect(stdout.includes(String.fromCharCode(27)), `${tested.name} (${leg}): stdout carries no ANSI`).toBe(false)
+  }
 }
 
 const runRow = (tested: Scenario) =>
@@ -486,6 +644,30 @@ const runRow = (tested: Scenario) =>
     const cellCaptured = capture()
     const cellExit = yield* runCellPath(cellCaptured, cellRequestOf(tested.target(), tested.flags, tested.configPath()))
     expectRow(tested, cellCaptured, cellExit, 'run')
+  })
+
+const firstLine = (text: string): string => text.split('\n')[0] ?? ''
+
+interface CommandRun {
+  readonly captured: Capture
+  readonly exitCode: number
+}
+
+const runCommandPath = (argv: readonly string[]): Effect.Effect<CommandRun> =>
+  Effect.gen(function*() {
+    const captured = capture()
+    yield* Effect.sync(() => {
+      process.exitCode = 0
+    })
+    yield* runCli({ version: cliVersion })([...argv]).pipe(Effect.orDie, Effect.provide(commandLayer(captured)))
+    const exitCode = yield* Effect.sync(() => {
+      const code = process.exitCode
+      return typeof code === 'number' ? code : 0
+    })
+    yield* Effect.sync(() => {
+      process.exitCode = 0
+    })
+    return { captured, exitCode }
   })
 
 const registryManifest = (base: string): string =>
@@ -603,6 +785,28 @@ describe('run-attw: the composed run cell over the published CLI surface', () =>
     it.effect(`agrees with the authored contract on ${tested.name}`, () => runRow(tested))
   }
 
+  for (const tested of authoredScenarios) {
+    it.effect(`agrees with the authored contract on ${tested.name}`, () => runRow(tested))
+  }
+
+  it.effect('agrees on a pack target addressed by a relative path', () =>
+    Effect.gen(function*() {
+      const path = yield* Path.Path
+      const relative = path.relative(process.cwd(), path.join(fixtureDir, 'packable'))
+      const expectation = envelopeExpectation(1, 'ok', 'attw-packable', ['NamedExports'], ['--include'])
+      const captured = capture()
+      const exitCode = yield* runCellPath(
+        captured,
+        cellRequestOf(relative, { pack: true, format: 'json' }, absentConfigPath()),
+      )
+      expectRow(
+        scenario('a relative pack target', () => relative, { pack: true, format: 'json' }, expectation),
+        captured,
+        exitCode,
+        'run',
+      )
+    }).pipe(Effect.provide(platformBase)))
+
   it.effect('agrees on a malformed package spec', () =>
     runRow(scenario('a malformed spec', () => 'pkg?fields=name', { fromNpm: true }, {
       form: 'failure',
@@ -649,4 +853,42 @@ describe('run-attw: the composed run cell over the published CLI surface', () =>
     }).pipe(Effect.provide(listening)))
 
   it.effect('prints schema documents that decode with the published envelope schema', () => runSchemaRow)
+
+  it.effect('prints the version of the CLI package it was built from', () =>
+    Effect.gen(function*() {
+      const { captured, exitCode } = yield* runCommandPath(['--version'])
+      expect(exitCode).toBe(0)
+      expect(stripAnsi(captured.stdout.join('')).trim()).toBe(`attw v${cliVersion}`)
+    }))
+
+  it.effect('analyzes the same package through the analyze subcommand as through the bare alias', () =>
+    Effect.gen(function*() {
+      const bare = yield* runCommandPath([tarball('false-cjs')])
+      const explicit = yield* runCommandPath(['analyze', tarball('false-cjs')])
+      expect(explicit.exitCode).toBe(bare.exitCode)
+      expect(explicit.captured.stdout.join('')).toBe(bare.captured.stdout.join(''))
+      expect(explicit.captured.stderr.join('')).toBe(bare.captured.stderr.join(''))
+    }))
+
+  it.effect('keeps an unknown flag out of stdout with a typed stderr document', () =>
+    Effect.gen(function*() {
+      const { captured, exitCode } = yield* runCommandPath(['--definitely-not-a-flag', tarball('false-cjs')])
+      expect(exitCode).toBe(1)
+      expect(captured.stdout.join('')).toBe('')
+      const [document = '', ...usageText] = captured.stderr.join('').split('\n')
+      expect(failureKindOf(document)).toBe('UnrecognizedOption')
+      expect(usageText.every((line) => line.trim() === '')).toBe(false)
+    }))
+
+  it.effect('refuses extra arguments to the schema subcommand instead of analyzing them', () =>
+    Effect.gen(function*() {
+      const bare = yield* runCommandPath(['schema', 'extra-arg'])
+      expect(bare.exitCode).toBe(1)
+      expect(bare.captured.stdout.join('')).toBe('')
+      expect(failureKindOf(firstLine(bare.captured.stderr.join('')))).toBe('UnexpectedArgument')
+      const pathLike = yield* runCommandPath(['schema', tarball('false-cjs')])
+      expect(pathLike.exitCode).toBe(1)
+      expect(pathLike.captured.stdout.join('')).toBe('')
+      expect(failureKindOf(firstLine(pathLike.captured.stderr.join('')))).toBe('UnexpectedArgument')
+    }))
 })
