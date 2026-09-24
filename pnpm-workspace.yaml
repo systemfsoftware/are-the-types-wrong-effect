@@ -10,7 +10,7 @@ catalog:
   "@commitlint/config-conventional": ^21.2.2
   "@commitlint/types": ^21.2.0
   "@effect/platform-node": 4.0.0-rc.116
-  "@effect/platform-node-shared": 4.0.0-rc.116
+  "@effect/platform-node-shared": 4.0.0-rc.117
   "@effect/tsgo": ^0.45.0
   "@effect/vitest": 4.0.0-rc.116
   "@loaderkit/resolve": ^1.0.6
@@ -63,7 +63,7 @@ packages:
 overrides:
   effect: 4.0.0-rc.116
   "@effect/platform-node": 4.0.0-rc.116
-  "@effect/platform-node-shared": 4.0.0-rc.116
+  "@effect/platform-node-shared": 4.0.0-rc.117
   "@effect/vitest": 4.0.0-rc.116
 minimumReleaseAgeExclude:
   - "@systemfsoftware/effect-cell-types@10.1.0"
