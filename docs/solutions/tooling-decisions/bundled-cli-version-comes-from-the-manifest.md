@@ -20,6 +20,7 @@ related_components:
   - "@systemfsoftware/tsconfig/bundler/no-dom"
   - manifestVersion
 tags: [cli, version, tsdown, rolldown, tsconfig-preset, bundler, regression-test, attw]
+last_updated: 2026-09-24
 ---
 
 # A bundled CLI derives its printed version from the manifest
@@ -42,8 +43,10 @@ tags: [cli, version, tsdown, rolldown, tsconfig-preset, bundler, regression-test
 
 ```
 before: writeVersion('1.1.1')                     // second source of truth, drifts silently
-after:  writeVersion(manifest.version)            // inlined by the bundler at build time
+after:  writeVersion(__ATTW_CLI_VERSION__)        // defined from package.json by tsdown and vitest
 ```
+
+**No TypeScript program in the package imports `package.json`.** The first fix imported the manifest from source and let the bundler inline it. That broke the mutation gate: the stryker TypeScript checker rewrites every tsconfig without its `include` list (`systemfsoftware/stryker-js-effect#91`), so a JSON file listed there drops out of the project and the dry-run compile fails with TS6307 before any mutant runs. The CLI's tsdown and vitest configs now each read `package.json` from disk, decode it through an Effect Schema JSON codec, and `define` `__ATTW_CLI_VERSION__`; the `cliVersion` export declares the constant and reads it. The manifest is still the only owner, and both configs must define it or the build and tests fail on an undefined identifier.
 
 **The resolver model in the compiler config must name the resolver that actually runs.** `tsc/*` presets describe a package Node resolves; `bundler/*` presets describe a package a bundler inlines. Choosing by repo precedent rather than by the consumer is how a package ends up typechecked against a resolver it never uses.
 
