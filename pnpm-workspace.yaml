@@ -9,7 +9,7 @@ catalog:
   "@commitlint/cli": ^21.2.2
   "@commitlint/config-conventional": ^21.2.2
   "@commitlint/types": ^21.2.0
-  "@effect/platform-node": 4.0.0-rc.116
+  "@effect/platform-node": 4.0.0-rc.117
   "@effect/platform-node-shared": 4.0.0-rc.116
   "@effect/tsgo": ^0.45.0
   "@effect/vitest": 4.0.0-rc.116
@@ -62,7 +62,7 @@ packages:
   - packages/arethetypeswrong/*
 overrides:
   effect: 4.0.0-rc.116
-  "@effect/platform-node": 4.0.0-rc.116
+  "@effect/platform-node": 4.0.0-rc.117
   "@effect/platform-node-shared": 4.0.0-rc.116
   "@effect/vitest": 4.0.0-rc.116
 minimumReleaseAgeExclude:
