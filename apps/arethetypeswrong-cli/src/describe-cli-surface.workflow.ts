@@ -15,7 +15,9 @@ export class RenderSchemaDocumentCommand extends S.Class<RenderSchemaDocumentCom
 )({
   version: S.String,
   target: S.Option(S.String),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 export class SchemaRendered extends S.TaggedClass<SchemaRendered>()('SchemaRendered', { version: S.String }) {
   readonly [SchemaSurfaceDecisionTypeId] = SchemaSurfaceDecisionTypeId
@@ -57,9 +59,11 @@ const versionUsability = (version: string): VersionUsability =>
     Match.exhaustive,
   )
 
-export const describeCliSurface = Workflow.make(
-  RenderSchemaDocumentCommand,
-  (command): Result.Result<SchemaSurfaceDecision, SchemaVersionUnusable> =>
+export const describeCliSurface = Workflow.make({
+  command: RenderSchemaDocumentCommand,
+  decision: S.Union([SchemaRendered, SchemaUsageRefused]),
+  error: SchemaVersionUnusable,
+  decide: (command): Result.Result<SchemaSurfaceDecision, SchemaVersionUnusable> =>
     Match.value(targetPresence(command.target)).pipe(
       Match.when('present', () => Result.succeed(new SchemaUsageRefused({ recovery: schemaUsageRecovery }))),
       Match.when('absent', () =>
@@ -70,4 +74,4 @@ export const describeCliSurface = Workflow.make(
         )),
       Match.exhaustive,
     ),
-)
+})

@@ -1,4 +1,4 @@
-import { checkPackage } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import { Gherkin, Given, it, layer, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { createPackage } from '@systemfsoftware/npm-package'
 import { Effect, Schema } from 'effect'
@@ -53,7 +53,7 @@ Feature('Entrypoint discovery across an export map with blocked subpaths').body(
           'pkg',
           () => authoredPackage,
         ),
-        When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+        When('the package is analysed')('analysed', ({ pkg }) => Analysis.make(pkg).run),
         Then('the analysis reports the subpath with the authored wildcard shape')(({ analysed }) => {
           if (!('entrypoints' in analysed)) {
             throw new Error('expected the analysis of a package carrying declarations')
@@ -74,7 +74,7 @@ Feature('Entrypoint discovery across an export map with blocked subpaths').body(
           'pkg',
           () => authoredPackage,
         ),
-        When('the package is analysed')('analysed', ({ pkg }) => checkPackage(pkg)),
+        When('the package is analysed')('analysed', ({ pkg }) => Analysis.make(pkg).run),
         Then('the analysis reports no entrypoint for the blocked subpath')(({ analysed }) => {
           if (!('entrypoints' in analysed)) {
             throw new Error('expected the analysis of a package carrying declarations')

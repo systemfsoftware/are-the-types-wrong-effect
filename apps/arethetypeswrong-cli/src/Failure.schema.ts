@@ -40,6 +40,17 @@ export class AnalysisFailed extends S.TaggedError<AnalysisFailed>()('AnalysisFai
   recovery: S.String,
 }) {}
 
+export const AttwFailureSchema = S.Union([
+  InvalidPackageSpec,
+  ConfigInvalid,
+  RegistryNotFound,
+  RegistryUnreachable,
+  RegistryBadResponse,
+  PackFailed,
+  TargetNotPackable,
+  AnalysisFailed,
+])
+
 export type AttwFailure =
   | InvalidPackageSpec
   | ConfigInvalid
@@ -69,3 +80,5 @@ export const FailureDocumentSchema = S.Struct({
 })
 
 export type FailureDocument = S.Schema.Type<typeof FailureDocumentSchema>
+
+export const FailureDocumentJson = S.fromJsonString(FailureDocumentSchema)

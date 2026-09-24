@@ -3,7 +3,7 @@ import { defineConfig } from 'tsdown'
 type ExportEntry = string | Record<string, string | undefined>
 
 const typesMap: Record<string, string> = {
-  '.': './dist/index.d.ts',
+  '.': './dist/mod.d.ts',
 }
 
 const injectTypes = (exports: Record<string, ExportEntry>): Record<string, ExportEntry> => {
@@ -26,12 +26,13 @@ const injectTypes = (exports: Record<string, ExportEntry>): Record<string, Expor
 
 export default defineConfig({
   // The root entry is the whole public surface, and everything a consumer reaches is
-  // re-exported from `index.ts`. Declaring `exports` here makes the build own the map, so
+  // re-exported from `mod.ts`. Declaring `exports` here makes the build own the map, so
   // it cannot drift away from what the package actually emits.
-  entry: ['src/index.ts'],
+  entry: { mod: './src/mod.ts' },
   format: 'esm',
   clean: true,
-  exports: { customExports: injectTypes },
+  define: { 'import.meta.vitest': 'undefined' },
+  exports: { devExports: '@systemfsoftware/source', customExports: injectTypes },
   outExtensions: () => ({ js: '.mjs', dts: '.d.ts' }),
   tsconfig: './tsconfig.build.json',
   deps: {

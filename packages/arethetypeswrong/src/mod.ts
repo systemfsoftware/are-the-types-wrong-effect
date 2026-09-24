@@ -1,0 +1,51 @@
+export * as Analysis from './Analysis/mod.js'
+
+export {
+  CJSOnlyExportsDefaultProblemSchema,
+  CJSResolvesToESMProblemSchema,
+  EntrypointResolutionAnalysisSchema,
+  FallbackConditionProblemSchema,
+  FalseCJSProblemSchema,
+  FalseESMProblemSchema,
+  FalseExportDefaultProblemSchema,
+  InternalResolutionErrorProblemSchema,
+  MissingExportEqualsProblemSchema,
+  ModuleKindReasonSchema,
+  ModuleKindSchema,
+  ModuleKindSyntaxSchema,
+  NamedExportsProblemSchema,
+  NoResolutionProblemSchema,
+  ProblemKindSchema,
+  ProblemSchema,
+  ResolutionKindSchema,
+  ResolutionOptionSchema,
+  ResolutionSchema,
+  UnexpectedModuleSyntaxProblemSchema,
+  UntypedResolutionProblemSchema,
+} from './Problem.schema.js'
+export type {
+  CJSOnlyExportsDefaultProblem,
+  CJSResolvesToESMProblem,
+  EntrypointResolutionAnalysis,
+  FallbackConditionProblem,
+  FalseCJSProblem,
+  FalseESMProblem,
+  FalseExportDefaultProblem,
+  InternalResolutionErrorProblem,
+  MissingExportEqualsProblem,
+  ModuleKind,
+  ModuleKindReason,
+  ModuleKindSyntax,
+  NamedExportsProblem,
+  NoResolutionProblem,
+  Problem,
+  ProblemKind,
+  Resolution,
+  ResolutionKind,
+  ResolutionOption,
+  UnexpectedModuleSyntaxProblem,
+  UntypedResolutionProblem,
+} from './Problem.schema.js'
+
+export { EntrypointInfoSchema, ProgramInfoSchema } from './Resolution.schema.js'
+export type { EntrypointInfo, ProgramInfo } from './Resolution.schema.js'

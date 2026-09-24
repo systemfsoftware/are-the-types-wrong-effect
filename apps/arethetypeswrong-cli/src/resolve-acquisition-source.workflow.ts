@@ -1,7 +1,8 @@
-import { type ParsedPackageSpec, ParsedPackageSpecSchema } from '@systemfsoftware/arethetypeswrong'
 import { Workflow } from '@systemfsoftware/effect-cell-types'
 import { Array, Match, Option, Predicate, Result } from 'effect'
 import * as S from 'effect/Schema'
+
+import { type ParsedPackageSpec, ParsedPackageSpecSchema } from './PackageSpec.schema.js'
 
 const acceptedSpecShape = 'Expected `pkg`, `pkg@1.2.3`, `pkg@^1.2.3`, `pkg@next`, or `@scope/pkg`.'
 
@@ -127,8 +128,15 @@ export class ResolveAcquisitionSourceCommand extends S.Class<ResolveAcquisitionS
 )({
   target: S.String,
   fromNpm: S.Boolean,
+  pack: S.optional(S.Boolean),
   parsed: S.Option(ParsedPackageSpecSchema),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
+
+export class PackDirectory extends S.TaggedClass<PackDirectory>()('PackDirectory', {}) {
+  readonly [AcquisitionSourceDecisionTypeId] = AcquisitionSourceDecisionTypeId
+}
 
 const registrySpecDecision = (
   command: ResolveAcquisitionSourceCommand,
@@ -152,7 +160,7 @@ export class RegistryPackage extends S.TaggedClass<RegistryPackage>()('RegistryP
   readonly [AcquisitionSourceDecisionTypeId] = AcquisitionSourceDecisionTypeId
 }
 
-export type AcquisitionSourceDecision = ExistingTarball | RegistryPackage
+export type AcquisitionSourceDecision = ExistingTarball | RegistryPackage | PackDirectory
 
 const tarballSuffixSchema = S.Literals(['.tar.gz', '.tgz', 'other'])
 
@@ -170,21 +178,26 @@ const tarballSuffix = (target: string): TarballSuffix =>
     Match.exhaustive,
   )
 
-const targetShapeSchema = S.Literals(['existingTarball', 'notPackable', 'registryPackage'])
+const targetShapeSchema = S.Literals(['packDirectory', 'existingTarball', 'notPackable', 'registryPackage'])
 
 type TargetShape = S.Schema.Type<typeof targetShapeSchema>
 
 const targetShape = (command: ResolveAcquisitionSourceCommand): TargetShape =>
-  Match.value(tarballSuffix(command.target)).pipe(
-    Match.when('.tgz', (): TargetShape => 'existingTarball'),
-    Match.when('.tar.gz', (): TargetShape => 'existingTarball'),
-    Match.when('other', (): TargetShape =>
-      Match.value(command.fromNpm).pipe(
-        Match.when(true, (): TargetShape => 'registryPackage'),
-        Match.when(false, (): TargetShape =>
-          Match.value(isBarePackageName(command.target)).pipe(
+  Match.value(command.pack === true).pipe(
+    Match.when(true, (): TargetShape => 'packDirectory'),
+    Match.when(false, () =>
+      Match.value(tarballSuffix(command.target)).pipe(
+        Match.when('.tgz', (): TargetShape => 'existingTarball'),
+        Match.when('.tar.gz', (): TargetShape => 'existingTarball'),
+        Match.when('other', (): TargetShape =>
+          Match.value(command.fromNpm).pipe(
             Match.when(true, (): TargetShape => 'registryPackage'),
-            Match.when(false, (): TargetShape => 'notPackable'),
+            Match.when(false, (): TargetShape =>
+              Match.value(isBarePackageName(command.target)).pipe(
+                Match.when(true, (): TargetShape => 'registryPackage'),
+                Match.when(false, (): TargetShape => 'notPackable'),
+                Match.exhaustive,
+              )),
             Match.exhaustive,
           )),
         Match.exhaustive,
@@ -192,13 +205,16 @@ const targetShape = (command: ResolveAcquisitionSourceCommand): TargetShape =>
     Match.exhaustive,
   )
 
-export const resolveAcquisitionSource = Workflow.make(
-  ResolveAcquisitionSourceCommand,
-  (command): Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable> =>
+export const resolveAcquisitionSource = Workflow.make({
+  command: ResolveAcquisitionSourceCommand,
+  decision: S.Union([PackDirectory, ExistingTarball, RegistryPackage]),
+  error: S.Union([InvalidPackageSpec, TargetNotPackable]),
+  decide: (command): Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable> =>
     Match.value(targetShape(command)).pipe(
+      Match.when('packDirectory', () => Result.succeed(new PackDirectory())),
       Match.when('existingTarball', () => Result.succeed(new ExistingTarball())),
       Match.when('registryPackage', () => registrySpecDecision(command)),
       Match.when('notPackable', () => Result.fail(targetNotPackable())),
       Match.exhaustive,
     ),
-)
+})

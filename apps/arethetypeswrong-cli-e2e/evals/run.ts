@@ -2,6 +2,8 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json | undefined }
+
 const evalsDir = import.meta.dirname
 const defaultBinaryPath = resolve(evalsDir, '../../arethetypeswrong-cli/dist/main.mjs')
 const transcriptsDir = resolve(evalsDir, 'transcripts')
@@ -12,7 +14,7 @@ const maxBufferBytes = 32 * 1024 * 1024
 
 interface EqualityCheck {
   readonly path: string
-  readonly expected: unknown
+  readonly expected: Json
 }
 
 interface StreamExpectation {
@@ -79,32 +81,32 @@ const reportFailure = (line: string): void => {
   process.stderr.write(`${line}\n`)
 }
 
-const requireObjectValue = (value: unknown, where: string): object => {
+const requireObjectValue = (value: Json | undefined, where: string): object => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error(`${where}: expected an object`)
   }
   return value
 }
 
-const propertyOf = (value: unknown, key: string, where: string): unknown =>
+const propertyOf = (value: Json | undefined, key: string, where: string): Json | undefined =>
   Object.getOwnPropertyDescriptor(requireObjectValue(value, where), key)?.value
 
-const readString = (value: unknown, where: string): string => {
+const readString = (value: Json, where: string): string => {
   if (typeof value !== 'string') throw new Error(`${where}: expected a string`)
   return value
 }
 
-const readNumber = (value: unknown, where: string): number => {
+const readNumber = (value: Json, where: string): number => {
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${where}: expected a finite number`)
   return value
 }
 
-const readBoolean = (value: unknown, where: string): boolean => {
+const readBoolean = (value: Json, where: string): boolean => {
   if (typeof value !== 'boolean') throw new Error(`${where}: expected a boolean`)
   return value
 }
 
-const readStringArray = (value: unknown, where: string): readonly string[] => {
+const readStringArray = (value: Json, where: string): readonly string[] => {
   if (!Array.isArray(value)) throw new Error(`${where}: expected an array of strings`)
   for (const entry of value) {
     if (typeof entry !== 'string') throw new Error(`${where}: expected an array of strings`)
@@ -112,23 +114,23 @@ const readStringArray = (value: unknown, where: string): readonly string[] => {
   return value
 }
 
-const readArray = (value: unknown, where: string): readonly unknown[] => {
+const readArray = (value: Json | undefined, where: string): readonly Json[] => {
   if (!Array.isArray(value)) throw new Error(`${where}: expected an array`)
   return value
 }
 
-const readNullableString = (value: unknown, where: string): string | null => {
+const readNullableString = (value: Json, where: string): string | null => {
   if (value === null) return null
   return readString(value, where)
 }
 
-const readEqualityChecks = (value: unknown, where: string): readonly EqualityCheck[] =>
+const readEqualityChecks = (value: Json, where: string): readonly EqualityCheck[] =>
   Object.entries(requireObjectValue(value, where)).map(([path, expected]) => ({ path, expected }))
 
 const readField = <A>(
-  object: unknown,
+  object: Json | undefined,
   key: string,
-  read: (value: unknown, where: string) => A,
+  read: (value: Json, where: string) => A,
   where: string,
 ): A => {
   const value = propertyOf(object, key, where)
@@ -137,9 +139,9 @@ const readField = <A>(
 }
 
 const readOptionalField = <A>(
-  object: unknown,
+  object: Json | undefined,
   key: string,
-  read: (value: unknown, where: string) => A,
+  read: (value: Json, where: string) => A,
   where: string,
 ): A | undefined => {
   const value = propertyOf(object, key, where)
@@ -156,7 +158,7 @@ const emptyStreamExpectation: StreamExpectation = {
   absent: undefined,
 }
 
-const readStreamExpectation = (value: unknown, where: string): StreamExpectation => ({
+const readStreamExpectation = (value: Json, where: string): StreamExpectation => ({
   empty: readOptionalField(value, 'empty', readBoolean, where),
   json: readOptionalField(value, 'json', readBoolean, where),
   contains: readOptionalField(value, 'contains', readStringArray, where),
@@ -165,13 +167,13 @@ const readStreamExpectation = (value: unknown, where: string): StreamExpectation
   absent: readOptionalField(value, 'absent', readStringArray, where),
 })
 
-const readStreamExpectationField = (object: unknown, key: string, where: string): StreamExpectation => {
+const readStreamExpectationField = (object: Json | undefined, key: string, where: string): StreamExpectation => {
   const value = propertyOf(object, key, where)
   if (value === undefined) return emptyStreamExpectation
   return readStreamExpectation(value, `${where}.${key}`)
 }
 
-const readInvocation = (value: unknown, where: string): Invocation => {
+const readInvocation = (value: Json, where: string): Invocation => {
   const expect = propertyOf(value, 'expect', where)
   const expectWhere = `${where}.expect`
   return {
@@ -185,7 +187,7 @@ const readInvocation = (value: unknown, where: string): Invocation => {
   }
 }
 
-const readTranscript = (value: unknown, where: string): Transcript => {
+const readTranscript = (value: Json, where: string): Transcript => {
   const invocationsWhere = `${where}.invocations`
   const entries = readArray(propertyOf(value, 'invocations', where), invocationsWhere)
   if (entries.length === 0) throw new Error(`${invocationsWhere}: needs at least one invocation`)
@@ -232,8 +234,8 @@ const invoke = (argv: readonly string[]): InvocationResult => {
   }
 }
 
-const readPath = (value: unknown, path: string): unknown => {
-  let current: unknown = value
+const readPath = (value: Json | undefined, path: string): Json | undefined => {
+  let current: Json | undefined = value
   for (const key of path.split('.')) {
     if (Array.isArray(current)) current = current[Number(key)]
     else if (typeof current === 'object' && current !== null) {
@@ -243,7 +245,7 @@ const readPath = (value: unknown, path: string): unknown => {
   return current
 }
 
-const sameValue = (actual: unknown, expected: unknown): boolean =>
+const sameValue = (actual: Json | undefined, expected: Json): boolean =>
   actual === expected || JSON.stringify(actual) === JSON.stringify(expected)
 
 const evaluateStream = (expectation: StreamExpectation, result: StreamResult, label: string): string[] => {
@@ -251,7 +253,7 @@ const evaluateStream = (expectation: StreamExpectation, result: StreamResult, la
   if (expectation.empty !== undefined && (result.bytes === 0) !== expectation.empty) {
     failures.push(`${label}: expected empty=${expectation.empty}, got ${result.bytes} bytes`)
   }
-  let parsed: unknown = undefined
+  let parsed: Json | undefined = undefined
   let parsedJson = false
   try {
     parsed = JSON.parse(result.text)

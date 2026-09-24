@@ -1,4 +1,6 @@
-import type { CheckResult, Problem, ProblemKind, ResolutionKind } from '@systemfsoftware/arethetypeswrong'
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
+import type { Problem, ProblemKind, ResolutionKind } from '@systemfsoftware/arethetypeswrong'
+import { Function } from 'effect'
 
 export const CliProblemFlags = [
   'no-resolution',
@@ -57,6 +59,8 @@ export type CliResolutionKind = typeof CliResolutionKinds[number]
 
 export const CliFormat = ['auto', 'table', 'table-flipped', 'ascii', 'json'] as const
 
+export type RequestedFormat = typeof CliFormat[number]
+
 export const CliProfile = ['strict', 'node16', 'esm-only'] as const
 
 const conflictsWithIgnoredRule = (problem: Problem, ignoredRules: readonly string[]): boolean =>
@@ -72,11 +76,46 @@ const isIgnoredProblem = (
 ): boolean =>
   conflictsWithIgnoredRule(problem, ignoredRules) || conflictsWithIgnoredResolution(problem, ignoredResolutions)
 
-export const isVisibleProblem = (
-  problem: Problem,
-  ignoredRules: readonly string[],
-  ignoredResolutions: readonly string[],
-): boolean => !isIgnoredProblem(problem, ignoredRules, ignoredResolutions)
+export const isVisibleProblem: {
+  (
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): (problem: Problem) => boolean
+  (
+    problem: Problem,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean
+} = Function.dual(
+  3,
+  (
+    problem: Problem,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean => !isIgnoredProblem(problem, ignoredRules, ignoredResolutions),
+)
 
-export const isUntypedResult = (result: CheckResult): result is Extract<CheckResult, { types: false }> =>
+export const isUntypedResult = (result: Analysis.PackageReport): result is Analysis.UntypedReport =>
   'types' in result && result.types === false
+
+export const hasVisibleProblem: {
+  (
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): (result: Analysis.PackageReport) => boolean
+  (
+    result: Analysis.PackageReport,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean
+} = Function.dual(
+  3,
+  (
+    result: Analysis.PackageReport,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean =>
+    isUntypedResult(result)
+      ? false
+      : result.problems.some((problem) => isVisibleProblem(problem, ignoredRules, ignoredResolutions)),
+)

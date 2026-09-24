@@ -18,27 +18,31 @@
     "provenance": true,
     "exports": {
       ".": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.mjs"
+        "types": "./dist/mod.d.ts",
+        "default": "./dist/mod.mjs"
       },
       "./package.json": "./package.json"
     }
   },
   "scripts": {
-    "build": "tsdown",
+    "api:check": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "build": "tsdown -l warn && pnpm api:check",
     "clean": "rimraf dist",
-    "typecheck": "tsc --noEmit --incremental",
+    "mutation": "stryker run",
+    "mutation:full": "stryker run --force",
+    "typecheck": "tsc -b",
     "attw": "npm_config_ignore_scripts=true attw --pack .",
     "lint": "f=${OXLINT_FORMAT:-${AGENT:+agent}}; oxlint . --format=${f:-default}",
-    "mutation": "stryker run",
     "test": "vitest run",
     "prepack": "pnpm build"
   },
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.mjs"
+      "@systemfsoftware/source": "./src/mod.ts",
+      "types": "./dist/mod.d.ts",
+      "default": "./dist/mod.mjs"
     },
     "./package.json": "./package.json"
   },
@@ -53,7 +57,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@systemfsoftware/all": "catalog:",
+    "@microsoft/api-extractor": "catalog:",
     "@systemfsoftware/arethetypeswrong-cli": "catalog:",
     "@systemfsoftware/arethetypeswrong-recipes": "workspace:^",
     "@systemfsoftware/effect-cell-types": "catalog:",
@@ -61,10 +65,12 @@
     "@systemfsoftware/effect-memfs": "catalog:",
     "@systemfsoftware/effect-schema-law": "catalog:",
     "@systemfsoftware/effect-schema-vite": "catalog:",
-    "@systemfsoftware/stryker-js-cli": "catalog:",
+    "@systemfsoftware/oxlint-config-recommended": "catalog:",
+    "@systemfsoftware/stryker-ignorer-effect-schema-declarations": "catalog:",
+    "@systemfsoftware/stryker-ignorer-in-source-vitest-block": "catalog:",
+    "@systemfsoftware/stryker-js": "catalog:",
     "@systemfsoftware/stryker-js-typescript-checker": "catalog:",
     "@systemfsoftware/stryker-js-vitest-runner": "catalog:",
-    "@systemfsoftware/stryker-plugins": "catalog:",
     "@systemfsoftware/stryker-test-contribution": "catalog:",
     "@systemfsoftware/tsconfig": "catalog:",
     "@types/node": "catalog:",
@@ -76,12 +82,13 @@
     "oxlint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
     "node": ">=24"
   },
   "inlinedDependencies": {
-    "@systemfsoftware/effect-cell-types": "7.0.0"
+    "@systemfsoftware/effect-cell-types": "10.1.0"
   }
 }

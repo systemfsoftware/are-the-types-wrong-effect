@@ -1,5 +1,5 @@
-import type { Analysis, CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
-import { Match } from 'effect'
+import { Analysis, type Problem } from '@systemfsoftware/arethetypeswrong'
+import { Function, Match, Schema as S } from 'effect'
 
 import type { MachineEnvelope } from './decode-envelope-document.workflow.js'
 import { renderEnvelopeDocument } from './envelope-document.js'
@@ -8,7 +8,7 @@ import type { AnsiAnnotation } from './RenderAnsi.js'
 import { renderAsciiAnalysis } from './RenderAscii.js'
 import { renderTypedAnalysis } from './RenderTyped.js'
 import { renderUntyped } from './RenderUntyped.js'
-import type { RenderMode } from './select-render-mode.workflow.js'
+import type { RenderMode } from './run-outcome.schema.js'
 
 export type HumanRenderMode = Exclude<RenderMode, 'envelope' | 'quiet'>
 
@@ -22,7 +22,7 @@ export interface RenderOptions {
 
 type ModeOptions = Omit<RenderOptions, 'format'>
 
-const visibleProblems = (analysis: Analysis, ignoreRules: readonly string[]): readonly Problem[] =>
+const visibleProblems = (analysis: Analysis.Report, ignoreRules: readonly string[]): readonly Problem[] =>
   analysis.problems.filter((p) => !ignoreRules.includes(problemFlagForKind(p.kind)))
 
 const groupProblem = (grouped: Record<string, Problem[]>, p: Problem): void => {
@@ -46,7 +46,7 @@ const renderSummary = (problems: readonly Problem[]): string => {
 }
 
 const renderFormatted = (
-  analysis: Analysis,
+  analysis: Analysis.Report,
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
@@ -73,14 +73,15 @@ const renderFormatted = (
 }
 
 const summarizedAnalysis = (
-  analysis: Analysis,
+  analysis: Analysis.Report,
   visible: readonly Problem[],
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
-): string => renderSummary(visible) + '\n' + renderAnalysis(analysis, { ...options, summary: false }, annotations)
+): string =>
+  renderSummary(visible) + '\n' + renderFormatted(analysis, visible, { ...options, summary: false }, annotations)
 
 const renderEntrypointAnalysis = (
-  analysis: Analysis,
+  analysis: Analysis.Report,
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => {
@@ -90,7 +91,7 @@ const renderEntrypointAnalysis = (
 }
 
 const renderedAnalysis = (
-  result: CheckResult,
+  result: Analysis.PackageReport,
   options: RenderOptions,
   annotations: Record<string, AnsiAnnotation>,
 ): string => {
@@ -104,23 +105,53 @@ const renderedAnalysis = (
   return renderEntrypointAnalysis(result, options, annotations)
 }
 
-export const renderAnalysis = (
-  result: CheckResult,
-  options: RenderOptions,
-  annotations: Record<string, AnsiAnnotation> = {},
-): string => renderedAnalysis(result, options, annotations)
+const argsBeginWithPackageReport = (args: IArguments): boolean => S.is(Analysis.PackageReport)(args[0])
 
-export const renderAnalysisForMode = (
-  result: CheckResult,
-  mode: RenderMode,
-  options: ModeOptions,
-  envelope: MachineEnvelope,
-): string =>
-  Match.value(mode).pipe(
-    Match.when('quiet', () => ''),
-    Match.when('envelope', () => renderEnvelopeDocument(envelope)),
-    Match.when('table', () => renderAnalysis(result, { ...options, format: 'table' })),
-    Match.when('table-flipped', () => renderAnalysis(result, { ...options, format: 'table-flipped' })),
-    Match.when('ascii', () => renderAnalysis(result, { ...options, format: 'ascii' })),
-    Match.exhaustive,
-  )
+export const renderAnalysis: {
+  (
+    options: RenderOptions,
+    annotations?: Record<string, AnsiAnnotation>,
+  ): (result: Analysis.PackageReport) => string
+  (
+    result: Analysis.PackageReport,
+    options: RenderOptions,
+    annotations?: Record<string, AnsiAnnotation>,
+  ): string
+} = Function.dual(
+  argsBeginWithPackageReport,
+  (
+    result: Analysis.PackageReport,
+    options: RenderOptions,
+    annotations: Record<string, AnsiAnnotation> = {},
+  ): string => renderedAnalysis(result, options, annotations),
+)
+
+export const renderAnalysisForMode: {
+  (
+    mode: RenderMode,
+    options: ModeOptions,
+    envelope: MachineEnvelope,
+  ): (result: Analysis.PackageReport) => string
+  (
+    result: Analysis.PackageReport,
+    mode: RenderMode,
+    options: ModeOptions,
+    envelope: MachineEnvelope,
+  ): string
+} = Function.dual(
+  4,
+  (
+    result: Analysis.PackageReport,
+    mode: RenderMode,
+    options: ModeOptions,
+    envelope: MachineEnvelope,
+  ): string =>
+    Match.value(mode).pipe(
+      Match.when('quiet', () => ''),
+      Match.when('envelope', () => renderEnvelopeDocument(envelope)),
+      Match.when('table', () => renderAnalysis(result, { ...options, format: 'table' })),
+      Match.when('table-flipped', () => renderAnalysis(result, { ...options, format: 'table-flipped' })),
+      Match.when('ascii', () => renderAnalysis(result, { ...options, format: 'ascii' })),
+      Match.exhaustive,
+    ),
+)

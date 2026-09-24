@@ -1,3 +1,5 @@
+import { Function } from 'effect'
+
 import type { Problem } from '@systemfsoftware/arethetypeswrong'
 import { renderTable } from './RenderTable.js'
 import { partitionProblemsByCell, problemsForCell, resolutionKindOrder, symbolForProblem } from './RenderTyped.js'
@@ -30,11 +32,24 @@ const asciiTable = (
   return renderTable(header, rows)
 }
 
-export const renderAsciiAnalysis = (
-  entrypoints: readonly string[],
-  problems: readonly Problem[],
-  opts: { readonly useEmoji: boolean },
-): string => {
-  if (entrypoints.length === 0) return 'No entrypoints found.'
-  return asciiTable(entrypoints, problems, opts.useEmoji)
-}
+export const renderAsciiAnalysis: {
+  (
+    problems: readonly Problem[],
+    opts: { readonly useEmoji: boolean },
+  ): (entrypoints: readonly string[]) => string
+  (
+    entrypoints: readonly string[],
+    problems: readonly Problem[],
+    opts: { readonly useEmoji: boolean },
+  ): string
+} = Function.dual(
+  3,
+  (
+    entrypoints: readonly string[],
+    problems: readonly Problem[],
+    opts: { readonly useEmoji: boolean },
+  ): string => {
+    if (entrypoints.length === 0) return 'No entrypoints found.'
+    return asciiTable(entrypoints, problems, opts.useEmoji)
+  },
+)

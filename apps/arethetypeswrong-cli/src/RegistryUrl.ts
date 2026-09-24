@@ -1,15 +1,17 @@
-import { Array, Option, Result } from 'effect'
+import { Array, Function, Match, Option, Result } from 'effect'
+import * as S from 'effect/Schema'
 
-import type { PackageSpecVersionKind, ParsedPackageSpec } from '@systemfsoftware/arethetypeswrong'
+import type { PackageSpecVersionKind, ParsedPackageSpec } from './PackageSpec.schema.js'
+import { RegistryUrlSchema } from './RegistryUrl.schema.js'
 
 export interface RegistryUrlRefusal {
   readonly message: string
   readonly recovery: string
 }
 
-export type PayloadKind = 'registry-document' | 'tarball'
-
 const refusal = (message: string, recovery: string): RegistryUrlRefusal => ({ message, recovery })
+
+export type PayloadKind = 'registry-document' | 'tarball'
 
 /**
  * C0 controls, space, and DEL. The URL parser strips the first group before it
@@ -92,29 +94,33 @@ const urlRules: readonly UrlRule[] = [
   },
 ]
 
-const parseRegistryUrl = (raw: string): Result.Result<URL, RegistryUrlRefusal> =>
-  Option.match(
-    Option.liftPredicate(raw, (text) => containsStrippedCharacter(text)).pipe(
-      Option.map(strippedUrl),
-    ),
-    {
-      onNone: () => Result.mapError(Result.try(() => new URL(raw)), unparseableUrl),
-      onSome: (found) => Result.fail(found),
-    },
-  )
-
 export const decodeRegistryUrl = (raw: string): Result.Result<string, RegistryUrlRefusal> =>
-  Result.flatMap(parseRegistryUrl(raw), (url) =>
-    Option.match(
-      Option.map(
-        Array.findFirst(urlRules, (rule) => rule.test(url)),
-        (rule) => rule.refusal(),
-      ),
-      {
-        onNone: () => Result.succeed(url.href.replace(/\/$/, '')),
-        onSome: (found) => Result.fail(found),
-      },
-    ))
+  Result.match(S.decodeResult(RegistryUrlSchema)(raw), {
+    onFailure: () => Result.fail(detailedRefusal(raw)),
+    onSuccess: (canonical) => Result.succeed(new URL(canonical).href.replace(/\/$/, '')),
+  })
+
+const detailedRefusal = (raw: string): RegistryUrlRefusal => {
+  const stripped = containsStrippedCharacter(raw)
+  const url = safeUrlOf(raw)
+  const ruleHit = Option.flatMap(
+    Option.fromUndefinedOr(url),
+    (parsed) => Option.map(Array.findFirst(urlRules, (rule) => rule.test(parsed)), (rule) => rule.refusal()),
+  )
+  return Match.value({ stripped, ruleHit, parsed: url !== undefined }).pipe(
+    Match.when({ stripped: true }, () => strippedUrl()),
+    Match.when({ ruleHit: { _tag: 'Some' } }, ({ ruleHit }) => ruleHit.value),
+    Match.orElse(() => unparseableUrl()),
+  )
+}
+
+const safeUrlOf = (raw: string): URL | undefined => {
+  try {
+    return new URL(raw)
+  } catch {
+    return undefined
+  }
+}
 
 const defaultTagByKind: Readonly<Record<PackageSpecVersionKind, Option.Option<string>>> = {
   none: Option.some('latest'),
@@ -126,9 +132,14 @@ const defaultTagByKind: Readonly<Record<PackageSpecVersionKind, Option.Option<st
 const requestedVersion = (spec: ParsedPackageSpec): string =>
   Option.getOrElse(defaultTagByKind[spec.versionKind], () => spec.version)
 
-export const buildManifestUrl = (registryBase: string, spec: ParsedPackageSpec): string =>
-  `${registryBase}/${encodeURIComponent(spec.name)}/${encodeURIComponent(requestedVersion(spec))}`
-
+export const buildManifestUrl: {
+  (spec: ParsedPackageSpec): (registryBase: string) => string
+  (registryBase: string, spec: ParsedPackageSpec): string
+} = Function.dual(
+  2,
+  (registryBase: string, spec: ParsedPackageSpec): string =>
+    `${registryBase}/${encodeURIComponent(spec.name)}/${encodeURIComponent(requestedVersion(spec))}`,
+)
 const payloadLimits: Readonly<Record<PayloadKind, number>> = {
   'registry-document': 8 * 1024 * 1024,
   tarball: 512 * 1024 * 1024,
@@ -141,18 +152,21 @@ const payloadLabels: Readonly<Record<PayloadKind, string>> = {
 
 export const payloadLimit = (kind: PayloadKind): number => payloadLimits[kind]
 
-export const decodePayloadSize = (
-  kind: PayloadKind,
-  byteLength: number,
-): Result.Result<number, RegistryUrlRefusal> => {
-  const limit = payloadLimit(kind)
-  if (byteLength > limit) {
-    return Result.fail(
-      refusal(
-        `The ${payloadLabels[kind]} is larger than the ${limit} bytes this tool will read.`,
-        'Analyze the package from a local tarball instead: download it and rerun with the .tgz path.',
-      ),
-    )
-  }
-  return Result.succeed(byteLength)
-}
+export const decodePayloadSize: {
+  (byteLength: number): (kind: PayloadKind) => Result.Result<number, RegistryUrlRefusal>
+  (kind: PayloadKind, byteLength: number): Result.Result<number, RegistryUrlRefusal>
+} = Function.dual(
+  2,
+  (kind: PayloadKind, byteLength: number): Result.Result<number, RegistryUrlRefusal> => {
+    const limit = payloadLimit(kind)
+    if (byteLength > limit) {
+      return Result.fail(
+        refusal(
+          `The ${payloadLabels[kind]} is larger than the ${limit} bytes this tool will read.`,
+          'Analyze the package from a local tarball instead: download it and rerun with the .tgz path.',
+        ),
+      )
+    }
+    return Result.succeed(byteLength)
+  },
+)

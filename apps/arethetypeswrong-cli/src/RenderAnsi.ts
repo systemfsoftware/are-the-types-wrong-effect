@@ -1,3 +1,5 @@
+import { Function } from 'effect'
+
 export type AnsiColor =
   | 'red'
   | 'green'
@@ -46,10 +48,13 @@ const colorPart = (anno: AnsiAnnotation): readonly string[] => {
   return [colorCode(anno.color)]
 }
 
-export const annotate = (text: string, anno: AnsiAnnotation): string => {
+export const annotate: {
+  (anno: AnsiAnnotation): (text: string) => string
+  (text: string, anno: AnsiAnnotation): string
+} = Function.dual(2, (text: string, anno: AnsiAnnotation): string => {
   if (!isStyled(anno)) return text
   return `\u001b[${[...boldPart(anno), ...colorPart(anno)].join(';')}m${text}\u001b[0m`
-}
+})
 
 // The escape is built, not written as a literal: a control character inside a
 // regex literal is invisible in a diff.
@@ -70,11 +75,24 @@ const colorizeMarkers = (cell: string, annotations: Record<string, AnsiAnnotatio
   return out
 }
 
-export const colorizeCell = (
-  cell: string,
-  color: boolean,
-  annotations: Record<string, AnsiAnnotation>,
-): string => {
-  if (!color) return cell
-  return colorizeMarkers(cell, annotations)
-}
+export const colorizeCell: {
+  (
+    color: boolean,
+    annotations: Record<string, AnsiAnnotation>,
+  ): (cell: string) => string
+  (
+    cell: string,
+    color: boolean,
+    annotations: Record<string, AnsiAnnotation>,
+  ): string
+} = Function.dual(
+  3,
+  (
+    cell: string,
+    color: boolean,
+    annotations: Record<string, AnsiAnnotation>,
+  ): string => {
+    if (!color) return cell
+    return colorizeMarkers(cell, annotations)
+  },
+)

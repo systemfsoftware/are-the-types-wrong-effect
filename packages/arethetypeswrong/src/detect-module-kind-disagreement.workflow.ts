@@ -29,7 +29,9 @@ export class DetectModuleKindDisagreementCommand extends S.Class<DetectModuleKin
   'DetectModuleKindDisagreementCommand',
 )({
   observation: S.Union([ModuleKindObservationMissing, ModuleKindObservationComplete]),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 export class FalseEsmDeclared extends S.TaggedClass<FalseEsmDeclared>()('FalseEsmDeclared', {
   typesFileName: S.String,
@@ -87,12 +89,14 @@ const declaredFalsely = (observation: ModuleKindObservationComplete): ModuleKind
     Match.orElse(() => new ModuleKindsAgree()),
   )
 
-export const detectModuleKindDisagreement = Workflow.make(
-  DetectModuleKindDisagreementCommand,
-  (command): Result.Result<ModuleKindDisagreementDecision, ModuleKindObservationUnavailable> =>
+export const detectModuleKindDisagreement = Workflow.make({
+  command: DetectModuleKindDisagreementCommand,
+  decision: S.Union([FalseEsmDeclared, FalseCjsDeclared, ModuleKindsAgree]),
+  error: ModuleKindObservationUnavailable,
+  decide: (command): Result.Result<ModuleKindDisagreementDecision, ModuleKindObservationUnavailable> =>
     Match.value(command.observation).pipe(
       Match.tag('ModuleKindObservationMissing', () => Result.fail(new ModuleKindObservationUnavailable())),
       Match.tag('ModuleKindObservationComplete', (observation) => Result.succeed(declaredFalsely(observation))),
       Match.exhaustive,
     ),
-)
+})

@@ -1,7 +1,8 @@
-import manifest from '../package.json'
+declare const __ATTW_CLI_VERSION__: string
 
 /**
- * The version the bundler inlines from the manifest (`tsdown` replaces the
- * import), because the npm package ships no `package.json` for a runtime read.
+ * The manifest version, substituted at build and test time (`tsdown` and
+ * `vitest` both `define` it from `manifest-version.ts`), because the npm package
+ * ships no `package.json` for a runtime read and no program here may import it.
  */
-export const cliVersion: string = manifest.version
+export const cliVersion: string = __ATTW_CLI_VERSION__

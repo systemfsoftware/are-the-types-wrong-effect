@@ -1,17 +1,18 @@
 import { it } from '@effect/vitest'
 import { Match, Option, Predicate, Result, Schema } from 'effect'
-import * as fc from 'effect/testing/FastCheck'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import {
   classifyRegistryFailure,
   ClassifyRegistryFailureCommand,
+  RegistryAnsweredSuccessfully,
   RegistryNoResponseObserved,
   type RegistryObservation,
   RegistryStatusObserved,
   RegistryUnreadableShapeObserved,
 } from '../classify-registry-failure.workflow.js'
-import { failureOutcome } from '../failure-shaping.js'
-import { type AttwFailure, FailureDocumentSchema } from '../Failure.schema.js'
+import { type AttwFailure, FailureDocumentJson } from '../Failure.schema.js'
+import { failureOutcome } from '../render-report.cell.js'
 
 type StatusClass = 'notFound' | 'answered' | 'badResponse'
 
@@ -48,36 +49,64 @@ const statusOf = (observation: RegistryObservation): Option.Option<number> =>
     Match.orElse(() => Option.none<number>()),
   )
 
-const statusObservation = fc
-  .integer({ min: 0, max: 599 })
-  .map((status) => new RegistryStatusObserved({ status }))
+const oneOfValues = <T>(values: readonly T[]): Arbitrary.Arbitrary<T> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Literals(values.map((_value, index) => index))),
+    (index) => Arbitrary.Constant(values[index]),
+  )
 
-const structuralObservation: fc.Arbitrary<RegistryObservation> = fc.constantFrom(
-  new RegistryNoResponseObserved(),
-  new RegistryUnreadableShapeObserved(),
+const oneOfArbitraries = <A, B>(
+  left: Arbitrary.Arbitrary<A>,
+  right: Arbitrary.Arbitrary<B>,
+): Arbitrary.Arbitrary<A | B> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Literals(['left', 'right'])),
+    (side): Arbitrary.Arbitrary<A | B> => side === 'left' ? left : right,
+  )
+
+const statusRange: Arbitrary.Arbitrary<number> = Arbitrary.schema(
+  Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 0, maximum: 599 }))),
 )
 
-const observation: fc.Arbitrary<RegistryObservation> = fc.oneof(statusObservation, structuralObservation)
+const statusObservation: Arbitrary.Arbitrary<RegistryStatusObserved> = statusRange.pipe(
+  Arbitrary.map((status) => new RegistryStatusObserved({ status })),
+)
 
-const rawCause: fc.Arbitrary<string> = fc
-  .string({ unit: fc.constantFrom(...'0123456789abcdef'.split('')), minLength: 8, maxLength: 16 })
-  .map((hex) => `<<raw-registry-cause:${hex}>>`)
+const structuralObservation: Arbitrary.Arbitrary<RegistryObservation> = oneOfValues([
+  new RegistryNoResponseObserved(),
+  new RegistryUnreadableShapeObserved(),
+])
+
+const observation: Arbitrary.Arbitrary<RegistryObservation> = oneOfArbitraries(
+  statusObservation,
+  structuralObservation,
+)
+
+const rawCause: Arbitrary.Arbitrary<string> = Arbitrary.schema(
+  Schema.String.pipe(Schema.check(Schema.isPattern(/^[0-9a-f]{8,16}$/))),
+).pipe(Arbitrary.map((hex) => `<<raw-registry-cause:${hex}>>`))
 
 type RawStatusObservation = RegistryStatusObserved & { readonly cause: string }
 
-const rawStatusObservation: fc.Arbitrary<RawStatusObservation> = fc
-  .tuple(fc.integer({ min: 0, max: 599 }), rawCause)
-  .map(([status, cause]): RawStatusObservation => ({
+const rawStatusObservation: Arbitrary.Arbitrary<RawStatusObservation> = Arbitrary.all([statusRange, rawCause]).pipe(
+  Arbitrary.map(([status, cause]): RawStatusObservation => ({
     _tag: 'RegistryStatusObserved',
     status,
     cause,
-  }))
+  })),
+)
+
+const authoredNotFoundMessage = 'The registry has no package or version matching that target.'
+const authoredNotFoundRecovery = 'Check the package name and version, then rerun the same command.'
 
 const holdsBoundaryRow = (row: { readonly status: number; readonly expected: StatusClass }): boolean =>
   Match.value(classificationOf(new RegistryStatusObserved({ status: row.status }))).pipe(
     Match.tag('Success', ({ success: decided }) =>
       Match.value(row.expected).pipe(
-        Match.when('notFound', () => Predicate.isTagged(decided, 'RegistryNotFound')),
+        Match.when('notFound', () =>
+          Predicate.isTagged(decided, 'RegistryNotFound') &&
+          decided.message === authoredNotFoundMessage &&
+          decided.recovery === authoredNotFoundRecovery),
         Match.when('badResponse', () =>
           Predicate.isTagged(decided, 'RegistryBadResponse') &&
           decided.message.includes(String(row.status))),
@@ -118,7 +147,7 @@ const holdsAuthoredModel = (generated: RegistryObservation): boolean => {
   )
 }
 
-const debugJson = (value: unknown): string =>
+const debugJson = (value: AttwFailure | RegistryAnsweredSuccessfully): string =>
   Match.value(Schema.encodeUnknownResult(Schema.fromJsonString(Schema.Unknown))(value)).pipe(
     Match.tag('Success', ({ success: text }) => text),
     Match.tag('Failure', () => ''),
@@ -133,9 +162,8 @@ const holdsRenderedDocument = (failure: AttwFailure, isTty: boolean): boolean =>
     return outcome.document.endsWith('\n') && !body.includes('\n') &&
       body.includes(failure.message) && body.includes(failure.recovery)
   }
-  const parsed: unknown = JSON.parse(outcome.document)
   return Result.match(
-    Schema.decodeUnknownResult(FailureDocumentSchema, { onExcessProperty: 'error' })(parsed),
+    Schema.decodeResult(FailureDocumentJson, { onExcessProperty: 'error' })(outcome.document),
     {
       onSuccess: (document) =>
         Predicate.isTagged(failure, document.kind) &&
@@ -148,7 +176,7 @@ const holdsRenderedDocument = (failure: AttwFailure, isTty: boolean): boolean =>
 
 it.prop(
   '∀row_RegistryStatusBoundary_=authoredClass',
-  [fc.constantFrom(...statusClassBoundaryTable)],
+  [oneOfValues(statusClassBoundaryTable)],
   ([row]) => holdsBoundaryRow(row),
 )
 

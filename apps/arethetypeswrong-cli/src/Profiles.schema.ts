@@ -13,9 +13,9 @@ export const ProfileName = S.Literals(['strict', 'node16', 'esm-only'])
  */
 export class ApplyProfileCommand extends S.TaggedClass<ApplyProfileCommand>()('ApplyProfileCommand', {
   profileName: ProfileName,
-  ignoreResolutions: S.optional(S.Array(IgnoredResolution)),
+  ignoreResolutions: IgnoredResolution.pipe(S.Array, S.optional),
 }) {}
 
 export class ApplyProfileDecision extends S.TaggedClass<ApplyProfileDecision>()('ApplyProfileDecision', {
-  ignoreResolutions: S.Array(IgnoredResolution),
+  ignoreResolutions: IgnoredResolution.pipe(S.Array),
 }) {}

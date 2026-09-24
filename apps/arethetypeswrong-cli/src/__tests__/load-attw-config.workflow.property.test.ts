@@ -1,6 +1,6 @@
 import { it } from '@effect/vitest'
-import { Match, Predicate, Result } from 'effect'
-import * as fc from 'effect/testing/FastCheck'
+import { Match, Predicate, Result, Schema } from 'effect'
+import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import {
   type AttwConfig,
@@ -9,6 +9,12 @@ import {
   loadAttwConfig,
   LoadAttwConfigCommand,
 } from '../load-attw-config.workflow.js'
+
+const oneOf = <A>(values: readonly A[]): Arbitrary.Arbitrary<A> =>
+  Arbitrary.flatMap(
+    Arbitrary.schema(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 0, maximum: values.length - 1 })))),
+    (index) => Arbitrary.Constant(values[index]),
+  )
 
 type ConfigValue = string | boolean | ReadonlyArray<string> | undefined
 
@@ -72,7 +78,9 @@ interface ConfigDocumentRow {
 const configDocumentTable: readonly ConfigDocumentRow[] = [
   { text: '{}', expected: {} },
   { text: '{"format":"json"}', expected: { format: 'json' } },
+  { text: '{"format":"table"}', expected: { format: 'table' } },
   { text: '{"format":"table-flipped"}', expected: { format: 'table-flipped' } },
+  { text: '{"format":"ascii"}', expected: { format: 'ascii' } },
   {
     text: '{"quiet":true,"summary":false,"emoji":false,"color":false}',
     expected: { quiet: true, summary: false, emoji: false, color: false },
@@ -82,6 +90,9 @@ const configDocumentTable: readonly ConfigDocumentRow[] = [
     expected: { ignoreRules: ['false-cjs', 'no-resolution'] },
   },
   { text: '{"ignoreResolutions":["node16-esm"]}', expected: { ignoreResolutions: ['node16-esm'] } },
+  { text: '{"ignoreResolutions":["node10"]}', expected: { ignoreResolutions: ['node10'] } },
+  { text: '{"ignoreResolutions":["node16-cjs"]}', expected: { ignoreResolutions: ['node16-cjs'] } },
+  { text: '{"ignoreResolutions":["bundler"]}', expected: { ignoreResolutions: ['bundler'] } },
   {
     text: '{"entrypoints":["."],"includeEntrypoints":["."],"excludeEntrypoints":["dist"]}',
     expected: { entrypoints: ['.'], includeEntrypoints: ['.'], excludeEntrypoints: ['dist'] },
@@ -120,11 +131,9 @@ const refusedConfigDocuments: readonly string[] = [
   '{"pack":{}}',
 ]
 
-const nonJsonText: fc.Arbitrary<string> = fc.string({
-  unit: fc.stringMatching(/^[a-z]$/),
-  minLength: 1,
-  maxLength: 16,
-})
+const nonJsonText: Arbitrary.Arbitrary<string> = Arbitrary.schema(
+  Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-z]{1,16}$/))),
+)
 
 const loadText = (text: string) =>
   loadAttwConfig(new LoadAttwConfigCommand({ request: new AttwConfigTextCommand({ text, filePath: configPath }) }))
@@ -138,26 +147,54 @@ const refused = (text: string): boolean =>
     onSuccess: () => false,
   })
 
+const everyConfigDocument: Arbitrary.Arbitrary<typeof configDocumentTable> = Arbitrary.Constant(configDocumentTable)
+
 it.prop(
-  '∀row_AttwConfigDecode_=authoredValues',
-  [fc.constantFrom(...configDocumentTable)],
-  ([row]) =>
-    Result.match(loadText(row.text), {
-      onSuccess: (decision) =>
-        Match.value(decision).pipe(
-          Match.tag('AttwConfigLoaded', ({ config }) => holdsAuthoredValues(config, row.expected)),
-          Match.tag('AttwConfigAbsent', () => false),
-          Match.exhaustive,
-        ),
-      onFailure: () => false,
-    }),
+  '∀rows_AttwConfigDecode_=authoredValues',
+  [everyConfigDocument],
+  ([rows]) =>
+    rows.every((row) =>
+      Result.match(loadText(row.text), {
+        onSuccess: (decision) =>
+          Match.value(decision).pipe(
+            Match.tag('AttwConfigLoaded', ({ config }) => holdsAuthoredValues(config, row.expected)),
+            Match.tag('AttwConfigAbsent', () => false),
+            Match.exhaustive,
+          ),
+        onFailure: () => false,
+      })
+    ),
 )
 
-it.prop('∀text_NotAConfigDocument_⊥Load', [fc.constantFrom(...refusedConfigDocuments)], ([text]) => refused(text))
+it.prop('∀text_NotAConfigDocument_⊥Load', [oneOf(refusedConfigDocuments)], ([text]) => refused(text))
 
 it.prop('∀text_NonJsonText_⊥Load', [nonJsonText], ([text]) => refused(text))
 
-it.prop('∀path_ConfigFileAbsent_=Absent', [fc.string()], ([filePath]) =>
+const configIssueTable: ReadonlyArray<{ readonly text: string; readonly message: string }> = [
+  {
+    text: '{"ignoreRules":["a",  "b", 3]}',
+    message: 'The .attw.json at /project/.attw.json is invalid: Expected string at ["ignoreRules"][2]',
+  },
+  {
+    text: '{"entrypoints":"a"}',
+    message: 'The .attw.json at /project/.attw.json is invalid: Expected array | undefined at ["entrypoints"]',
+  },
+  { text: '[]', message: 'The .attw.json at /project/.attw.json is invalid: Expected object' },
+]
+
+it.prop(
+  '∀rows_ConfigIssue_=authoredOneLineMessage',
+  [Arbitrary.Constant(configIssueTable)],
+  ([rows]) =>
+    rows.every((row) =>
+      Result.match(loadText(row.text), {
+        onFailure: (failure) => failure.message === row.message,
+        onSuccess: () => false,
+      })
+    ),
+)
+
+it.prop('∀path_ConfigFileAbsent_=Absent', [Schema.String], ([filePath]) =>
   Result.match(
     loadAttwConfig(new LoadAttwConfigCommand({ request: new AttwConfigFileAbsentCommand({ filePath }) })),
     {

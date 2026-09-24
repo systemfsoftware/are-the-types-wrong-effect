@@ -1,5 +1,5 @@
 import {
-  AnalysisTypesSchema,
+  Analysis,
   EntrypointInfoSchema,
   InternalResolutionErrorProblemSchema,
   ProblemSchema,
@@ -16,7 +16,7 @@ export const MaskedProblemSchema = S.Union([
   ProblemSchema,
   S.Struct({
     ...InternalResolutionErrorProblemSchema.fields,
-    trace: S.optionalKey(S.Array(S.String)),
+    trace: S.String.pipe(S.Array, S.optionalKey),
   }),
 ])
 
@@ -24,9 +24,9 @@ export const OkEnvelopeSchema = S.Struct({
   status: S.Literal('ok'),
   packageName: S.String,
   packageVersion: S.String,
-  types: AnalysisTypesSchema,
+  types: Analysis.PackageTypes,
   problems: S.Array(MaskedProblemSchema),
-  problemCounts: S.Record(S.String, S.Number),
+  problemCounts: S.Record(S.String, S.Finite),
   entrypoints: S.optionalKey(S.Record(S.String, EntrypointInfoSchema)),
   buildTools: S.optionalKey(S.Record(S.String, S.String)),
   programInfo: S.optionalKey(S.Record(ResolutionOptionSchema, ProgramInfoSchema)),
@@ -47,7 +47,9 @@ export type MaskedProblem = S.Schema.Type<typeof MaskedProblemSchema>
 
 export class EnvelopeDocumentCommand extends S.Class<EnvelopeDocumentCommand>('EnvelopeDocumentCommand')({
   value: S.Unknown,
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 const EnvelopeDocumentDecisionTypeId: unique symbol = Symbol.for(
   '@systemfsoftware/arethetypeswrong-cli/EnvelopeDocumentDecision',
@@ -74,9 +76,11 @@ export class EnvelopeDocumentRefused extends S.TaggedError<EnvelopeDocumentRefus
 
 export type EnvelopeDocumentDecision = OkEnvelopeAccepted | UntypedEnvelopeAccepted
 
-export const decodeEnvelopeDocument = Workflow.make(
-  EnvelopeDocumentCommand,
-  (command): Result.Result<EnvelopeDocumentDecision, EnvelopeDocumentRefused> =>
+export const decodeEnvelopeDocument = Workflow.make({
+  command: EnvelopeDocumentCommand,
+  decision: S.Union([OkEnvelopeAccepted, UntypedEnvelopeAccepted]),
+  error: EnvelopeDocumentRefused,
+  decide: (command): Result.Result<EnvelopeDocumentDecision, EnvelopeDocumentRefused> =>
     Result.match(S.decodeUnknownResult(MachineEnvelopeSchema, rejectUndeclaredKeys)(command.value), {
       onFailure: (issue) => Result.fail(new EnvelopeDocumentRefused({ issue: issue.message })),
       onSuccess: (document): Result.Result<EnvelopeDocumentDecision, EnvelopeDocumentRefused> =>
@@ -85,4 +89,4 @@ export const decodeEnvelopeDocument = Workflow.make(
           Match.orElse((untyped) => Result.succeed(new UntypedEnvelopeAccepted({ document: untyped }))),
         ),
     }),
-)
+})

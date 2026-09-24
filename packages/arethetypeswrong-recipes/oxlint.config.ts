@@ -1,17 +1,4 @@
-import all from '@systemfsoftware/all'
+import recommended from '@systemfsoftware/oxlint-config-recommended'
 import { defineConfig } from 'oxlint'
 
-export default defineConfig({
-  extends: [all],
-
-  overrides: [
-    {
-      files: ['**/*.test.ts', '**/*.spec.ts'],
-      rules: { 'vitest/no-standalone-expect': 'off' },
-    },
-    {
-      files: ['**/vitest.config.ts', '**/tsdown.config.ts'],
-      rules: { 'no-restricted-imports': 'off' },
-    },
-  ],
-})
+export default defineConfig({ extends: [recommended] })

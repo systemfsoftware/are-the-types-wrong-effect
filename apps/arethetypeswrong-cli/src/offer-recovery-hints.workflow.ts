@@ -3,8 +3,16 @@ import { Match, Result } from 'effect'
 import * as S from 'effect/Schema'
 
 import { MachineEnvelopeSchema } from './decode-envelope-document.workflow.js'
-import { type Hint, HintIds } from './hint-shaping.js'
-import { RenderModeSchema } from './select-render-mode.workflow.js'
+import { RenderModeSchema } from './run-outcome.schema.js'
+
+const HintIds = ['expansion', 'directoryWithoutPack', 'untyped'] as const
+
+export type HintId = typeof HintIds[number]
+
+export interface Hint {
+  readonly id: HintId
+  readonly text: string
+}
 
 const EnvelopeMaskSchema = S.Struct({
   entrypoints: S.Boolean,
@@ -51,7 +59,9 @@ export class PacklessDirectoryHintsRequest extends S.TaggedClass<PacklessDirecto
 
 export class DecideHintsCommand extends S.TaggedClass<DecideHintsCommand>()('DecideHintsCommand', {
   request: S.Union([RunHintsRequest, PacklessDirectoryHintsRequest]),
-}) {}
+}) {
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
 
 const HintsDecisionTypeId: unique symbol = Symbol.for('@systemfsoftware/arethetypeswrong-cli/HintsDecision')
 type HintsDecisionTypeId = typeof HintsDecisionTypeId
@@ -144,9 +154,11 @@ const hintsForSituation = (situation: HintSituation): HintsDecision =>
     Match.exhaustive,
   )
 
-export const offerRecoveryHints = Workflow.make(
-  DecideHintsCommand,
-  (command): Result.Result<HintsDecision, IncludeTokensRefused> =>
+export const offerRecoveryHints = Workflow.make({
+  command: DecideHintsCommand,
+  decision: S.Union([HintsOffered, NoHintsApplicable]),
+  error: IncludeTokensRefused,
+  decide: (command): Result.Result<HintsDecision, IncludeTokensRefused> =>
     Match.value(command.request).pipe(
       Match.tag('PacklessDirectoryHintsRequest', () =>
         Result.succeed(new HintsOffered({ hints: [directoryWithoutPackHint] }))),
@@ -159,4 +171,4 @@ export const offerRecoveryHints = Workflow.make(
         )),
       Match.exhaustive,
     ),
-)
+})
