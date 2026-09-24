@@ -12,4 +12,9 @@ export class LexerUnavailable extends Schema.TaggedError<LexerUnavailable>()('Le
   cause: Schema.optional(Schema.Unknown),
 }) {}
 
-export type AnalysisError = ManifestUnreadable | CompilerFailed | LexerUnavailable
+export class EntrypointsAllExcluded extends Schema.TaggedError<EntrypointsAllExcluded>()('EntrypointsAllExcluded', {
+  patterns: Schema.Array(Schema.String),
+  entrypoints: Schema.Array(Schema.String),
+}) {}
+
+export type AnalysisError = ManifestUnreadable | CompilerFailed | LexerUnavailable | EntrypointsAllExcluded

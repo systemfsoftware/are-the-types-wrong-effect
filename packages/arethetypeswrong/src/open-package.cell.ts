@@ -3,7 +3,7 @@ import type { Package } from '@systemfsoftware/npm-package'
 import { Effect, Match, Option, Result, Schema } from 'effect'
 import ts from 'typescript'
 
-import { ManifestUnreadable } from './AnalysisError.schema.js'
+import { EntrypointsAllExcluded, ManifestUnreadable } from './AnalysisError.schema.js'
 import {
   DiscoverEntrypoints,
   discoverEntrypoints,
@@ -226,10 +226,24 @@ const withoutRegexes = (regexes: ReadonlyArray<RegExp>, entrypoints: ReadonlyArr
     [...entrypoints],
   )
 
-const entrypointsFor = (command: OpenRead, subject: ReadonlyArray<string>): ReadonlyArray<string> =>
-  uniqueTexts(
-    [subject, companionSubpaths(command)].flatMap((candidates) => withoutRegexes(regexesFor(command), candidates)),
+const entrypointsOutcome = (
+  command: OpenRead,
+  subject: ReadonlyArray<string>,
+): Effect.Effect<ReadonlyArray<string>, EntrypointsAllExcluded> => {
+  const regexes = regexesFor(command)
+  const candidates = [...subject, ...companionSubpaths(command)]
+  const remaining = uniqueTexts(withoutRegexes(regexes, candidates))
+  return Match.value({ discovered: candidates.length > 0, kept: remaining.length > 0 }).pipe(
+    Match.when({ discovered: true, kept: false }, () =>
+      Effect.fail(
+        new EntrypointsAllExcluded({
+          patterns: regexes.map((regex) => regex.source),
+          entrypoints: uniqueTexts(candidates),
+        }),
+      )),
+    Match.orElse(() => Effect.succeed(remaining)),
   )
+}
 
 const companionSubpaths = (command: OpenRead): ReadonlyArray<string> =>
   Option.match(command.companionManifest, {
@@ -322,16 +336,23 @@ const openedOf = (command: OpenRead, entrypoints: ReadonlyArray<string>): Opened
     })),
   )
 
-const outcomeFor = (command: OpenRead, decision: DiscoveredDecision): OpenedPackage =>
-  openedOf(command, entrypointsFor(command, subpathsOf(decision)))
+const outcomeFor = (
+  command: OpenRead,
+  decision: DiscoveredDecision,
+): Effect.Effect<OpenedPackage, EntrypointsAllExcluded> =>
+  Effect.map(entrypointsOutcome(command, subpathsOf(decision)), (entrypoints) => openedOf(command, entrypoints))
 
-export const openPackage: Cell.Cell<AnalysisRequest, OpenedPackage, ManifestUnreadable> = Sandwich.named(
+export const openPackage: Cell.Cell<
+  AnalysisRequest,
+  OpenedPackage,
+  ManifestUnreadable | EntrypointsAllExcluded
+> = Sandwich.named(
   'open.package',
 )(read)
   .decide(discoverEntrypoints)
   .write({
-    EntrypointsDiscovered: (discovered, command) => Effect.succeed(outcomeFor(command, discovered)),
-    ProxiesDiscovered: (proxies, command) => Effect.succeed(outcomeFor(command, proxies)),
-    EntrypointsNotDeclared: (_refused, command) => Effect.succeed(outcomeFor(command, new EntrypointsNotDeclared())),
+    EntrypointsDiscovered: (discovered, command) => outcomeFor(command, discovered),
+    ProxiesDiscovered: (proxies, command) => outcomeFor(command, proxies),
+    EntrypointsNotDeclared: (_refused, command) => outcomeFor(command, new EntrypointsNotDeclared()),
     CommandRejected: (rejected) => Effect.fail(new ManifestUnreadable({ cause: rejected })),
   })

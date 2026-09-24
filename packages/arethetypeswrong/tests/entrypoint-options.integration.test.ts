@@ -2,7 +2,7 @@ import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
 import { Gherkin, Given, it, layer, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import type { Package } from '@systemfsoftware/npm-package'
-import { Effect } from 'effect'
+import { Effect, Result } from 'effect'
 import { expect } from 'vitest'
 
 const Feature = makeFeature({ it, layer })
@@ -87,6 +87,28 @@ Feature('The entrypoints an analysis reports once an entrypoint option is applie
           ])),
         Then('both forms report the same analysis')(({ analysed }) => {
           expect(analysed[0]).toEqual(analysed[1])
+        }),
+      ),
+    )
+
+    scenario(
+      'a pattern that excludes every entrypoint refuses the analysis',
+      Gherkin.Do.pipe(
+        Given('the multi-entrypoint synthetic package publishing three subpaths')('pkg', multiEntrypoint),
+        When('every entrypoint is excluded by pattern')(
+          'refused',
+          ({ pkg }) => Effect.result(Analysis.make(pkg).pipe(Analysis.excludeEntrypoints([/.*/])).run),
+        ),
+        Then('the analysis refuses instead of reporting an empty report')(({ refused }) => {
+          expect(Result.match(refused, {
+            onFailure: (error) => error,
+            onSuccess: () => null,
+          })).toEqual(
+            new Analysis.EntrypointsAllExcluded({
+              patterns: ['.*'],
+              entrypoints: ['.', './macros', './utils'],
+            }),
+          )
         }),
       ),
     )

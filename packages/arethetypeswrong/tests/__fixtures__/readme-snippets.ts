@@ -65,4 +65,5 @@ export const describedFailure = Effect.catchTags(Analysis.make(demoPackage).run,
   ManifestUnreadable: () => Effect.succeed('the package manifest could not be read'),
   CompilerFailed: () => Effect.succeed('TypeScript could not build the program'),
   LexerUnavailable: () => Effect.succeed('the CommonJS lexer could not be initialized'),
+  EntrypointsAllExcluded: () => Effect.succeed('the exclusions left no entrypoint to analyze'),
 })

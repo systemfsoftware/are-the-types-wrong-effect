@@ -3,7 +3,12 @@ import * as Option from 'effect/Option'
 import * as Result from 'effect/Result'
 import { describe, expect, it } from 'vitest'
 
-import { CompilerFailed, LexerUnavailable, ManifestUnreadable } from '../AnalysisError.schema.js'
+import {
+  CompilerFailed,
+  EntrypointsAllExcluded,
+  LexerUnavailable,
+  ManifestUnreadable,
+} from '../AnalysisError.schema.js'
 import { PackageManifestJson } from '../PackageManifest.schema.js'
 
 describe('AnalysisError refusal boundary', () => {
@@ -25,6 +30,25 @@ describe('AnalysisError refusal boundary', () => {
 
   it('accepts the lexer-unavailable tag a consumer branches on', () => {
     expect(Result.isSuccess(Schema.decodeResult(LexerUnavailable)({ _tag: 'LexerUnavailable' }))).toBe(true)
+  })
+
+  it('accepts the entrypoints-all-excluded tag with the patterns it names', () => {
+    expect(Result.isSuccess(
+      Schema.decodeResult(EntrypointsAllExcluded)({
+        _tag: 'EntrypointsAllExcluded',
+        patterns: ['.*'],
+        entrypoints: ['.'],
+      }),
+    )).toBe(true)
+  })
+
+  it('refuses an entrypoints-all-excluded payload that names no excluded entrypoints', () => {
+    expect(Result.isFailure(
+      Schema.decodeUnknownResult(EntrypointsAllExcluded)({
+        _tag: 'EntrypointsAllExcluded',
+        patterns: ['.*'],
+      }),
+    )).toBe(true)
   })
 
   it('carries the manifest parse failure as an untouched cause', () => {

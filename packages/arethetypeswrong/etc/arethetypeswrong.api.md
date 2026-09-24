@@ -8,7 +8,7 @@ import { Schema } from 'effect';
 
 // @public (undocumented)
 export namespace Analysis {
-    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, PackageTypes, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withTypesCompanion };
+    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, EntrypointsAllExcluded, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, PackageTypes, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withTypesCompanion };
 }
 
 // @public (undocumented)

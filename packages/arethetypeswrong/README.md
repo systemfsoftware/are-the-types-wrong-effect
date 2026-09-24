@@ -176,13 +176,14 @@ Every problem is a tagged variant of one union, and its `kind` names it. `Proble
 
 ## Failure model
 
-The engine names exactly three failures, and each arrives as a tagged error on the Effect's error channel — `spec.run` reports them as values, not exceptions. All three carry an optional `cause`.
+The engine names exactly four failures, and each arrives as a tagged error on the Effect's error channel — `spec.run` reports them as values, not exceptions. `ManifestUnreadable`, `CompilerFailed` and `LexerUnavailable` carry an optional `cause`; `EntrypointsAllExcluded` carries the `patterns` and the `entrypoints` they excluded.
 
-| Failure              | Raised when                                                |
-| -------------------- | ---------------------------------------------------------- |
-| `ManifestUnreadable` | The package manifest could not be read or decoded.         |
-| `CompilerFailed`     | The TypeScript program for the package could not be built. |
-| `LexerUnavailable`   | The CommonJS lexer could not be initialized.               |
+| Failure                  | Raised when                                                     |
+| ------------------------ | --------------------------------------------------------------- |
+| `ManifestUnreadable`     | The package manifest could not be read or decoded.              |
+| `CompilerFailed`         | The TypeScript program for the package could not be built.      |
+| `LexerUnavailable`       | The CommonJS lexer could not be initialized.                    |
+| `EntrypointsAllExcluded` | A caller-supplied pattern excluded every discovered entrypoint. |
 
 Handle them with `Effect.catchTags`, or let them propagate to the edge:
 
@@ -194,6 +195,7 @@ export const describedFailure = Effect.catchTags(Analysis.make(demoPackage).run,
   ManifestUnreadable: () => Effect.succeed('the package manifest could not be read'),
   CompilerFailed: () => Effect.succeed('TypeScript could not build the program'),
   LexerUnavailable: () => Effect.succeed('the CommonJS lexer could not be initialized'),
+  EntrypointsAllExcluded: () => Effect.succeed('the exclusions left no entrypoint to analyze'),
 })
 ```
 
