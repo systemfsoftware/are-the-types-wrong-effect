@@ -80,3 +80,5 @@ export const FailureDocumentSchema = S.Struct({
 })
 
 export type FailureDocument = S.Schema.Type<typeof FailureDocumentSchema>
+
+export const FailureDocumentJson = S.fromJsonString(FailureDocumentSchema)

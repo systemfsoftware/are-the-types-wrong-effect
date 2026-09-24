@@ -8,7 +8,7 @@ import type { AnsiAnnotation } from './RenderAnsi.js'
 import { renderAsciiAnalysis } from './RenderAscii.js'
 import { renderTypedAnalysis } from './RenderTyped.js'
 import { renderUntyped } from './RenderUntyped.js'
-import type { RenderMode } from './select-render-mode.workflow.js'
+import type { RenderMode } from './run-outcome.schema.js'
 
 export type HumanRenderMode = Exclude<RenderMode, 'envelope' | 'quiet'>
 

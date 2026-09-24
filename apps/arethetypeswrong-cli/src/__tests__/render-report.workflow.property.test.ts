@@ -21,8 +21,7 @@ import {
 } from '../Failure.schema.js'
 import type { EnvelopeMask } from '../Mask.js'
 import { renderReport, RenderReportCommand, type RenderReportDecision } from '../render-report.workflow.js'
-import { AnalyzedRun, RefusedRun } from '../run-outcome.schema.js'
-import type { RenderMode } from '../select-render-mode.workflow.js'
+import { AnalyzedRun, RefusedRun, type RenderMode } from '../run-outcome.schema.js'
 import { TerminalObservations } from '../TerminalError.schema.js'
 
 const defaultMask: EnvelopeMask = { entrypoints: false, buildTools: false, programInfo: false, traces: false }

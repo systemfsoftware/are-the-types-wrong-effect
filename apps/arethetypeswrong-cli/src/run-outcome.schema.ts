@@ -3,7 +3,10 @@ import * as S from 'effect/Schema'
 
 import { MachineEnvelopeSchema } from './decode-envelope-document.workflow.js'
 import { AttwFailureSchema } from './Failure.schema.js'
-import { RenderModeSchema } from './select-render-mode.workflow.js'
+
+export const RenderModeSchema = S.Literals(['envelope', 'table', 'table-flipped', 'ascii', 'quiet'])
+
+export type RenderMode = S.Schema.Type<typeof RenderModeSchema>
 
 export const EnvelopeMaskSchema = S.Struct({
   entrypoints: S.Boolean,

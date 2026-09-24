@@ -1,7 +1,7 @@
 import { Sandwich } from '@systemfsoftware/effect-cell-types'
 import { Effect, Function, Result } from 'effect'
 import * as S from 'effect/Schema'
-import { type AttwFailure, AttwFailureSchema, type FailureDocument } from './Failure.schema.js'
+import { type AttwFailure, AttwFailureSchema, type FailureDocument, FailureDocumentJson } from './Failure.schema.js'
 import { FailureRendered, renderReport, RenderReportCommand, type ReportRendered } from './render-report.workflow.js'
 import { renderAnalysisForMode } from './Render.js'
 import { RefusedRun, RenderedRun, RunOutcome } from './run-outcome.schema.js'
@@ -25,12 +25,15 @@ const failureDocument = (failure: AttwFailure): FailureDocument => ({
 
 const proseLine = (failure: AttwFailure): string => `${failure.message} ${failure.recovery}\n`
 
+const encodedFailureDocument = (failure: AttwFailure): string =>
+  Function.pipe(failureDocument(failure), S.encodeResult(FailureDocumentJson), Result.getOrThrow)
+
 export const failureOutcome: {
   (options: { readonly isTty: boolean }): (failure: AttwFailure) => FailureOutcome
   (failure: AttwFailure, options: { readonly isTty: boolean }): FailureOutcome
 } = Function.dual(2, (failure: AttwFailure, options: { readonly isTty: boolean }): FailureOutcome => {
   if (options.isTty) return { document: proseLine(failure), exitCode: 1 }
-  return { document: `${JSON.stringify(failureDocument(failure))}\n`, exitCode: 1 }
+  return { document: `${encodedFailureDocument(failure)}\n`, exitCode: 1 }
 })
 
 const renderedRunOf = (rendered: RenderedDecision): RenderedRun => {

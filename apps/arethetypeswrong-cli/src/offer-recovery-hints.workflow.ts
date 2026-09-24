@@ -3,7 +3,7 @@ import { Match, Result } from 'effect'
 import * as S from 'effect/Schema'
 
 import { MachineEnvelopeSchema } from './decode-envelope-document.workflow.js'
-import { RenderModeSchema } from './select-render-mode.workflow.js'
+import { RenderModeSchema } from './run-outcome.schema.js'
 
 const HintIds = ['expansion', 'directoryWithoutPack', 'untyped'] as const
 

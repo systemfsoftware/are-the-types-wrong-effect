@@ -14,7 +14,7 @@ import {
   PacklessDirectoryHintsRequest,
   RunHintsRequest,
 } from '../offer-recovery-hints.workflow.js'
-import type { RenderMode } from '../select-render-mode.workflow.js'
+import type { RenderMode } from '../run-outcome.schema.js'
 
 const oneOf = <A>(values: readonly A[]): Arbitrary.Arbitrary<A> =>
   Arbitrary.flatMap(

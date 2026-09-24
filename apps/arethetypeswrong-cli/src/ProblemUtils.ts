@@ -59,6 +59,8 @@ export type CliResolutionKind = typeof CliResolutionKinds[number]
 
 export const CliFormat = ['auto', 'table', 'table-flipped', 'ascii', 'json'] as const
 
+export type RequestedFormat = typeof CliFormat[number]
+
 export const CliProfile = ['strict', 'node16', 'esm-only'] as const
 
 const conflictsWithIgnoredRule = (problem: Problem, ignoredRules: readonly string[]): boolean =>

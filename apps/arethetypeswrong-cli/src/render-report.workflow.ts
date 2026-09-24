@@ -12,8 +12,8 @@ import {
 } from './decode-envelope-document.workflow.js'
 import { AttwFailureSchema } from './Failure.schema.js'
 import type { EnvelopeMask } from './Mask.js'
-import { AnalyzedRun, RunOutcome } from './run-outcome.schema.js'
-import { type RenderMode, RenderModeSchema } from './select-render-mode.workflow.js'
+import type { CliProblemFlag } from './ProblemUtils.js'
+import { AnalyzedRun, type RenderMode, RenderModeSchema, RunOutcome } from './run-outcome.schema.js'
 import { TerminalObservations } from './TerminalError.schema.js'
 
 interface RenderPolicyRequest {
@@ -73,24 +73,24 @@ const decidedRenderMode = (command: RenderReportCommand, analyzed: AnalyzedRun) 
     terminalWidth: command.observations.width,
   }).mode
 
-const problemFlagOf = (kind: ProblemKind): string =>
+const problemFlagOf = (kind: ProblemKind): CliProblemFlag =>
   Match.value(kind).pipe(
-    Match.when('NoResolution', (): string => 'no-resolution'),
-    Match.when('UntypedResolution', (): string => 'untyped-resolution'),
-    Match.when('FalseCJS', (): string => 'false-cjs'),
-    Match.when('FalseESM', (): string => 'false-esm'),
-    Match.when('CJSResolvesToESM', (): string => 'cjs-resolves-to-esm'),
-    Match.when('FallbackCondition', (): string => 'fallback-condition'),
-    Match.when('CJSOnlyExportsDefault', (): string => 'cjs-only-exports-default'),
-    Match.when('NamedExports', (): string => 'named-exports'),
-    Match.when('FalseExportDefault', (): string => 'false-export-default'),
-    Match.when('MissingExportEquals', (): string => 'missing-export-equals'),
-    Match.when('UnexpectedModuleSyntax', (): string => 'unexpected-module-syntax'),
-    Match.when('InternalResolutionError', (): string => 'internal-resolution-error'),
+    Match.when('NoResolution', (): CliProblemFlag => 'no-resolution'),
+    Match.when('UntypedResolution', (): CliProblemFlag => 'untyped-resolution'),
+    Match.when('FalseCJS', (): CliProblemFlag => 'false-cjs'),
+    Match.when('FalseESM', (): CliProblemFlag => 'false-esm'),
+    Match.when('CJSResolvesToESM', (): CliProblemFlag => 'cjs-resolves-to-esm'),
+    Match.when('FallbackCondition', (): CliProblemFlag => 'fallback-condition'),
+    Match.when('CJSOnlyExportsDefault', (): CliProblemFlag => 'cjs-only-exports-default'),
+    Match.when('NamedExports', (): CliProblemFlag => 'named-exports'),
+    Match.when('FalseExportDefault', (): CliProblemFlag => 'false-export-default'),
+    Match.when('MissingExportEquals', (): CliProblemFlag => 'missing-export-equals'),
+    Match.when('UnexpectedModuleSyntax', (): CliProblemFlag => 'unexpected-module-syntax'),
+    Match.when('InternalResolutionError', (): CliProblemFlag => 'internal-resolution-error'),
     Match.exhaustive,
   )
 
-const presentResolutionKind = (problem: Problem): string =>
+const problemResolutionKindOf = (problem: Problem): string =>
   Match.value(problem).pipe(
     Match.when({ kind: 'NoResolution' }, ({ resolutionKind }): string => resolutionKind),
     Match.when({ kind: 'UntypedResolution' }, ({ resolutionKind }): string => resolutionKind),
@@ -99,23 +99,13 @@ const presentResolutionKind = (problem: Problem): string =>
     Match.orElse((): string => ''),
   )
 
-const carriedResolutionKind = (problem: Problem): string | undefined => presentResolutionKind(problem)
-
-const definedResolutionKind = (kind: string | undefined): string =>
-  Match.value(kind).pipe(
-    Match.when(undefined, (): string => ''),
-    Match.orElse((present): string => present),
-  )
-
-const resolutionKindOf = (problem: Problem): string => definedResolutionKind(carriedResolutionKind(problem))
-
 const ignoredRuleOf = (problem: Problem, ignoredRules: readonly string[]): boolean =>
   ignoredRules.includes(problemFlagOf(problem.kind))
 
 const ignoredResolutionOf = (problem: Problem, ignoredResolutions: readonly string[]): boolean =>
-  ignoredResolutions.includes(resolutionKindOf(problem))
+  ignoredResolutions.includes(problemResolutionKindOf(problem))
 
-const isIgnoredProblemOf = (
+const visibleProblemOf = (
   problem: Problem,
   ignoredRules: readonly string[],
   ignoredResolutions: readonly string[],
@@ -124,20 +114,9 @@ const isIgnoredProblemOf = (
     rule: ignoredRuleOf(problem, ignoredRules),
     resolution: ignoredResolutionOf(problem, ignoredResolutions),
   }).pipe(
-    Match.when({ rule: true }, (): boolean => true),
-    Match.when({ resolution: true }, (): boolean => true),
-    Match.orElse((): boolean => false),
-  )
-
-const visibleProblemOf = (
-  problem: Problem,
-  ignoredRules: readonly string[],
-  ignoredResolutions: readonly string[],
-): boolean =>
-  Match.value(isIgnoredProblemOf(problem, ignoredRules, ignoredResolutions)).pipe(
-    Match.when(true, (): boolean => false),
-    Match.when(false, (): boolean => true),
-    Match.exhaustive,
+    Match.when({ rule: true }, (): boolean => false),
+    Match.when({ resolution: true }, (): boolean => false),
+    Match.orElse((): boolean => true),
   )
 
 const maskTracedProblem = (problem: Problem): MaskedProblem =>

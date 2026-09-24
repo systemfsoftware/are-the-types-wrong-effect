@@ -4,6 +4,7 @@ import { Workflow } from '@systemfsoftware/effect-cell-types'
 import { Match, Result } from 'effect'
 import * as S from 'effect/Schema'
 
+import type { CliProblemFlag } from './ProblemUtils.js'
 import { RenderOutcome } from './run-outcome.schema.js'
 
 interface SuppressionRequest {
@@ -12,42 +13,40 @@ interface SuppressionRequest {
   readonly ignoredResolutions: readonly string[]
 }
 
-const ruleFlagOf = (kind: Problem['kind']): string =>
+const ruleFlagOf = (kind: Problem['kind']): CliProblemFlag =>
   Match.value(kind).pipe(
-    Match.when('NoResolution', (): string => 'no-resolution'),
-    Match.when('UntypedResolution', (): string => 'untyped-resolution'),
-    Match.when('FalseCJS', (): string => 'false-cjs'),
-    Match.when('FalseESM', (): string => 'false-esm'),
-    Match.when('CJSResolvesToESM', (): string => 'cjs-resolves-to-esm'),
-    Match.when('FallbackCondition', (): string => 'fallback-condition'),
-    Match.when('CJSOnlyExportsDefault', (): string => 'cjs-only-exports-default'),
-    Match.when('NamedExports', (): string => 'named-exports'),
-    Match.when('FalseExportDefault', (): string => 'false-export-default'),
-    Match.when('MissingExportEquals', (): string => 'missing-export-equals'),
-    Match.when('UnexpectedModuleSyntax', (): string => 'unexpected-module-syntax'),
-    Match.when('InternalResolutionError', (): string => 'internal-resolution-error'),
+    Match.when('NoResolution', (): CliProblemFlag => 'no-resolution'),
+    Match.when('UntypedResolution', (): CliProblemFlag => 'untyped-resolution'),
+    Match.when('FalseCJS', (): CliProblemFlag => 'false-cjs'),
+    Match.when('FalseESM', (): CliProblemFlag => 'false-esm'),
+    Match.when('CJSResolvesToESM', (): CliProblemFlag => 'cjs-resolves-to-esm'),
+    Match.when('FallbackCondition', (): CliProblemFlag => 'fallback-condition'),
+    Match.when('CJSOnlyExportsDefault', (): CliProblemFlag => 'cjs-only-exports-default'),
+    Match.when('NamedExports', (): CliProblemFlag => 'named-exports'),
+    Match.when('FalseExportDefault', (): CliProblemFlag => 'false-export-default'),
+    Match.when('MissingExportEquals', (): CliProblemFlag => 'missing-export-equals'),
+    Match.when('UnexpectedModuleSyntax', (): CliProblemFlag => 'unexpected-module-syntax'),
+    Match.when('InternalResolutionError', (): CliProblemFlag => 'internal-resolution-error'),
     Match.exhaustive,
   )
 
-const ignoredByResolution = (request: SuppressionRequest): boolean =>
-  Match.value(request.problem).pipe(
-    Match.when({ kind: 'NoResolution' }, ({ resolutionKind }) => request.ignoredResolutions.includes(resolutionKind)),
-    Match.when({ kind: 'UntypedResolution' }, ({ resolutionKind }) =>
-      request.ignoredResolutions.includes(resolutionKind)),
-    Match.when({ kind: 'CJSResolvesToESM' }, ({ resolutionKind }) =>
-      request.ignoredResolutions.includes(resolutionKind)),
-    Match.when({ kind: 'FallbackCondition' }, ({ resolutionKind }) =>
-      request.ignoredResolutions.includes(resolutionKind)),
-    Match.orElse(() =>
-      false
-    ),
+const problemResolutionKindOf = (problem: Problem): string =>
+  Match.value(problem).pipe(
+    Match.when({ kind: 'NoResolution' }, ({ resolutionKind }): string => resolutionKind),
+    Match.when({ kind: 'UntypedResolution' }, ({ resolutionKind }): string => resolutionKind),
+    Match.when({ kind: 'CJSResolvesToESM' }, ({ resolutionKind }): string => resolutionKind),
+    Match.when({ kind: 'FallbackCondition' }, ({ resolutionKind }): string => resolutionKind),
+    Match.orElse((): string => ''),
   )
 
 const isVisibleProblem = (request: SuppressionRequest): boolean =>
-  Match.value(request.ignoredRules.includes(ruleFlagOf(request.problem.kind))).pipe(
-    Match.when(true, () => false),
-    Match.when(false, () => !ignoredByResolution(request)),
-    Match.exhaustive,
+  Match.value({
+    rule: request.ignoredRules.includes(ruleFlagOf(request.problem.kind)),
+    resolution: request.ignoredResolutions.includes(problemResolutionKindOf(request.problem)),
+  }).pipe(
+    Match.when({ rule: true }, (): boolean => false),
+    Match.when({ resolution: true }, (): boolean => false),
+    Match.orElse((): boolean => true),
   )
 
 interface VisibilityRequest {
