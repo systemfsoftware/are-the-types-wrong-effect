@@ -6,7 +6,6 @@ import { type Pipeable, Prototype } from 'effect/Pipeable'
 import { analyse } from './analysis.cell.js'
 import type { AnalysisError } from './AnalysisError.schema.js'
 import type { AnalysisRequest, ExcludedEntrypoint } from './open-package.cell.js'
-import type { ResolutionKind } from './Problem.schema.js'
 import type { PackageReport } from './Report.schema.js'
 
 const TypeId = '~systemfsoftware/arethetypeswrong/Analysis'
@@ -19,11 +18,8 @@ export interface AnalysisSpec extends Pipeable {
   includeEntrypoints(entrypoints: ReadonlyArray<string>): AnalysisSpec
   excludeEntrypoints(entrypoints: ReadonlyArray<ExcludedEntrypoint>): AnalysisSpec
   withTypesCompanion(companion: Package): AnalysisSpec
-  withModes(modes: ReadonlyArray<ResolutionKind>): AnalysisSpec
   readonly run: Effect.Effect<PackageReport, AnalysisError>
 }
-
-const allModes: ReadonlyArray<ResolutionKind> = ['node10', 'node16-cjs', 'node16-esm', 'bundler']
 
 const makeProto = (request: AnalysisRequest): AnalysisSpec => {
   const self: AnalysisSpec = {
@@ -34,7 +30,6 @@ const makeProto = (request: AnalysisRequest): AnalysisSpec => {
     includeEntrypoints: (entrypoints) => includeEntrypoints(self, entrypoints),
     excludeEntrypoints: (entrypoints) => excludeEntrypoints(self, entrypoints),
     withTypesCompanion: (companion) => withTypesCompanion(self, companion),
-    withModes: (modes) => withModes(self, modes),
     get run() {
       return analyse.run(request)
     },
@@ -50,7 +45,6 @@ export const make = (pkg: Package): AnalysisSpec =>
     includeEntrypoints: [],
     excludeEntrypoints: [],
     entrypointsLegacy: false,
-    modes: allModes,
   })
 
 export const withEntrypoints: {
@@ -90,13 +84,4 @@ export const withTypesCompanion: {
   2,
   (spec: AnalysisSpec, companion: Package): AnalysisSpec =>
     makeProto({ ...spec.request, pkg: spec.request.pkg.withOverlay(companion), companion }),
-)
-
-export const withModes: {
-  (modes: ReadonlyArray<ResolutionKind>): (spec: AnalysisSpec) => AnalysisSpec
-  (spec: AnalysisSpec, modes: ReadonlyArray<ResolutionKind>): AnalysisSpec
-} = dual(
-  2,
-  (spec: AnalysisSpec, modes: ReadonlyArray<ResolutionKind>): AnalysisSpec =>
-    makeProto({ ...spec.request, modes: [...modes] }),
 )

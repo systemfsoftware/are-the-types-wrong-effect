@@ -104,7 +104,6 @@ type AcquiredOutcome = AcquiredRun | RefusedRun
 type AnalyzedOutcome = AnalyzedPackage | RefusedRun
 
 const defaultRegistry = 'https://registry.npmjs.org'
-const allModes: readonly ResolutionKind[] = ['node10', 'node16-cjs', 'node16-esm', 'bundler']
 
 const rejectedAnalysis = (): AnalysisFailed =>
   new AnalysisFailed({
@@ -173,11 +172,6 @@ const acquireErrorRunOf = (error: AcquireTarballError): RefusedRun =>
       })),
     Match.exhaustive,
   )
-
-const modesFor = (profile: 'strict' | 'node16' | 'esm-only'): readonly ResolutionKind[] => {
-  const silenced = applyProfile(new ApplyProfileCommand({ profileName: profile })).ignoreResolutions
-  return allModes.filter((mode) => !silenced.includes(mode))
-}
 
 const defaulted = <Value>(value: Value | undefined, fallback: Value): Value => value ?? fallback
 
@@ -272,7 +266,6 @@ const analyzeRequestOf = (request: EffectiveRunRequest, evidence: AcquiredTarbal
   includeEntrypoints: request.includeEntrypoints,
   excludeEntrypoints: request.excludeEntrypoints,
   entrypointsLegacy: request.entrypointsLegacy,
-  modes: modesFor(request.profile),
 })
 
 const analyzedRunOf = (request: EffectiveRunRequest, analysed: AnalyzedOutcome): RunOutcome =>

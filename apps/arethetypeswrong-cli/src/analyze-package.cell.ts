@@ -1,5 +1,4 @@
 import { Analysis } from '@systemfsoftware/arethetypeswrong'
-import type { ResolutionKind } from '@systemfsoftware/arethetypeswrong'
 import { Cell } from '@systemfsoftware/effect-cell-types'
 import { createPackageFromTarballData } from '@systemfsoftware/npm-package'
 import { Data, Effect, Match, Option } from 'effect'
@@ -13,7 +12,6 @@ export interface AnalyzePackageRequest {
   readonly includeEntrypoints: readonly string[]
   readonly excludeEntrypoints: readonly string[]
   readonly entrypointsLegacy: boolean
-  readonly modes: readonly ResolutionKind[]
 }
 
 export class AnalyzedPackage extends Data.TaggedClass('AnalyzedPackage')<{
@@ -30,8 +28,7 @@ const analysisFailed = (): AnalysisFailed =>
 
 const specOf = (request: AnalyzePackageRequest) => {
   const base = Analysis.make(createPackageFromTarballData(request.bytes))
-  const withModes = Analysis.withModes(base, request.modes)
-  const withIncludes = Analysis.includeEntrypoints(withModes, request.includeEntrypoints)
+  const withIncludes = Analysis.includeEntrypoints(base, request.includeEntrypoints)
   const withExcludes = Analysis.excludeEntrypoints(withIncludes, request.excludeEntrypoints)
   const withExplicit = Option.match(Option.fromNullishOr(request.entrypoints), {
     onNone: () => withExcludes,

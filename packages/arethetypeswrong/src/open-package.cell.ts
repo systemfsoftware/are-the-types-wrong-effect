@@ -16,7 +16,6 @@ import { PackageJsonDocument } from './internal/json-document.schema.js'
 import { containsTypes } from './internal/types-presence.js'
 import './internal/typescript-internals.js'
 import { type PackageManifest, PackageManifestJson } from './PackageManifest.schema.js'
-import type { ResolutionKind } from './Problem.schema.js'
 import type { PackageTypes, UntypedReport } from './Report.schema.js'
 
 export type ExcludedEntrypoint = string | RegExp
@@ -28,7 +27,6 @@ export interface AnalysisRequest {
   readonly includeEntrypoints: ReadonlyArray<string>
   readonly excludeEntrypoints: ReadonlyArray<ExcludedEntrypoint>
   readonly entrypointsLegacy: boolean
-  readonly modes: ReadonlyArray<ResolutionKind>
 }
 
 export interface PreparedPackage {
@@ -38,7 +36,6 @@ export interface PreparedPackage {
   readonly entrypoints: ReadonlyArray<string>
   readonly types: PackageTypes
   readonly buildTools: Record<string, string>
-  readonly modes: ReadonlyArray<ResolutionKind>
 }
 
 const UntypedOpenedTag = { _tag: 'Untyped' } as const
@@ -321,7 +318,6 @@ const openedOf = (command: OpenRead, entrypoints: ReadonlyArray<string>): Opened
         entrypoints,
         types,
         buildTools: buildToolsOf(command.manifest),
-        modes: command.request.modes,
       },
     })),
   )

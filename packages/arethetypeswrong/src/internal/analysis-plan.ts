@@ -33,7 +33,6 @@ export interface AnalysisPlan {
   readonly packageVersion: string
   readonly types: PackageTypes
   readonly buildTools: Record<string, string>
-  readonly modes: ReadonlyArray<ResolutionKind>
   readonly entrypoints: Record<string, EntrypointInfo>
   readonly programInfo: Record<ResolutionOption, ProgramInfo>
   readonly cells: ReadonlyArray<CellPlan>
@@ -263,7 +262,6 @@ export const planOf = (target: CompiledTarget): Effect.Effect<AnalysisPlan> =>
       packageVersion: target.packageVersion,
       types: target.types,
       buildTools: target.buildTools,
-      modes: target.modes,
       entrypoints,
       programInfo,
       cells: cellsOf(entrypoints, programInfo),

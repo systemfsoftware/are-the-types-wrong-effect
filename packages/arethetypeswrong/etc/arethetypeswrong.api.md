@@ -8,7 +8,7 @@ import { Schema } from 'effect';
 
 // @public (undocumented)
 export namespace Analysis {
-    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, PackageTypes, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withModes, withTypesCompanion };
+    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, PackageTypes, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withTypesCompanion };
 }
 
 // @public (undocumented)
@@ -18,8 +18,8 @@ export type CJSOnlyExportsDefaultProblem = Schema.Schema.Type<typeof CJSOnlyExpo
 export const CJSOnlyExportsDefaultProblemSchema: Schema.Struct<{
     readonly kind: Schema.Literal<"CJSOnlyExportsDefault">;
     readonly fileName: Schema.String;
-    readonly pos: Schema.Number;
-    readonly end: Schema.Number;
+    readonly pos: Schema.Natural;
+    readonly end: Schema.Natural;
 }>;
 
 // @public (undocumented)
@@ -55,7 +55,7 @@ export const EntrypointInfoSchema: Schema.Struct<{
             readonly trace: Schema.$Array<Schema.String>;
         }>>;
         readonly files: Schema.optional<Schema.$Array<Schema.String>>;
-        readonly visibleProblems: Schema.optional<Schema.$Array<Schema.Number>>;
+        readonly visibleProblems: Schema.optional<Schema.$Array<Schema.Natural>>;
     }>>>;
     readonly hasTypes: Schema.Boolean;
     readonly isWildcard: Schema.Boolean;
@@ -82,7 +82,7 @@ export const EntrypointResolutionAnalysisSchema: Schema.Struct<{
         readonly trace: Schema.$Array<Schema.String>;
     }>>;
     readonly files: Schema.optional<Schema.$Array<Schema.String>>;
-    readonly visibleProblems: Schema.optional<Schema.$Array<Schema.Number>>;
+    readonly visibleProblems: Schema.optional<Schema.$Array<Schema.Natural>>;
 }>;
 
 // @public (undocumented)
@@ -152,11 +152,11 @@ export type InternalResolutionErrorProblem = Schema.Schema.Type<typeof InternalR
 export const InternalResolutionErrorProblemSchema: Schema.Struct<{
     readonly kind: Schema.Literal<"InternalResolutionError">;
     readonly fileName: Schema.String;
-    readonly pos: Schema.Number;
-    readonly end: Schema.Number;
+    readonly pos: Schema.Natural;
+    readonly end: Schema.Natural;
     readonly resolutionOption: Schema.Literals<readonly ["node10", "node16", "bundler"]>;
     readonly moduleSpecifier: Schema.String;
-    readonly resolutionMode: Schema.optional<Schema.Number>;
+    readonly resolutionMode: Schema.optional<Schema.Natural>;
     readonly trace: Schema.$Array<Schema.String>;
 }>;
 
@@ -285,17 +285,17 @@ export const ProblemSchema: Schema.Union<readonly [Schema.Struct<{
 }>, Schema.Struct<{
     readonly kind: Schema.Literal<"InternalResolutionError">;
     readonly fileName: Schema.String;
-    readonly pos: Schema.Number;
-    readonly end: Schema.Number;
+    readonly pos: Schema.Natural;
+    readonly end: Schema.Natural;
     readonly resolutionOption: Schema.Literals<readonly ["node10", "node16", "bundler"]>;
     readonly moduleSpecifier: Schema.String;
-    readonly resolutionMode: Schema.optional<Schema.Number>;
+    readonly resolutionMode: Schema.optional<Schema.Natural>;
     readonly trace: Schema.$Array<Schema.String>;
 }>, Schema.Struct<{
     readonly kind: Schema.Literal<"UnexpectedModuleSyntax">;
     readonly fileName: Schema.String;
-    readonly pos: Schema.Number;
-    readonly end: Schema.Number;
+    readonly pos: Schema.Natural;
+    readonly end: Schema.Natural;
     readonly syntax: Schema.Literals<readonly [1, 99]>;
     readonly moduleKind: Schema.Struct<{
         readonly detectedKind: Schema.Literals<readonly [1, 99]>;
@@ -305,8 +305,8 @@ export const ProblemSchema: Schema.Union<readonly [Schema.Struct<{
 }>, Schema.Struct<{
     readonly kind: Schema.Literal<"CJSOnlyExportsDefault">;
     readonly fileName: Schema.String;
-    readonly pos: Schema.Number;
-    readonly end: Schema.Number;
+    readonly pos: Schema.Natural;
+    readonly end: Schema.Natural;
 }>]>;
 
 // @public (undocumented)
@@ -351,8 +351,8 @@ export type UnexpectedModuleSyntaxProblem = Schema.Schema.Type<typeof Unexpected
 export const UnexpectedModuleSyntaxProblemSchema: Schema.Struct<{
     readonly kind: Schema.Literal<"UnexpectedModuleSyntax">;
     readonly fileName: Schema.String;
-    readonly pos: Schema.Number;
-    readonly end: Schema.Number;
+    readonly pos: Schema.Natural;
+    readonly end: Schema.Natural;
     readonly syntax: Schema.Literals<readonly [1, 99]>;
     readonly moduleKind: Schema.Struct<{
         readonly detectedKind: Schema.Literals<readonly [1, 99]>;

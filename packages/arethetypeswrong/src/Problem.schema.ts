@@ -50,7 +50,7 @@ export const EntrypointResolutionAnalysisSchema = Schema.Struct({
   resolution: Schema.optional(ResolutionSchema),
   implementationResolution: Schema.optional(ResolutionSchema),
   files: Schema.optional(Schema.Array(Schema.String)),
-  visibleProblems: Schema.optional(Schema.Array(Schema.Number)),
+  visibleProblems: Schema.optional(Schema.Array(Schema.Natural)),
 })
 export type EntrypointResolutionAnalysis = Schema.Schema.Type<typeof EntrypointResolutionAnalysisSchema>
 
@@ -126,11 +126,11 @@ export type MissingExportEqualsProblem = Schema.Schema.Type<typeof MissingExport
 export const InternalResolutionErrorProblemSchema = Schema.Struct({
   kind: Schema.Literal('InternalResolutionError'),
   fileName: Schema.String,
-  pos: Schema.Number,
-  end: Schema.Number,
+  pos: Schema.Natural,
+  end: Schema.Natural,
   resolutionOption: ResolutionOptionSchema,
   moduleSpecifier: Schema.String,
-  resolutionMode: Schema.optional(Schema.Number),
+  resolutionMode: Schema.optional(Schema.Natural),
   trace: Schema.Array(Schema.String),
 })
 export type InternalResolutionErrorProblem = Schema.Schema.Type<typeof InternalResolutionErrorProblemSchema>
@@ -138,8 +138,8 @@ export type InternalResolutionErrorProblem = Schema.Schema.Type<typeof InternalR
 export const UnexpectedModuleSyntaxProblemSchema = Schema.Struct({
   kind: Schema.Literal('UnexpectedModuleSyntax'),
   fileName: Schema.String,
-  pos: Schema.Number,
-  end: Schema.Number,
+  pos: Schema.Natural,
+  end: Schema.Natural,
   syntax: ModuleKindSyntaxSchema,
   moduleKind: ModuleKindSchema,
 })
@@ -148,8 +148,8 @@ export type UnexpectedModuleSyntaxProblem = Schema.Schema.Type<typeof Unexpected
 export const CJSOnlyExportsDefaultProblemSchema = Schema.Struct({
   kind: Schema.Literal('CJSOnlyExportsDefault'),
   fileName: Schema.String,
-  pos: Schema.Number,
-  end: Schema.Number,
+  pos: Schema.Natural,
+  end: Schema.Natural,
 })
 export type CJSOnlyExportsDefaultProblem = Schema.Schema.Type<typeof CJSOnlyExportsDefaultProblemSchema>
 

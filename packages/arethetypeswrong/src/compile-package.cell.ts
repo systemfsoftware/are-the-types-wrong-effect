@@ -5,7 +5,6 @@ import type { CompilerFailed, LexerUnavailable } from './AnalysisError.schema.js
 import type { CompiledPackage } from './compiled-package.handle.js'
 import { open as openCompiledPackage } from './compiled-package.handle.js'
 import type { PreparedPackage } from './open-package.cell.js'
-import type { ResolutionKind } from './Problem.schema.js'
 import type { PackageTypes } from './Report.schema.js'
 
 export interface CompiledTarget {
@@ -15,7 +14,6 @@ export interface CompiledTarget {
   readonly entrypoints: ReadonlyArray<string>
   readonly types: PackageTypes
   readonly buildTools: Record<string, string>
-  readonly modes: ReadonlyArray<ResolutionKind>
 }
 
 const targetOf = (prepared: PreparedPackage, compiled: CompiledPackage): CompiledTarget => ({
@@ -25,7 +23,6 @@ const targetOf = (prepared: PreparedPackage, compiled: CompiledPackage): Compile
   entrypoints: prepared.entrypoints,
   types: prepared.types,
   buildTools: prepared.buildTools,
-  modes: prepared.modes,
 })
 
 export const compilePackage: Cell.Cell<PreparedPackage, CompiledTarget, CompilerFailed | LexerUnavailable> = Cell.id<
