@@ -1,4 +1,5 @@
 import { Effect, Layer, Match, Predicate } from 'effect'
+import * as Duration from 'effect/Duration'
 import * as PlatformFs from 'effect/FileSystem'
 import * as PlatformPath from 'effect/Path'
 import { type PlatformError } from 'effect/PlatformError'
@@ -11,9 +12,11 @@ import { PackRunnerOutputUnreadable, PackRunnerSpawnRefused } from '../PackRunne
 
 const TARBALL_SUFFIX = '.tgz'
 const DEFAULT_WORKSPACE_PREFIX = 'attw-pack-'
+const DEFAULT_TIMEOUT: Duration.Input = '30 seconds'
 
 export interface NpmPackRunnerOptions {
   readonly workspacePrefix?: string | undefined
+  readonly timeout?: Duration.Input | undefined
 }
 interface PackWorkspace {
   readonly fs: PlatformFs.FileSystem
@@ -41,12 +44,16 @@ const spawnedPack = (
   spawner: ChildProcessSpawner['Service'],
   workspace: PackWorkspace,
   directory: string,
+  timeout: Duration.Input,
 ): Effect.Effect<string, PackRunnerSpawnRefused> =>
   Effect.mapError(
-    spawner.string(
-      ChildProcess.make('npm', ['pack', '--ignore-scripts', workspace.path.resolve(directory)]).pipe(
-        ChildProcess.setCwd(workspace.temporary),
+    Effect.timeout(
+      spawner.string(
+        ChildProcess.make('npm', ['pack', '--ignore-scripts', workspace.path.resolve(directory)]).pipe(
+          ChildProcess.setCwd(workspace.temporary),
+        ),
       ),
+      timeout,
     ),
     (cause) => new PackRunnerSpawnRefused({ directory, cause }),
   )
@@ -102,9 +109,10 @@ const packInWorkspace = (
   spawner: ChildProcessSpawner['Service'],
   workspace: PackWorkspace,
   directory: string,
+  timeout: Duration.Input,
 ): Effect.Effect<PackResult, PackRunnerSpawnRefused | PackRunnerOutputUnreadable> =>
   Effect.flatMap(
-    spawnedPack(spawner, workspace, directory),
+    spawnedPack(spawner, workspace, directory, timeout),
     (output) => tarballIn(workspace, directory, output),
   )
 const packedScoped = (
@@ -112,11 +120,12 @@ const packedScoped = (
   path: PlatformPath.Path,
   spawner: ChildProcessSpawner['Service'],
   prefix: string,
+  timeout: Duration.Input,
   directory: string,
 ): Effect.Effect<PackResult, PackRunnerSpawnRefused | PackRunnerOutputUnreadable, Scope.Scope> =>
   Effect.flatMap(
     makeWorkspace(fs, path, prefix, directory),
-    (workspace) => packInWorkspace(spawner, workspace, directory),
+    (workspace) => packInWorkspace(spawner, workspace, directory, timeout),
   )
 
 const serviceFor = (
@@ -124,11 +133,12 @@ const serviceFor = (
   path: PlatformPath.Path,
   spawner: ChildProcessSpawner['Service'],
   prefix: string,
+  timeout: Duration.Input,
 ): PackRunner['Service'] => {
   const pack = (
     directory: string,
   ): Effect.Effect<PackResult, PackRunnerSpawnRefused | PackRunnerOutputUnreadable, Scope.Scope> =>
-    packedScoped(fs, path, spawner, prefix, directory)
+    packedScoped(fs, path, spawner, prefix, timeout, directory)
   return PackRunner.of({ pack })
 }
 
@@ -136,18 +146,23 @@ const workspacePrefix = (prefix: string | undefined): string => prefix ?? DEFAUL
 
 const defaultedPrefix = (options: NpmPackRunnerOptions | undefined): string => workspacePrefix(options?.workspacePrefix)
 
+const resolvedTimeout = (timeout: Duration.Input | undefined): Duration.Input => timeout ?? DEFAULT_TIMEOUT
+
+const timeoutOf = (options: NpmPackRunnerOptions | undefined): Duration.Input => resolvedTimeout(options?.timeout)
+
 const serviceLayer = (
   prefix: string,
+  timeout: Duration.Input,
 ): Layer.Layer<PackRunner, never, PlatformFs.FileSystem | PlatformPath.Path | ChildProcessSpawner> =>
   Layer.effect(
     PackRunner,
     Effect.map(
       Effect.all([PlatformFs.FileSystem, PlatformPath.Path, ChildProcessSpawner] as const),
-      ([fs, path, spawner]) => serviceFor(fs, path, spawner, prefix),
+      ([fs, path, spawner]) => serviceFor(fs, path, spawner, prefix, timeout),
     ),
   )
 
 export const layer = (
   options?: NpmPackRunnerOptions,
 ): Layer.Layer<PackRunner, never, PlatformFs.FileSystem | PlatformPath.Path | ChildProcessSpawner> =>
-  serviceLayer(defaultedPrefix(options))
+  serviceLayer(defaultedPrefix(options), timeoutOf(options))

@@ -28,4 +28,8 @@ export const EnvelopeText = S.fromJsonString(
   }),
 )
 
-export const FailureText = S.fromJsonString(S.Struct({ kind: S.String }))
+export const FailureText = S.fromJsonString(S.Struct({
+  kind: S.String,
+  message: S.String,
+  recovery: S.String,
+}))

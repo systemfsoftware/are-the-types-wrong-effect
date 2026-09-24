@@ -7,7 +7,9 @@ import * as Command from 'effect/unstable/cli/Command'
 import * as Flag from 'effect/unstable/cli/Flag'
 
 import { schemaCommand } from './describe-cli-surface.command.js'
+import { AnalysisFailed } from './Failure.schema.js'
 import { CliFormat, CliProfile } from './ProblemUtils.js'
+import { failureOutcome } from './render-report.cell.js'
 import { runAttw, type RunAttwFlags, type RunAttwRequest, type RunAttwServices } from './run-attw.cell.js'
 import { selectUsageErrorOutcome, SelectUsageErrorOutcomeCommand } from './select-usage-error-outcome.workflow.js'
 import { Terminal, type TerminalService } from './terminal.service.js'
@@ -101,11 +103,28 @@ export const runAttwRequestOf = (config: AnalyzeConfig): RunAttwRequest => ({
   } satisfies RunAttwFlags,
 })
 
+const unreportedRun = (): AnalysisFailed =>
+  new AnalysisFailed({
+    message: 'The run could not report its result.',
+    recovery: 'Rerun the same command and report the failure if it repeats.',
+  })
+
+const renderUnreportedRun = (): Effect.Effect<number, never, Terminal> =>
+  Effect.gen(function*() {
+    const terminal = yield* Terminal
+    const observations = yield* terminal.observations
+    const outcome = failureOutcome(unreportedRun(), { isTty: observations.isTty })
+    yield* terminal.writeError(outcome.document).pipe(Effect.orDie)
+    return outcome.exitCode
+  })
+
 const runAttwHandler = (
   config: AnalyzeConfig,
 ): Effect.Effect<number, never, RunAttwServices | Command.Environment> =>
   Effect.gen(function*() {
-    const exitCode = yield* Effect.scoped(runAttw.run(runAttwRequestOf(config))).pipe(Effect.orDie)
+    const exitCode = yield* Effect.scoped(runAttw.run(runAttwRequestOf(config))).pipe(
+      Effect.catch(() => renderUnreportedRun()),
+    )
     yield* Effect.sync(() => {
       process.exitCode = exitCode
     })

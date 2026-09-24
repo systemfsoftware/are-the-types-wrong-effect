@@ -29,6 +29,7 @@ import type { AttwConfig } from './load-attw-config.workflow.js'
 import { decodeIncludeMask, type EnvelopeMask } from './Mask.js'
 import { offerHintsCell } from './offer-hints.cell.js'
 import { PackRunner } from './pack-runner.service.js'
+import type { RequestedFormat } from './ProblemUtils.js'
 import { applyProfile } from './Profiles.js'
 import { ApplyProfileCommand } from './Profiles.schema.js'
 import { Registry } from './registry.service.js'
@@ -37,7 +38,6 @@ import { decodePayloadSize } from './RegistryUrl.js'
 import { renderReportCell } from './render-report.cell.js'
 import { AnalyzedRun, RefusedRun, RenderOutcome, RunOutcome } from './run-outcome.schema.js'
 import { selectExitCode, SelectExitCodeCommand } from './select-exit-code.workflow.js'
-import type { RequestedFormat } from './select-render-mode.workflow.js'
 import { Terminal } from './terminal.service.js'
 import { TerminalWriteRefused } from './TerminalError.schema.js'
 
@@ -67,7 +67,7 @@ export interface RunAttwRequest {
 }
 export type RunAttwRejection = Sandwich.CommandRejected
 
-export type RunAttwError = TerminalWriteRefused | AcquisitionCommandRejected | FilesystemReadRefused | RunAttwRejection
+export type RunAttwError = TerminalWriteRefused | AcquisitionCommandRejected | RunAttwRejection
 
 export type RunAttwServices = Filesystem | Registry | Terminal | PackRunner
 
@@ -217,9 +217,27 @@ const resolvedOutcomeOf = (request: RunAttwRequest, decision: LoadAttwConfigAnsw
       }),
   })
 
+const configUnreadable = (filePath: string): ConfigInvalid =>
+  new ConfigInvalid({
+    message: `The .attw.json at ${filePath} could not be read.`,
+    recovery: 'Fix the file permissions or delete the file, then rerun the same command.',
+  })
+
+const configRefusalOf = (
+  error: FilesystemReadRefused | AcquisitionCommandRejected | Sandwich.CommandRejected,
+): RefusedRun =>
+  Match.value(error).pipe(
+    Match.tag('FilesystemReadRefused', (refused) => new RefusedRun({ failure: configUnreadable(refused.path) })),
+    Match.orElse(() => new RefusedRun({ failure: rejectedAnalysis() })),
+  )
+
 const resolvedCell = loadAttwConfigFile.pipe(
   Cell.mapInput((request: RunAttwRequest) => ({ configPath: request.configPath })),
   Cell.flatMap((decision) => Cell.map(Cell.id<RunAttwRequest>(), (request) => resolvedOutcomeOf(request, decision))),
+  Cell.match({
+    onFailure: (error) => configRefusalOf(error),
+    onSuccess: (outcome) => outcome,
+  }),
 )
 
 const acquireRequestOf = (request: EffectiveRunRequest): AcquireTarballRequest => ({

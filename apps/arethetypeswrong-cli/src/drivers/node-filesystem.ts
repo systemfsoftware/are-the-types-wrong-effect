@@ -45,7 +45,11 @@ export const layer = (
             readUtf8: (filePath) => Effect.mapError(fs.readFileString(filePath), readRefused(filePath)),
             fileExists: existsAfterIgnore,
             isDirectory: directoryAfterIgnore,
-            deleteFile: (filePath) => Effect.orElseSucceed(fs.remove(filePath), () => undefined),
+            deleteFile: (filePath) =>
+              Effect.orElseSucceed(
+                Effect.tapError(fs.remove(filePath), (cause) => Effect.logDebug('delete refused', cause)),
+                () => undefined,
+              ),
             resolve: (...segments) => path.resolve(...segments),
             join: (...segments) => path.join(...segments),
             makeTempDirectory: makeTempDirectory(fs, prefix),

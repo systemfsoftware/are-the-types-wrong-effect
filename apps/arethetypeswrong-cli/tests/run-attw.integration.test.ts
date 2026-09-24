@@ -27,8 +27,8 @@ import { CompactJson } from '../src/RenderJson.schema.js'
 import { runAttw } from '../src/run-attw.cell.js'
 import type { RunAttwFlags, RunAttwRequest } from '../src/run-attw.cell.js'
 import { analyzeFlags, runAttwCommand, runCli } from '../src/run-attw.command.js'
-import { Terminal } from '../src/terminal.service.js'
-import { TerminalObservations } from '../src/TerminalError.schema.js'
+import { Terminal, type TerminalService } from '../src/terminal.service.js'
+import { TerminalObservations, TerminalWriteRefused } from '../src/TerminalError.schema.js'
 import {
   EnvelopeText,
   FailureText,
@@ -61,6 +61,18 @@ const terminalOf = (captured: Capture) =>
     exit: neverExit,
   })
 
+const refusingReportTerminal = (captured: Capture): TerminalService =>
+  Terminal.of({
+    write: () => Effect.fail(new TerminalWriteRefused({ stream: 'stdout' })),
+    writeError: (text: string) =>
+      Effect.sync(() => {
+        captured.stderr.push(text)
+      }),
+    observations: Effect.succeed(new TerminalObservations({ isTty: false, width: 120 })),
+    environment: Effect.succeed({}),
+    exit: neverExit,
+  })
+
 const platformBase = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer)
 
 const spawnerLayer = NodeChildProcessSpawner.layer.pipe(Layer.provide(platformBase))
@@ -75,13 +87,15 @@ const httpRegistryLayer = HttpRegistry.layer({ maxPayloadBytes: 8 * 1024 * 1024 
   Layer.provide(NodeHttpClient.layerFetch),
 )
 
-const cellLayer = (captured: Capture) =>
+const cellLayerWith = (captured: Capture, terminal: TerminalService) =>
   Layer.mergeAll(
-    Layer.succeed(Terminal, terminalOf(captured)),
+    Layer.succeed(Terminal, terminal),
     nodeFilesystemLayer,
     npmPackRunnerLayer,
     httpRegistryLayer,
   )
+
+const cellLayer = (captured: Capture) => cellLayerWith(captured, terminalOf(captured))
 
 const commandEnvironmentLayer = Layer.mergeAll(
   NodeFileSystem.layer,
@@ -91,7 +105,10 @@ const commandEnvironmentLayer = Layer.mergeAll(
   spawnerLayer,
 )
 
-const commandLayer = (captured: Capture) => Layer.mergeAll(cellLayer(captured), commandEnvironmentLayer)
+const commandLayerWith = (captured: Capture, terminal: TerminalService) =>
+  Layer.mergeAll(cellLayerWith(captured, terminal), commandEnvironmentLayer)
+
+const commandLayer = (captured: Capture) => commandLayerWith(captured, terminalOf(captured))
 
 const runCellPath = (captured: Capture, request: RunAttwRequest) =>
   runAttw.run(request).pipe(Effect.orDie, Effect.provide(cellLayer(captured)))
@@ -214,6 +231,8 @@ const prepareFixtures = Effect.gen(function*() {
   }
   yield* fs.writeFileString(path.join(dir, 'corrupt.tgz'), 'not a tarball')
   yield* fs.writeFileString(path.join(dir, 'waiver.attw.json'), waiverText)
+  yield* fs.makeDirectory(path.join(dir, 'directory.tgz'))
+  yield* fs.makeDirectory(path.join(dir, 'unreadable.attw.json'))
   registryTarball = packTree(registryTree.files, registryTree.name)
   const packDir = path.join(dir, 'packable')
   yield* fs.makeDirectory(packDir)
@@ -253,6 +272,7 @@ const tarball = (packageName: string): string => `${fixtureDir}/${packageName}.t
 
 const absentConfigPath = (): string => `${fixtureDir}/absent.attw.json`
 const waiverConfigPath = (): string => `${fixtureDir}/waiver.attw.json`
+const unreadableConfigPath = (): string => `${fixtureDir}/unreadable.attw.json`
 
 const RESOLUTION_COLUMNS = ['node10', 'node16-cjs', 'node16-esm', 'bundler'] as const
 const TABLE_HEADER = ['Entrypoint', ...RESOLUTION_COLUMNS]
@@ -290,7 +310,13 @@ type RowExpectation =
   }
   | { readonly form: 'untyped-prose'; readonly exitCode: number; readonly packageName: string }
   | EnvelopeRowExpectation
-  | { readonly form: 'failure'; readonly exitCode: number; readonly failureKind: string }
+  | {
+    readonly form: 'failure'
+    readonly exitCode: number
+    readonly failureKind: string
+    readonly failureMessage?: string
+    readonly failureRecovery?: string
+  }
 
 interface Scenario {
   readonly name: string
@@ -418,6 +444,14 @@ const localScenarios: readonly Scenario[] = [
     form: 'failure',
     exitCode: 1,
     failureKind: 'TargetNotPackable',
+  }),
+  scenario('an existing tarball path that cannot be read', () => `${fixtureDir}/directory.tgz`, {}, {
+    form: 'failure',
+    exitCode: 1,
+    failureKind: 'TargetNotPackable',
+    failureMessage: 'The target is not a package tarball this tool can read.',
+    failureRecovery:
+      'Pass --pack with a directory, an existing .tgz path, or a package name with --from-npm, then rerun the same command.',
   }),
   scenario(
     'pack analyzes a packable directory',
@@ -577,11 +611,13 @@ const humanTable = (stdout: string): HumanTable => {
   return { header, rows }
 }
 
-const failureKindOf = (stderr: string): string => {
+const failureDocumentOf = (stderr: string): S.Schema.Type<typeof FailureText> => {
   const decoded = S.decodeResult(FailureText)(stderr)
   if (Result.isFailure(decoded)) throw new Error(`attw printed no failure document: ${stderr}`)
-  return decoded.success.kind
+  return decoded.success
 }
+
+const failureKindOf = (stderr: string): string => failureDocumentOf(stderr).kind
 
 const expectRow = (tested: Scenario, captured: Capture, exitCode: number, leg: string): void => {
   const stdout = captured.stdout.join('')
@@ -590,7 +626,14 @@ const expectRow = (tested: Scenario, captured: Capture, exitCode: number, leg: s
   expect(exitCode, `${tested.name} (${leg}): exit code`).toBe(expectation.exitCode)
   if (expectation.form === 'failure') {
     expect(stdout, `${tested.name} (${leg}): failure stdout is empty`).toBe('')
-    expect(failureKindOf(stderr), `${tested.name} (${leg}): failure kind`).toBe(expectation.failureKind)
+    const failure = failureDocumentOf(stderr)
+    expect(failure.kind, `${tested.name} (${leg}): failure kind`).toBe(expectation.failureKind)
+    if (expectation.failureMessage !== undefined) {
+      expect(failure.message, `${tested.name} (${leg}): failure message`).toBe(expectation.failureMessage)
+    }
+    if (expectation.failureRecovery !== undefined) {
+      expect(failure.recovery, `${tested.name} (${leg}): failure recovery`).toBe(expectation.failureRecovery)
+    }
     return
   }
   if (expectation.form === 'untyped-prose') {
@@ -653,13 +696,19 @@ interface CommandRun {
   readonly exitCode: number
 }
 
-const runCommandPath = (argv: readonly string[]): Effect.Effect<CommandRun> =>
+const runCommandPathOn = (
+  captured: Capture,
+  terminal: TerminalService,
+  argv: readonly string[],
+): Effect.Effect<CommandRun> =>
   Effect.gen(function*() {
-    const captured = capture()
     yield* Effect.sync(() => {
       process.exitCode = 0
     })
-    yield* runCli({ version: cliVersion })([...argv]).pipe(Effect.orDie, Effect.provide(commandLayer(captured)))
+    yield* runCli({ version: cliVersion })([...argv]).pipe(
+      Effect.orDie,
+      Effect.provide(commandLayerWith(captured, terminal)),
+    )
     const exitCode = yield* Effect.sync(() => {
       const code = process.exitCode
       return typeof code === 'number' ? code : 0
@@ -669,6 +718,11 @@ const runCommandPath = (argv: readonly string[]): Effect.Effect<CommandRun> =>
     })
     return { captured, exitCode }
   })
+
+const runCommandPath = (argv: readonly string[]): Effect.Effect<CommandRun> => {
+  const captured = capture()
+  return runCommandPathOn(captured, terminalOf(captured), argv)
+}
 
 const registryManifest = (base: string): string =>
   Result.getOrThrow(
@@ -813,6 +867,31 @@ describe('run-attw: the composed run cell over the published CLI surface', () =>
       exitCode: 1,
       failureKind: 'InvalidPackageSpec',
     })))
+
+  it.effect('agrees on an unreadable .attw.json', () =>
+    runRow(scenario('an unreadable .attw.json', () => tarball('false-cjs'), {}, {
+      form: 'failure',
+      exitCode: 1,
+      failureKind: 'ConfigInvalid',
+      failureMessage: `The .attw.json at ${unreadableConfigPath()} could not be read.`,
+      failureRecovery: 'Fix the file permissions or delete the file, then rerun the same command.',
+    }, unreadableConfigPath)))
+
+  it.effect('keeps the failure envelope when the terminal refuses the report', () =>
+    Effect.gen(function*() {
+      const captured = capture()
+      const { exitCode } = yield* runCommandPathOn(captured, refusingReportTerminal(captured), [
+        tarball('false-cjs'),
+        '--format',
+        'json',
+      ])
+      const failure = failureDocumentOf(captured.stderr.join(''))
+      expect(exitCode).toBe(1)
+      expect(captured.stdout.join('')).toBe('')
+      expect(failure.kind).toBe('AnalysisFailed')
+      expect(failure.message).toBe('The run could not report its result.')
+      expect(failure.recovery).toBe('Rerun the same command and report the failure if it repeats.')
+    }))
 
   it.effect('agrees on a registry 404 from the loopback registry', () =>
     Effect.gen(function*() {
