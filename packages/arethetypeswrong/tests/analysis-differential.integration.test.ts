@@ -1,6 +1,6 @@
 import { effect, it } from '@effect/vitest'
 import { Analysis, checkPackage, CheckResultSchema, type LegacyAnalysis } from '@systemfsoftware/arethetypeswrong'
-import type { CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
+import type { CheckPackageOptions, CheckResult, Problem } from '@systemfsoftware/arethetypeswrong'
 import { Recipe } from '@systemfsoftware/arethetypeswrong-recipes'
 import type { Package } from '@systemfsoftware/npm-package'
 import { createPackage } from '@systemfsoftware/npm-package'
@@ -49,17 +49,52 @@ const canonicalOutcome = (
         canonical,
       })),
   })
+interface OptionsCase {
+  readonly name: string
+  readonly options: CheckPackageOptions
+  readonly build: (pkg: Package) => Analysis.AnalysisSpec
+}
 
-const agreeOn = (pkg: Package): Effect.Effect<void> =>
+const optionsCases: ReadonlyArray<OptionsCase> = [
+  { name: 'default options', options: {}, build: (pkg) => Analysis.make(pkg) },
+  {
+    name: 'legacy declared-code-file entrypoints',
+    options: { entrypointsLegacy: true },
+    build: (pkg) => Analysis.make(pkg).pipe(Analysis.withLegacyEntrypoints),
+  },
+  {
+    name: 'explicit entrypoints',
+    options: { entrypoints: ['.'] },
+    build: (pkg) => Analysis.make(pkg).pipe(Analysis.withEntrypoints(['.'])),
+  },
+  {
+    name: 'include entrypoints',
+    options: { includeEntrypoints: ['.'] },
+    build: (pkg) => Analysis.make(pkg).pipe(Analysis.includeEntrypoints(['.'])),
+  },
+  {
+    name: 'exclude entrypoints',
+    options: { excludeEntrypoints: [/utils/] },
+    build: (pkg) => Analysis.make(pkg).pipe(Analysis.excludeEntrypoints([/utils/])),
+  },
+  {
+    name: 'node16 profile modes',
+    options: {},
+    build: (pkg) => Analysis.make(pkg).pipe(Analysis.withModes(['node16-cjs', 'node16-esm'])),
+  },
+]
+
+const agreeWithOptions = (pkg: Package, legacyOptions: CheckPackageOptions, build: OptionsCase['build']) =>
   Effect.gen(function*() {
-    const legacy = yield* Effect.exit(checkPackage(pkg))
-    const rebuilt = yield* Effect.exit(Analysis.make(pkg).run)
-    if (Exit.isFailure(legacy) || Exit.isFailure(rebuilt)) {
+    const builder = build(pkg)
+    const legacyRun = yield* Effect.exit(checkPackage(pkg, legacyOptions))
+    const rebuilt = yield* Effect.exit(builder.run)
+    if (Exit.isFailure(legacyRun) || Exit.isFailure(rebuilt)) {
       expect(Exit.isFailure(rebuilt), 'the old engine and Analysis disagree on the failure class').toBe(true)
-      expect(Exit.isFailure(legacy), 'the old engine and Analysis disagree on the failure class').toBe(true)
+      expect(Exit.isFailure(legacyRun), 'the old engine and Analysis disagree on the failure class').toBe(true)
       return
     }
-    const legacyCanonical = yield* Effect.orDie(canonicalText(legacy.value))
+    const legacyCanonical = yield* Effect.orDie(canonicalText(legacyRun.value))
     const rebuiltCanonical = yield* Effect.orDie(canonicalText(rebuilt.value))
     expect(rebuiltCanonical, 'the rebuilt Analysis diverged from the old engine').toBe(legacyCanonical)
   })
@@ -120,9 +155,51 @@ const treeFiles = (plan: TreePlan): { readonly packageName: string; readonly fil
   const files: Record<string, string> = {
     'package.json': encodeManifestText(manifest),
     [implementation.path]: implementation.body,
+    'dist/extra.cts': 'export const extra = 2;\n',
+    'dist/extra.d.css.ts': 'export declare const extra: number;\n',
   }
   if (plan.shipsDeclarations) {
     files[declarationPath] = 'export declare const value: number;\n'
+  }
+  if (plan.proxyLayout === 'nested-proxy') {
+    files['legacy/nested/package.json'] = encodeManifestText({
+      name: packageName,
+      version: '1.0.0',
+      main: './index.js',
+    })
+    files['legacy/nested/index.js'] = 'module.exports = { nested: 1 };\n'
+  }
+  if (plan.proxyLayout === 'vendor' || plan.proxyLayout === 'nested-vendor-proxy') {
+    files['thirdparty/dep/package.json'] = encodeManifestText({
+      name: 'foreign-dep',
+      version: '1.0.0',
+      main: './index.js',
+    })
+    files['thirdparty/dep/index.js'] = 'module.exports = { dep: 1 };\n'
+  }
+  if (plan.proxyLayout === 'nested-vendor-proxy') {
+    files['thirdparty/dep/nested/package.json'] = encodeManifestText({
+      name: packageName,
+      version: '1.0.0',
+      main: './index.js',
+    })
+    files['thirdparty/dep/nested/index.js'] = 'module.exports = { hidden: 1 };\n'
+  }
+  if (plan.proxyLayout === 'mixed-case') {
+    files['MixedCase/package.json'] = encodeManifestText({
+      name: packageName,
+      version: '1.0.0',
+      main: './index.js',
+    })
+    files['MixedCase/index.js'] = 'module.exports = { mixed: 1 };\n'
+    files['a-b/package.json'] = encodeManifestText({ name: packageName, version: '1.0.0', main: './index.js' })
+    files['a-b/index.js'] = 'module.exports = { dashed: 1 };\n'
+    files['a/b/package.json'] = encodeManifestText({ name: packageName, version: '1.0.0', main: './index.js' })
+    files['a/b/index.js'] = 'module.exports = { slashed: 1 };\n'
+  }
+  if (plan.proxyLayout === 'malformed-proxy') {
+    files['broken/package.json'] = '{ "name": "broken", '
+    files['broken/index.js'] = 'module.exports = { broken: 1 };\n'
   }
   return { packageName, files }
 }
@@ -152,19 +229,29 @@ it.prop('every generated tree is mounted whole under its own package name', [pla
 })
 
 for (const [recipe, make] of Object.entries(Recipe)) {
-  effect(`the old engine and the Analysis builder agree on the ${recipe} fixture package`, () => agreeOn(make()))
+  for (const optionsCase of optionsCases) {
+    effect(
+      `the old engine and the Analysis builder agree on the ${recipe} fixture package under ${optionsCase.name}`,
+      () => agreeWithOptions(make(), optionsCase.options, optionsCase.build),
+    )
+  }
 }
 
 it.effect.prop(
-  'the old engine and the Analysis builder agree on every generated package tree',
+  'the old engine and the Analysis builder agree on every generated package tree under every option case',
   [planArbitrary],
   ([plan]) => {
     const { packageName, files } = treeFiles(plan)
-    return agreeOn(createPackage(files, packageName, '1.0.0'))
+    const pkg = createPackage(files, packageName, '1.0.0')
+    return Effect.forEach(
+      optionsCases,
+      (optionsCase) => agreeWithOptions(pkg, optionsCase.options, optionsCase.build),
+      { discard: true },
+    )
   },
 )
 
-effect('the pipe and data-first combinator forms yield equal specs', () =>
+effect('the legacy combinator flags legacy declared-code-file discovery', () =>
   Effect.sync(() => {
     const { packageName, files } = treeFiles({
       nameVariant: 0,
@@ -173,9 +260,9 @@ effect('the pipe and data-first combinator forms yield equal specs', () =>
       implementationSyntax: 'esm',
       declarationSyntax: 'esm',
       shipsDeclarations: true,
+      proxyLayout: 'flat',
     })
     const pkg = createPackage(files, packageName, '1.0.0')
-    const piped = Analysis.make(pkg).pipe(Analysis.excludeEntrypoints(['./private']))
-    const direct = Analysis.excludeEntrypoints(Analysis.make(pkg), ['./private'])
-    expect(piped.request).toEqual(direct.request)
+    const piped = Analysis.make(pkg).pipe(Analysis.withLegacyEntrypoints)
+    expect(piped.request.entrypointsLegacy).toBe(true)
   }))

@@ -3,8 +3,16 @@ import { Match, Result } from 'effect'
 import * as S from 'effect/Schema'
 
 import { MachineEnvelopeSchema } from './decode-envelope-document.workflow.js'
-import { type Hint, HintIds } from './hint-shaping.js'
 import { RenderModeSchema } from './select-render-mode.workflow.js'
+
+const HintIds = ['expansion', 'directoryWithoutPack', 'untyped'] as const
+
+export type HintId = typeof HintIds[number]
+
+export interface Hint {
+  readonly id: HintId
+  readonly text: string
+}
 
 const EnvelopeMaskSchema = S.Struct({
   entrypoints: S.Boolean,

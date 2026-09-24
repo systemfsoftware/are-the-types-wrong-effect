@@ -11,5 +11,6 @@ export class RegistryPayloadOverBudget extends Schema.TaggedError<RegistryPayloa
     url: Schema.String,
     byteLength: Schema.Finite,
     budgetBytes: Schema.Finite,
+    kind: Schema.optional(Schema.Literals(['registry-document', 'tarball'])),
   },
 ) {}

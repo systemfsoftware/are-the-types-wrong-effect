@@ -13,6 +13,7 @@ import {
 import type { ParsedPackageSpec } from './PackageSpec.schema.js'
 import { RegistryDocument } from './Registry.schema.js'
 import { Registry } from './registry.service.js'
+import { RegistryPayloadOverBudget } from './RegistryError.schema.js'
 import { RegistryDocumentRead, RegistryStatusRead } from './RegistryObservation.schema.js'
 import { buildManifestUrl } from './RegistryUrl.js'
 
@@ -89,7 +90,15 @@ export const resolveRegistryManifest = Sandwich.named('acquire.resolve_registry_
           onFailure: (refusal) =>
             Match.value(refusal).pipe(
               Match.tag('RegistryUnreachable', () => Effect.succeed(noResponseRaw(request.registryBase))),
-              Match.tag('RegistryPayloadOverBudget', (overBudget) => Effect.fail(overBudget)),
+              Match.tag('RegistryPayloadOverBudget', (overBudget) =>
+                Effect.fail(
+                  new RegistryPayloadOverBudget({
+                    url: overBudget.url,
+                    byteLength: overBudget.byteLength,
+                    budgetBytes: overBudget.budgetBytes,
+                    kind: 'registry-document',
+                  }),
+                )),
               Match.exhaustive,
             ),
           onSuccess: (observation) => Effect.succeed(observationRaw(request.registryBase, observation)),

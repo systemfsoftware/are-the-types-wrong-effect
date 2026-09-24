@@ -15,11 +15,12 @@ import { resolveAcquisitionSource, ResolveAcquisitionSourceCommand } from '../re
 const registryBase = 'https://registry.npmjs.org'
 const defaultTag = 'latest'
 
-type Disposition = 'registryPackage' | 'existingTarball' | 'targetNotPackable' | 'invalidSpec'
+type Disposition = 'registryPackage' | 'existingTarball' | 'packDirectory' | 'targetNotPackable' | 'invalidSpec'
 
 interface SpecRow {
   readonly target: string
   readonly fromNpm: boolean
+  readonly pack?: boolean
   readonly expected: Disposition
   readonly name?: string
   readonly version?: string
@@ -42,8 +43,14 @@ const specDispositionTable: readonly SpecRow[] = [
     version: '1.2.3',
   },
   { target: 'demo.tgz', fromNpm: false, expected: 'existingTarball' },
+  { target: 'demo.tgz', fromNpm: false, expected: 'existingTarball' },
   { target: 'demo.tgz', fromNpm: true, expected: 'existingTarball' },
-  { target: 'demo.tar.gz', fromNpm: false, expected: 'existingTarball' },
+  { target: './demo', fromNpm: false, pack: true, expected: 'packDirectory' },
+  { target: './demo', fromNpm: true, pack: true, expected: 'packDirectory' },
+  { target: 'demo', fromNpm: true, pack: true, expected: 'packDirectory' },
+  { target: 'demo.tgz', fromNpm: false, pack: true, expected: 'packDirectory' },
+  { target: 'demo?fields=name', fromNpm: true, pack: true, expected: 'packDirectory' },
+  { target: '.', fromNpm: false, pack: true, expected: 'packDirectory' },
   { target: './demo', fromNpm: false, expected: 'targetNotPackable' },
   { target: '../demo', fromNpm: false, expected: 'targetNotPackable' },
   { target: '/abs/demo', fromNpm: false, expected: 'targetNotPackable' },
@@ -66,14 +73,17 @@ const parsedSpecOf = (target: string): Option.Option<ParsedPackageSpec> =>
     onSuccess: (spec) => Option.some(spec),
   })
 
-const decisionOf = (target: string, fromNpm: boolean) =>
-  resolveAcquisitionSource(new ResolveAcquisitionSourceCommand({ target, fromNpm, parsed: parsedSpecOf(target) }))
+const decisionOf = (target: string, fromNpm: boolean, pack?: boolean) =>
+  resolveAcquisitionSource(
+    new ResolveAcquisitionSourceCommand({ target, fromNpm, pack, parsed: parsedSpecOf(target) }),
+  )
 
 const holdsSpecRow = (row: SpecRow): boolean =>
-  Result.match(decisionOf(row.target, row.fromNpm), {
+  Result.match(decisionOf(row.target, row.fromNpm, row.pack), {
     onSuccess: (decision) =>
       Match.value(decision).pipe(
         Match.tag('ExistingTarball', () => row.expected === 'existingTarball'),
+        Match.tag('PackDirectory', () => row.expected === 'packDirectory'),
         Match.tag('RegistryPackage', ({ spec }) =>
           row.expected === 'registryPackage' &&
           (row.name === undefined || spec.name === row.name) &&
@@ -102,6 +112,35 @@ const oneOf = <A>(values: readonly A[]): Arbitrary.Arbitrary<A> =>
 
 const oneArbitrary = <A>(branches: ReadonlyArray<Arbitrary.Arbitrary<A>>): Arbitrary.Arbitrary<A> =>
   oneOf(branches).pipe(Arbitrary.flatMap((branch) => branch))
+
+const targetText = Arbitrary.schema(Schema.String)
+
+const commandPackForced = Arbitrary.map(targetText, (target) =>
+  new ResolveAcquisitionSourceCommand({
+    target,
+    fromNpm: true,
+    pack: true,
+    parsed: Option.none<ParsedPackageSpec>(),
+  }))
+
+const commandWithoutPack = Arbitrary.map(
+  Arbitrary.all({ target: targetText, fromNpm: Arbitrary.schema(Schema.Boolean) }),
+  ({ target, fromNpm }) => new ResolveAcquisitionSourceCommand({ target, fromNpm, parsed: parsedSpecOf(target) }),
+)
+
+const packDirectoryOf = (command: ResolveAcquisitionSourceCommand): boolean =>
+  Result.match(resolveAcquisitionSource(command), {
+    onSuccess: (decision) =>
+      Match.value(decision).pipe(
+        Match.tag('PackDirectory', () => true),
+        Match.orElse(() => false),
+      ),
+    onFailure: () => false,
+  })
+
+it.prop('∀command_PackPresent_∃PackDirectory', [commandPackForced], ([command]) => packDirectoryOf(command))
+
+it.prop('∀command_PackAbsent_⊥PackDirectory', [commandWithoutPack], ([command]) => !packDirectoryOf(command))
 
 const intBetween = (minimum: number, maximum: number): Arbitrary.Arbitrary<number> =>
   Arbitrary.schema(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum, maximum }))))

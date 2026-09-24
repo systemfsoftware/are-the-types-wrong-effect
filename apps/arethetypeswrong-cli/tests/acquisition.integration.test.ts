@@ -1,4 +1,10 @@
-import { NodeFileSystem, NodeHttpClient, NodeHttpServer, NodePath } from '@effect/platform-node'
+import {
+  NodeChildProcessSpawner,
+  NodeFileSystem,
+  NodeHttpClient,
+  NodeHttpServer,
+  NodePath,
+} from '@effect/platform-node'
 import { Gherkin, Given, it, layer, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { Effect, Layer, Match, Predicate } from 'effect'
 import * as HttpRouter from 'effect/unstable/http/HttpRouter'
@@ -9,6 +15,7 @@ import { expect } from 'vitest'
 import { acquireTarball } from '../src/acquire-tarball.cell.js'
 import * as HttpRegistry from '../src/drivers/http-registry.js'
 import * as NodeFilesystem from '../src/drivers/node-filesystem.js'
+import * as NpmPackRunner from '../src/drivers/npm-pack-runner.js'
 import { Registry } from '../src/registry.service.js'
 
 const Feature = makeFeature({ it, layer })
@@ -56,9 +63,15 @@ const filesystemScenario = NodeFilesystem.layer().pipe(
   Layer.provide(NodePath.layer),
 )
 
-const scenarioLayer = Layer.mergeAll(registryScenario, filesystemScenario)
+const platformBase = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer)
 
-const registryBase = () => HttpServer.addressFormattedWith((address) => Effect.succeed(address))
+const spawnerLayer = NodeChildProcessSpawner.layer.pipe(Layer.provide(platformBase))
+
+const packScenario = NpmPackRunner.layer().pipe(Layer.provide(Layer.mergeAll(platformBase, spawnerLayer)))
+
+const scenarioLayer = Layer.mergeAll(registryScenario, filesystemScenario, packScenario)
+
+const serverBase = () => HttpServer.addressFormattedWith((address) => Effect.succeed(address))
 
 const missingTarball = (base: string) =>
   Effect.match(
@@ -106,7 +119,7 @@ Feature('Downloading a published package from a registry')
     scenario(
       'The registry has no such package',
       Gherkin.Do.pipe(
-        Given('a registry that answers not found for the requested document')('base', () => registryBase()),
+        Given('a registry that answers not found for the requested document')('base', () => serverBase()),
         When('the tool tries to fetch the published tarball')('verdict', (s) => missingTarball(s.base)),
         Then('the missing package surfaces as the registry refusing the name')((s) => {
           expect(s.verdict).toBe('missing')
@@ -117,7 +130,7 @@ Feature('Downloading a published package from a registry')
     scenario(
       'The tool can ask for tarball bytes the registry actually serves',
       Gherkin.Do.pipe(
-        Given('a registry holding the published tarball')('base', () => registryBase()),
+        Given('a registry holding the published tarball')('base', () => serverBase()),
         When('the tool reads those tarball bytes')('verdict', (s) => untouchedTarball(s.base)),
         Then('the whole tarball arrives')((s) => {
           expect(s.verdict).toBe('served')

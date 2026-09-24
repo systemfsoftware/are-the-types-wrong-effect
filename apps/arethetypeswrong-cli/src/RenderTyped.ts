@@ -1,3 +1,5 @@
+import { Function } from 'effect'
+
 import type { Problem, ResolutionKind } from '@systemfsoftware/arethetypeswrong'
 import type { AnsiAnnotation } from './RenderAnsi.js'
 import { colorizeCell } from './RenderAnsi.js'
@@ -40,10 +42,13 @@ const textSymbols: Record<Problem['kind'], string> = {
   CJSOnlyExportsDefault: 'X',
 }
 
-export const symbolForProblem = (p: Problem, useEmoji: boolean): string => {
+export const symbolForProblem: {
+  (useEmoji: boolean): (p: Problem) => string
+  (p: Problem, useEmoji: boolean): string
+} = Function.dual(2, (p: Problem, useEmoji: boolean): string => {
   if (useEmoji) return emojiSymbols[p.kind]
   return textSymbols[p.kind]
-}
+})
 
 export type RenderOptions = {
   readonly flipped: boolean
@@ -111,23 +116,47 @@ const pushProblem = (
  * A problem carrying neither field is global and lands in every cell, which is why the walk is
  * over the problem's own axes rather than over the cells.
  */
-export const partitionProblemsByCell = (
-  entrypoints: readonly string[],
-  problems: readonly Problem[],
-): ReadonlyMap<string, readonly Problem[]> => {
-  const cells = new Map<string, Problem[]>()
-  seedCells(cells, entrypoints)
-  for (const problem of problems) {
-    pushProblem(cells, problemEntrypoints(problem, entrypoints), problemResolutionKinds(problem), problem)
-  }
-  return cells
-}
+export const partitionProblemsByCell: {
+  (
+    problems: readonly Problem[],
+  ): (entrypoints: readonly string[]) => ReadonlyMap<string, readonly Problem[]>
+  (
+    entrypoints: readonly string[],
+    problems: readonly Problem[],
+  ): ReadonlyMap<string, readonly Problem[]>
+} = Function.dual(
+  2,
+  (
+    entrypoints: readonly string[],
+    problems: readonly Problem[],
+  ): ReadonlyMap<string, readonly Problem[]> => {
+    const cells = new Map<string, Problem[]>()
+    seedCells(cells, entrypoints)
+    for (const problem of problems) {
+      pushProblem(cells, problemEntrypoints(problem, entrypoints), problemResolutionKinds(problem), problem)
+    }
+    return cells
+  },
+)
 
-export const problemsForCell = (
-  cells: ReadonlyMap<string, readonly Problem[]>,
-  entrypoint: string,
-  resolutionKind: ResolutionKind,
-): readonly Problem[] => cells.get(cellKey(entrypoint, resolutionKind)) ?? []
+export const problemsForCell: {
+  (
+    entrypoint: string,
+    resolutionKind: ResolutionKind,
+  ): (cells: ReadonlyMap<string, readonly Problem[]>) => readonly Problem[]
+  (
+    cells: ReadonlyMap<string, readonly Problem[]>,
+    entrypoint: string,
+    resolutionKind: ResolutionKind,
+  ): readonly Problem[]
+} = Function.dual(
+  3,
+  (
+    cells: ReadonlyMap<string, readonly Problem[]>,
+    entrypoint: string,
+    resolutionKind: ResolutionKind,
+  ): readonly Problem[] => cells.get(cellKey(entrypoint, resolutionKind)) ?? [],
+)
 
 const emptyCellMark = (useEmoji: boolean): string => {
   if (useEmoji) return '✔'
@@ -175,9 +204,31 @@ const typedAnalysisText = (
   return typedTable(entrypoints, problems, opts, annotations)
 }
 
-export const renderTypedAnalysis = (
-  entrypoints: readonly string[],
-  problems: readonly Problem[],
-  opts: RenderOptions,
-  annotations: Record<string, AnsiAnnotation> = {},
-): string => typedAnalysisText(entrypoints, problems, opts, annotations)
+const isEntrypointArray = (value: unknown): value is ReadonlyArray<string> =>
+  Array.isArray(value) && value.every((each) => typeof each === 'string')
+
+const argsBeginWithEntrypoints = (args: IArguments): boolean => isEntrypointArray(args[0])
+
+const isTypedDataFirst = argsBeginWithEntrypoints
+
+export const renderTypedAnalysis: {
+  (
+    problems: readonly Problem[],
+    opts: RenderOptions,
+    annotations?: Record<string, AnsiAnnotation>,
+  ): (entrypoints: readonly string[]) => string
+  (
+    entrypoints: readonly string[],
+    problems: readonly Problem[],
+    opts: RenderOptions,
+    annotations?: Record<string, AnsiAnnotation>,
+  ): string
+} = Function.dual(
+  isTypedDataFirst,
+  (
+    entrypoints: readonly string[],
+    problems: readonly Problem[],
+    opts: RenderOptions,
+    annotations: Record<string, AnsiAnnotation> = {},
+  ): string => typedAnalysisText(entrypoints, problems, opts, annotations),
+)

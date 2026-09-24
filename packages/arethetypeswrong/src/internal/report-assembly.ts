@@ -1,17 +1,17 @@
 import { Option } from 'effect'
 import { dual } from 'effect/Function'
 
-import type { EntrypointResolutionAnalysis, Problem } from '../Problem.schema.js'
+import type { EntrypointResolutionAnalysis, Problem, ResolutionKind } from '../Problem.schema.js'
 import type { PackageReport } from '../Report.schema.js'
 import type { EntrypointInfo } from '../Resolution.schema.js'
-import type { AnalysisPlan, CellPlan, ProblemRun } from './analysis-plan.js'
+import type { AnalysisPlan, ProblemRun } from './analysis-plan.js'
 import { runListOf } from './analysis-plan.js'
 import { dedupeKeyOf } from './problem-keys.js'
 
 /** @internal */
 export interface DetectedProblems {
   readonly problems: ReadonlyArray<Problem>
-  readonly visible: ReadonlyArray<ReadonlyArray<number>>
+  readonly visible: ReadonlyArray<ReadonlyArray<number> | undefined>
 }
 
 interface FoldState {
@@ -64,20 +64,17 @@ export const detectedOf: {
 
 const withVisible = (
   resolution: EntrypointResolutionAnalysis,
-  visible: ReadonlyArray<number>,
-): EntrypointResolutionAnalysis => ({
-  ...resolution,
-  visibleProblems: visible,
-})
+  visible: ReadonlyArray<number> | undefined,
+): EntrypointResolutionAnalysis => visible === undefined ? resolution : { ...resolution, visibleProblems: visible }
 
-const visibleAt = (
-  cells: ReadonlyArray<CellPlan>,
-  visible: ReadonlyArray<ReadonlyArray<number>>,
-  entrypoint: string,
-  kind: string,
-): ReadonlyArray<number> => {
-  const index = cells.findIndex((cell) => cell.entrypoint === entrypoint && cell.resolutionKind === kind)
-  return index === -1 ? [] : visible[index]
+const slotVisible = (
+  plan: AnalysisPlan,
+  detected: DetectedProblems,
+  subpath: string,
+  kind: ResolutionKind,
+): ReadonlyArray<number> | undefined => {
+  const index = plan.cells.findIndex((cell) => cell.entrypoint === subpath && cell.resolutionKind === kind)
+  return index === -1 ? undefined : detected.visible[index]
 }
 
 const entrypointsWithVisible = (
@@ -99,16 +96,16 @@ const infoWithVisible = (
 ): EntrypointInfo => ({
   ...info,
   resolutions: {
-    node10: withVisible(info.resolutions.node10, visibleAt(plan.cells, detected.visible, subpath, 'node10')),
+    node10: withVisible(info.resolutions.node10, slotVisible(plan, detected, subpath, 'node10')),
     'node16-cjs': withVisible(
       info.resolutions['node16-cjs'],
-      visibleAt(plan.cells, detected.visible, subpath, 'node16-cjs'),
+      slotVisible(plan, detected, subpath, 'node16-cjs'),
     ),
     'node16-esm': withVisible(
       info.resolutions['node16-esm'],
-      visibleAt(plan.cells, detected.visible, subpath, 'node16-esm'),
+      slotVisible(plan, detected, subpath, 'node16-esm'),
     ),
-    bundler: withVisible(info.resolutions.bundler, visibleAt(plan.cells, detected.visible, subpath, 'bundler')),
+    bundler: withVisible(info.resolutions.bundler, slotVisible(plan, detected, subpath, 'bundler')),
   },
 })
 

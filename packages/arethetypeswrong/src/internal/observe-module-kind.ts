@@ -20,11 +20,10 @@ const completeObservationOf = (query: ObservationQuery): Option.Option<ModuleKin
   if (query.resolutionOption !== 'node16') {
     return Option.none()
   }
-  const planModuleKinds = query.node16ModuleKinds
   const pair = resolveModulePair(query.self, { entrypoint: query.entrypoint, resolutionKind: query.resolutionKind })
   return Option.flatMap(
     Option.all({
-      kinds: Option.fromNullishOr(planModuleKinds),
+      kinds: Option.fromNullishOr(query.node16ModuleKinds),
       typesFileName: Option.fromNullishOr(viewFileName(pair.types)),
       implementationFileName: Option.fromNullishOr(viewFileName(pair.implementation)),
     }),

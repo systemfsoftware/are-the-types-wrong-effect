@@ -1,3 +1,5 @@
+import { Function } from 'effect'
+
 export type Cell = string
 
 export const cellWidth = (cell: Cell): number => visibleWidth(cell)
@@ -33,16 +35,27 @@ const widenColumns = (widths: Array<number>, row: ReadonlyArray<Cell>): void => 
   }
 }
 
-export const computeColumnWidths = (
-  header: ReadonlyArray<string>,
-  rows: ReadonlyArray<ReadonlyArray<Cell>>,
-): ReadonlyArray<number> => {
-  const widths: Array<number> = header.map(cellWidth)
-  for (const row of rows) {
-    widenColumns(widths, row)
-  }
-  return widths
-}
+export const computeColumnWidths: {
+  (
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+  ): (header: ReadonlyArray<string>) => ReadonlyArray<number>
+  (
+    header: ReadonlyArray<string>,
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+  ): ReadonlyArray<number>
+} = Function.dual(
+  2,
+  (
+    header: ReadonlyArray<string>,
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+  ): ReadonlyArray<number> => {
+    const widths: Array<number> = header.map(cellWidth)
+    for (const row of rows) {
+      widenColumns(widths, row)
+    }
+    return widths
+  },
+)
 
 const renderCell = (cell: Cell, width: number): string => cell.padEnd(width)
 
@@ -65,11 +78,33 @@ const renderTableText = (
   return [headerRow, ...dataRows].join('\n')
 }
 
-export const renderTable = (
-  header: ReadonlyArray<string>,
-  rows: ReadonlyArray<ReadonlyArray<Cell>>,
-  gap: number = 2,
-): string => renderTableText(header, rows, gap)
+const isRowOfCells = (value: unknown): value is ReadonlyArray<ReadonlyArray<string>> => {
+  if (!Array.isArray(value)) return false
+  return value.some((each) => Array.isArray(each))
+}
+
+const argsBeginWithHeader = (args: IArguments): boolean => !isRowOfCells(args[0])
+
+const isTableDataFirst = argsBeginWithHeader
+
+export const renderTable: {
+  (
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+    gap?: number,
+  ): (header: ReadonlyArray<string>) => string
+  (
+    header: ReadonlyArray<string>,
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+    gap?: number,
+  ): string
+} = Function.dual(
+  isTableDataFirst,
+  (
+    header: ReadonlyArray<string>,
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+    gap: number = 2,
+  ): string => renderTableText(header, rows, gap),
+)
 
 const rowAt = (rows: ReadonlyArray<ReadonlyArray<Cell>>, i: number): ReadonlyArray<Cell> => rows[i] ?? []
 
@@ -122,8 +157,21 @@ const flippedTableText = (
   return flippedOrHeaderText(header, rows, gap)
 }
 
-export const renderFlippedTable = (
-  header: ReadonlyArray<string>,
-  rows: ReadonlyArray<ReadonlyArray<Cell>>,
-  gap: number = 2,
-): string => flippedTableText(header, rows, gap)
+export const renderFlippedTable: {
+  (
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+    gap?: number,
+  ): (header: ReadonlyArray<string>) => string
+  (
+    header: ReadonlyArray<string>,
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+    gap?: number,
+  ): string
+} = Function.dual(
+  isTableDataFirst,
+  (
+    header: ReadonlyArray<string>,
+    rows: ReadonlyArray<ReadonlyArray<Cell>>,
+    gap: number = 2,
+  ): string => flippedTableText(header, rows, gap),
+)

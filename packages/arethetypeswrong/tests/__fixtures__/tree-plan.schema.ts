@@ -7,5 +7,13 @@ export const TreePlan = S.Struct({
   implementationSyntax: S.Literals(['esm', 'cjs']),
   declarationSyntax: S.Literals(['esm', 'cjs']),
   shipsDeclarations: S.Boolean,
+  proxyLayout: S.Literals([
+    'flat',
+    'nested-proxy',
+    'vendor',
+    'nested-vendor-proxy',
+    'mixed-case',
+    'malformed-proxy',
+  ]),
 })
 export type TreePlan = S.Schema.Type<typeof TreePlan>

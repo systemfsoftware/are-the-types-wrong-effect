@@ -1,7 +1,9 @@
 import { Cell, Sandwich } from '@systemfsoftware/effect-cell-types'
 import { Effect, Match, Option, Result } from 'effect'
+import type * as Scope from 'effect/Scope'
 
 import { AcquisitionCommandRejected, ManifestResolved, PackCleaned, TarballFetched } from './Acquisition.schema.js'
+import { DirectoryPacked, PackFailed } from './classify-pack-outcome.workflow.js'
 import {
   RegistryBadResponseDecided,
   RegistryNotFoundDecided,
@@ -11,9 +13,14 @@ import { TarballRead } from './classify-tarball-read.workflow.js'
 import { ConfigInvalid } from './Failure.schema.js'
 import { fetchRegistryTarball } from './fetch-registry-tarball.cell.js'
 import { Filesystem } from './filesystem.service.js'
+import { packDirectory } from './pack-directory.cell.js'
+import { PackRunner } from './pack-runner.service.js'
 import type { ParsedPackageSpec } from './PackageSpec.schema.js'
 import { verdictFor } from './parse-package-spec.cell.js'
 import { parsePackageSpec } from './parse-package-spec.workflow.js'
+import { readTarballFile } from './read-tarball-file.cell.js'
+import { Registry } from './registry.service.js'
+import { RegistryPayloadOverBudget } from './RegistryError.schema.js'
 import { decodeRegistryUrl } from './RegistryUrl.js'
 import {
   InvalidPackageSpec,
@@ -26,6 +33,7 @@ import { resolveRegistryManifest } from './resolve-registry-manifest.cell.js'
 export interface AcquireTarballRequest {
   readonly target: string
   readonly fromNpm: boolean
+  readonly pack?: boolean
   readonly registry: string
 }
 
@@ -45,7 +53,19 @@ export type RegistryManifestAnswer = ManifestResolved | Exclude<RegistryAcquisit
 
 export type AcquiredTarballSource = TarballFetched | TarballRead | PackCleaned
 
-export type AcquiredTarballAnswer = AcquiredTarballSource | ConfigInvalid | InvalidPackageSpec | TargetNotPackable
+export type AcquiredTarballAnswer =
+  | AcquiredTarballSource
+  | ConfigInvalid
+  | InvalidPackageSpec
+  | TargetNotPackable
+  | RegistryNotFoundDecided
+  | RegistryUnreachableDecided
+  | RegistryBadResponseDecided
+  | PackFailed
+
+export type AcquireTarballError = AcquisitionCommandRejected | RegistryPayloadOverBudget
+
+export type AcquireTarballServices = Filesystem | Registry | PackRunner | Scope.Scope
 
 const sourceRaw = (
   request: AcquireTarballRequest,
@@ -53,6 +73,7 @@ const sourceRaw = (
 ): AcquisitionSourceRaw => ({
   target: request.target,
   fromNpm: request.fromNpm,
+  pack: request.pack === true,
   parsed: spec,
   registry: request.registry,
 })
@@ -82,6 +103,32 @@ const registryAcquisition = resolveRegistryManifest.pipe(
   ),
 )
 
+const packOutcomeFailed = (): PackFailed =>
+  new PackFailed({
+    message: '`npm pack` did not produce a readable tarball in the target directory.',
+    recovery:
+      'Run `npm pack` in the target directory to see the failure, fix it, then rerun the same command with --pack.',
+  })
+
+const packThenRead = packDirectory.pipe(
+  Cell.andThen((packed) =>
+    Match.value(packed).pipe(
+      Match.tag('DirectoryPacked', (directory) =>
+        readTarballFile.pipe(Cell.mapInput((_packed: DirectoryPacked | PackFailed) => directory))),
+      Match.tag('PackFailed', (failed) =>
+        Cell.succeed<PackCleaned | PackFailed>(failed)),
+      Match.exhaustive,
+    )
+  ),
+)
+
+const packedAnswerOf = (packed: PackCleaned | PackFailed): AcquiredTarballAnswer =>
+  Match.value(packed).pipe(
+    Match.tag('PackCleaned', (cleaned): AcquiredTarballAnswer => cleaned),
+    Match.tag('PackFailed', (): AcquiredTarballAnswer => packOutcomeFailed()),
+    Match.exhaustive,
+  )
+
 export const acquireTarball = Sandwich.named('acquire.tarball')(
   (request: AcquireTarballRequest) => {
     const parsed = Result.match(parsePackageSpec(verdictFor(request.target)), {
@@ -93,11 +140,22 @@ export const acquireTarball = Sandwich.named('acquire.tarball')(
 )
   .decide(resolveAcquisitionSource)
   .write({
+    PackDirectory: (_decision, command) =>
+      Effect.matchEffect(packThenRead.run({ directory: command.target }), {
+        onFailure: (error): Effect.Effect<AcquiredTarballAnswer, AcquisitionCommandRejected, PackRunner> =>
+          Match.value(error).pipe(
+            Match.tag('PackRunnerSpawnRefused', () => Effect.succeed(packOutcomeFailed())),
+            Match.tag('AcquisitionCommandRejected', (rejected) => Effect.fail(rejected)),
+            Match.exhaustive,
+          ),
+        onSuccess: (packed): Effect.Effect<AcquiredTarballAnswer, never, never> =>
+          Effect.succeed(packedAnswerOf(packed)),
+      }),
     ExistingTarball: (_decision, command) =>
       Effect.flatMap(Filesystem, (fs) =>
         Effect.match(fs.readBytes(command.target), {
-          onFailure: () => Effect.succeed(targetNotPackable()),
-          onSuccess: (bytes) => Effect.succeed(new TarballRead({ ref: localRef(command.target), bytes })),
+          onFailure: () => targetNotPackable(),
+          onSuccess: (bytes) => new TarballRead({ ref: localRef(command.target), bytes }),
         })),
     RegistryPackage: (decision, command) =>
       Effect.matchEffect(Effect.fromResult(decodeRegistryUrl(command.registry)), {

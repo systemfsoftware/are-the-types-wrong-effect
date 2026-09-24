@@ -15,6 +15,7 @@ import {
   RegistryUnreachableDecided,
 } from './classify-registry-failure.workflow.js'
 import { Registry } from './registry.service.js'
+import { RegistryPayloadOverBudget } from './RegistryError.schema.js'
 import { RegistryDocumentRead, RegistryStatusRead } from './RegistryObservation.schema.js'
 
 type RegistryFailureCommand = (typeof ClassifyRegistryFailureCommand)['Encoded']
@@ -69,7 +70,15 @@ export const fetchRegistryTarball = Sandwich.named('acquire.fetch_registry_tarba
           onFailure: (refusal) =>
             Match.value(refusal).pipe(
               Match.tag('RegistryUnreachable', () => Effect.succeed(noResponseRaw(ref))),
-              Match.tag('RegistryPayloadOverBudget', (overBudget) => Effect.fail(overBudget)),
+              Match.tag('RegistryPayloadOverBudget', (overBudget) =>
+                Effect.fail(
+                  new RegistryPayloadOverBudget({
+                    url: overBudget.url,
+                    byteLength: overBudget.byteLength,
+                    budgetBytes: overBudget.budgetBytes,
+                    kind: 'tarball',
+                  }),
+                )),
               Match.exhaustive,
             ),
           onSuccess: (observation) => Effect.succeed(observationRaw(ref, observation)),

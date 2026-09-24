@@ -1,6 +1,7 @@
 import { Cell, Sandwich } from '@systemfsoftware/effect-cell-types'
 import type { Package } from '@systemfsoftware/npm-package'
 import { Effect, Match, Option, Result, Schema } from 'effect'
+import ts from 'typescript'
 
 import { BuildToolSchema } from './Analysis.schema.js'
 import { ManifestUnreadable } from './AnalysisError.schema.js'
@@ -9,8 +10,12 @@ import {
   discoverEntrypoints,
   DiscoverEntrypointsDecision,
   EntrypointsNotDeclared,
+  ObservedDeclaredFile,
+  type ObservedPackageJson,
 } from './discover-entrypoints.workflow.js'
+import { PackageJsonDocument } from './internal/json-document.schema.js'
 import { containsTypes } from './internal/types-presence.js'
+import './internal/typescript-internals.js'
 import { type PackageManifest, PackageManifestJson } from './PackageManifest.schema.js'
 import type { ResolutionKind } from './Problem.schema.js'
 import type { PackageTypes, UntypedReport } from './Report.schema.js'
@@ -23,6 +28,7 @@ export interface AnalysisRequest {
   readonly entrypoints: ReadonlyArray<string> | undefined
   readonly includeEntrypoints: ReadonlyArray<string>
   readonly excludeEntrypoints: ReadonlyArray<ExcludedEntrypoint>
+  readonly entrypointsLegacy: boolean
   readonly modes: ReadonlyArray<ResolutionKind>
 }
 
@@ -60,6 +66,9 @@ interface OpenRead {
   readonly exclude: ReadonlyArray<string>
   readonly request: AnalysisRequest
   readonly companionManifest: Option.Option<PackageManifest>
+  readonly legacy: boolean
+  readonly declaredFiles: ReadonlyArray<ObservedDeclaredFile>
+  readonly packageJsonFiles: ReadonlyArray<ObservedPackageJson>
 }
 
 type DiscoveredDecision = (typeof DiscoverEntrypointsDecision)['Encoded']
@@ -94,12 +103,67 @@ const regexExclusions = (exclusions: ReadonlyArray<ExcludedEntrypoint>): Readonl
 
 const regexesFor = (command: OpenRead): ReadonlyArray<RegExp> =>
   command.entrypoints === null ? regexExclusions(command.request.excludeEntrypoints) : []
-
 const explicitEntryPoints = (entrypoints: ReadonlyArray<string> | undefined): ReadonlyArray<string> | null =>
   Option.match(Option.fromNullishOr(entrypoints), {
     onNone: () => null,
     onSome: (names) => [...names],
   })
+const ancestorDirectoriesOf = (path: string): ReadonlyArray<string> => {
+  const directories: Array<string> = []
+  ts.forEachAncestorDirectory(path, (directory) => {
+    directories.push(directory)
+    return undefined
+  })
+  return directories
+}
+
+const unparsedPackageJson = (path: string): ObservedPackageJson => ({
+  path,
+  name: null,
+  hasMain: false,
+  parsed: false,
+  ancestors: ancestorDirectoriesOf(path),
+})
+
+const observedDeclaredFile = (fileName: string): ObservedDeclaredFile => ({
+  fileName,
+  isDeclaration: ts.isDeclarationFileName(fileName),
+})
+
+const observedName = (document: PackageJsonDocument): string | null =>
+  Match.value(document['name']).pipe(
+    Match.when(
+      (candidate: Schema.Json): candidate is string => typeof candidate === 'string',
+      (text) => text,
+    ),
+    Match.orElse((): string | null => null),
+  )
+const decodedPackageJson = (path: string, text: string): ObservedPackageJson =>
+  Option.match(Schema.decodeOption(PackageJsonDocument)(text), {
+    onNone: () => unparsedPackageJson(path),
+    onSome: (document) => ({
+      path,
+      name: observedName(document),
+      hasMain: 'main' in document,
+      parsed: true,
+      ancestors: ancestorDirectoriesOf(path),
+    }),
+  })
+
+const observedPackageJson = (pkg: Package, path: string): ObservedPackageJson =>
+  Option.match(Option.fromNullishOr(pkg.tryReadFile(path)), {
+    onNone: () => unparsedPackageJson(path),
+    onSome: (text) => decodedPackageJson(path, text),
+  })
+
+const packageRootOf = (pkg: Package): string => `/node_modules/${pkg.packageName}`
+
+const packageJsonPaths = (pkg: Package): ReadonlyArray<string> => {
+  const root = packageRootOf(pkg)
+  return pkg.listFiles(root)
+    .filter((file) => file.startsWith(root) && file.endsWith('/package.json'))
+    .sort((left, right) => left.length - right.length)
+}
 
 const read = (request: AnalysisRequest): Effect.Effect<OpenRead, ManifestUnreadable> =>
   Effect.gen(function*() {
@@ -113,12 +177,16 @@ const read = (request: AnalysisRequest): Effect.Effect<OpenRead, ManifestUnreada
       exclude: textExclusions(request.excludeEntrypoints),
       request,
       companionManifest,
+      legacy: request.entrypointsLegacy,
+      declaredFiles: [...request.pkg.listFiles(packageRootOf(request.pkg))].map(observedDeclaredFile),
+      packageJsonFiles: packageJsonPaths(request.pkg).map((path) => observedPackageJson(request.pkg, path)),
     }
   })
 
 const subpathsOf = (decision: DiscoveredDecision): ReadonlyArray<string> =>
   Match.value(decision).pipe(
     Match.tag('EntrypointsDiscovered', (discovered) => discovered.entrypoints.map((entrypoint) => entrypoint.subpath)),
+    Match.tag('ProxiesDiscovered', ({ proxies }) => [...proxies].sort(ts.comparePathsCaseInsensitive)),
     Match.tag('EntrypointsNotDeclared', () => ['.']),
     Match.exhaustive,
   )
@@ -148,6 +216,9 @@ const discoveryCommand = (command: OpenRead, manifest: PackageManifest): Discove
     entrypoints: explicitEntryPoints(command.request.entrypoints),
     include: [...command.request.includeEntrypoints],
     exclude: textExclusions(command.request.excludeEntrypoints),
+    legacy: command.legacy,
+    declaredFiles: [...command.declaredFiles],
+    packageJsonFiles: [...command.packageJsonFiles],
   })
 
 const uniqueTexts = (values: ReadonlyArray<string>): ReadonlyArray<string> =>
@@ -247,6 +318,7 @@ export const openPackage: Cell.Cell<AnalysisRequest, OpenedPackage, ManifestUnre
   .decide(discoverEntrypoints)
   .write({
     EntrypointsDiscovered: (discovered, command) => Effect.succeed(outcomeFor(command, discovered)),
+    ProxiesDiscovered: (proxies, command) => Effect.succeed(outcomeFor(command, proxies)),
     EntrypointsNotDeclared: (_refused, command) => Effect.succeed(outcomeFor(command, new EntrypointsNotDeclared())),
     CommandRejected: (rejected) => Effect.fail(new ManifestUnreadable({ cause: rejected })),
   })

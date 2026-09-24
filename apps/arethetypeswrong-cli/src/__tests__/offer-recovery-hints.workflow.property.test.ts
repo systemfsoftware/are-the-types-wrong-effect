@@ -4,10 +4,12 @@ import { Arbitrary } from 'effect/unstable/arbitrary'
 
 import { CliInputSchema } from '../CliInput.schema.js'
 import type { MachineEnvelope } from '../decode-envelope-document.workflow.js'
-import { type Hint, type HintId, renderHints } from '../hint-shaping.js'
 import { type EnvelopeMask, type EnvelopeMaskField, EnvelopeMaskFields } from '../Mask.js'
+import { renderHints } from '../offer-hints.cell.js'
 import {
   DecideHintsCommand,
+  type Hint,
+  type HintId,
   offerRecoveryHints,
   PacklessDirectoryHintsRequest,
   RunHintsRequest,

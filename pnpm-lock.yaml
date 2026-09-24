@@ -198,6 +198,9 @@ importers:
       '@systemfsoftware/arethetypeswrong':
         specifier: workspace:*
         version: link:../../packages/arethetypeswrong
+      '@systemfsoftware/arethetypeswrong-recipes':
+        specifier: workspace:^
+        version: link:../../packages/arethetypeswrong-recipes
       '@systemfsoftware/effect-cell-types':
         specifier: 'catalog:'
         version: 10.1.0(effect@4.0.0-rc.116)
@@ -210,6 +213,9 @@ importers:
       '@systemfsoftware/effect-schema-vite':
         specifier: 'catalog:'
         version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
+      '@systemfsoftware/npm-package':
+        specifier: 'catalog:'
+        version: 0.4.0(effect@4.0.0-rc.116)
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'
         version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)

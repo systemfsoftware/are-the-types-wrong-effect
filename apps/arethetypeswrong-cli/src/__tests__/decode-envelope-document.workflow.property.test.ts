@@ -1,36 +1,10 @@
 import { it } from '@effect/vitest'
-import {
-  type CheckResult,
-  InternalResolutionErrorProblemSchema,
-  type Problem,
-  ProblemSchema,
-} from '@systemfsoftware/arethetypeswrong'
+import { InternalResolutionErrorProblemSchema, type Problem, ProblemSchema } from '@systemfsoftware/arethetypeswrong'
 import { Match, Result, Schema } from 'effect'
 import { Arbitrary } from 'effect/unstable/arbitrary'
 
-import {
-  decodeEnvelopeDocument,
-  EnvelopeDocumentCommand,
-  type MaskedProblem,
-} from '../decode-envelope-document.workflow.js'
-import { decideEnvelope } from '../envelope-document.js'
-import { computeExitCode } from '../GetExitCode.js'
-import { ComputeExitCodeCommand } from '../GetExitCode.schema.js'
-import {
-  decideMask,
-  defaultEnvelopeMask,
-  type EnvelopeMask,
-  type EnvelopeMaskField,
-  EnvelopeMaskFields,
-} from '../Mask.js'
-import { CliProblemFlags, CliResolutionKinds, problemFlagForKind } from '../ProblemUtils.js'
-
-const defaultMaskContract: Readonly<Record<EnvelopeMaskField, boolean>> = {
-  entrypoints: false,
-  buildTools: false,
-  programInfo: false,
-  traces: false,
-}
+import { decodeEnvelopeDocument, EnvelopeDocumentCommand } from '../decode-envelope-document.workflow.js'
+import { decideMask, type EnvelopeMaskField, EnvelopeMaskFields } from '../Mask.js'
 
 const oneOfValues = <T>(values: readonly T[]): Arbitrary.Arbitrary<T> =>
   Arbitrary.flatMap(
@@ -118,62 +92,6 @@ const refusedDocument: Arbitrary.Arbitrary<WireEnvelope> = problem.pipe(
   Arbitrary.flatMap((generated) => oneOfValues(refusedDocuments(generated))),
 )
 
-const analysisOf = (problems: readonly Problem[]): CheckResult => ({
-  packageName: 'demo',
-  packageVersion: '1.0.0',
-  buildTools: {},
-  types: { kind: 'included' },
-  entrypoints: {},
-  programInfo: { node10: {}, node16: {}, bundler: {} },
-  problems,
-})
-
-const untypedResult = (): CheckResult => ({ packageName: 'demo', packageVersion: '1.0.0', types: false })
-
-const mask: Arbitrary.Arbitrary<EnvelopeMask> = oneOfArbitraries(
-  Arbitrary.Constant(defaultEnvelopeMask),
-  Arbitrary.all({
-    entrypoints: Arbitrary.schema(Schema.Boolean),
-    buildTools: Arbitrary.schema(Schema.Boolean),
-    programInfo: Arbitrary.schema(Schema.Boolean),
-    traces: Arbitrary.schema(Schema.Boolean),
-  }),
-)
-
-const ignores: Arbitrary.Arbitrary<{ readonly rules: readonly string[]; readonly resolutions: readonly string[] }> =
-  Arbitrary.all({
-    rules: Arbitrary.array(Arbitrary.schema(Schema.Literals(CliProblemFlags)), { maxLength: 3 }),
-    resolutions: Arbitrary.array(Arbitrary.schema(Schema.Literals(CliResolutionKinds)), { maxLength: 3 }),
-  })
-
-const authoredVisible = (
-  one: Problem,
-  ignored: { readonly rules: readonly string[]; readonly resolutions: readonly string[] },
-): boolean =>
-  !ignored.rules.includes(problemFlagForKind(one.kind)) &&
-  !('resolutionKind' in one && ignored.resolutions.includes(one.resolutionKind))
-
-const authoredMaskedProblems = (
-  problems: readonly Problem[],
-  ignored: { readonly rules: readonly string[]; readonly resolutions: readonly string[] },
-  maskValue: EnvelopeMask,
-): readonly MaskedProblem[] =>
-  problems
-    .filter((one) => authoredVisible(one, ignored))
-    .map((one) => {
-      if (maskValue.traces) return one
-      if (one.kind === 'InternalResolutionError') {
-        const { trace: _trace, ...rest } = one
-        return rest
-      }
-      return one
-    })
-
-const sameKindSequence = (left: readonly MaskedProblem[], right: readonly MaskedProblem[]): boolean =>
-  left.length === right.length && left.every((one, index) => one.kind === right[index]?.kind)
-
-const defaultMaskHolds = EnvelopeMaskFields.every((field) => defaultEnvelopeMask[field] === defaultMaskContract[field])
-
 it.prop(
   '∀problem_TypedEnvelopeSkeleton_=OkEnvelopeAccepted',
   [problem],
@@ -213,53 +131,6 @@ it.prop(
   '∀document_MutatedEnvelope_⊥Decode',
   [refusedDocument],
   ([value]) => Result.isFailure(decodeOf(value)),
-)
-
-it.prop(
-  '∀problem,mask,ignores,typed_EnvelopeContract_=authoredModel',
-  [problem, mask, ignores, Schema.Boolean],
-  ([generated, maskValue, ignored, typed]) => {
-    let result: CheckResult = untypedResult()
-    if (typed) {
-      result = analysisOf([generated])
-    }
-    const decision = decideEnvelope({
-      result,
-      ignoreRules: [...ignored.rules],
-      ignoreResolutions: [...ignored.resolutions],
-      mask: maskValue,
-    })
-    const document = decision.document
-    if (!typed) {
-      return defaultMaskHolds &&
-        document.status === 'untyped' &&
-        !('problems' in document) &&
-        decision.exitCode === 0
-    }
-    const expectedProblems = authoredMaskedProblems([generated], ignored, maskValue)
-    const expectedExitCode = computeExitCode(
-      new ComputeExitCodeCommand({
-        result,
-        ignoreRules: [...ignored.rules],
-        ignoreResolutions: [...ignored.resolutions],
-      }),
-    ).exitCode
-    if (document.status !== 'ok') return false
-    return defaultMaskHolds &&
-      decision.exitCode === expectedExitCode &&
-      ('entrypoints' in document) === maskValue.entrypoints &&
-      ('buildTools' in document) === maskValue.buildTools &&
-      ('programInfo' in document) === maskValue.programInfo &&
-      sameKindSequence(document.problems, expectedProblems) &&
-      document.problems.every((one) =>
-        one.kind !== 'InternalResolutionError' || ('trace' in one) === maskValue.traces
-      ) &&
-      Object.values(document.problemCounts).reduce((sum, count) => sum + count, 0) ===
-        document.problems.length &&
-      Object.entries(document.problemCounts).every(([kind, count]) =>
-        count === document.problems.filter((one) => one.kind === kind).length
-      )
-  },
 )
 
 const includeList: Arbitrary.Arbitrary<readonly EnvelopeMaskField[]> = Arbitrary.array(

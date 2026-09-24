@@ -1,7 +1,6 @@
 import { it } from '@effect/vitest'
 import { Match, Option, Result, Schema } from 'effect'
 
-import { analyzeFlags, documentedEnvelopeKeys, documentedFlags, implementedFlags } from '../AttwHandler.js'
 import { cliVersion } from '../cli-version.js'
 import {
   decodeEnvelopeDocument,
@@ -9,9 +8,10 @@ import {
   type MachineEnvelope,
   MachineEnvelopeSchema,
 } from '../decode-envelope-document.workflow.js'
+import { buildSchemaDocument, documentedEnvelopeKeys, documentedFlags } from '../describe-cli-surface.command.js'
 import { documentedEnvelopeKey, documentedFlag, implementedFlag } from '../describe-cli-surface.schema.js'
 import { describeCliSurface, RenderSchemaDocumentCommand } from '../describe-cli-surface.workflow.js'
-import { buildSchemaDocument } from '../schema-command.js'
+import { analyzeFlags } from '../run-attw.command.js'
 
 const wiredKeys = (value: MachineEnvelope): readonly string[] => Object.keys(value)
 
@@ -35,7 +35,7 @@ it.prop('∀flag_ImplementedFlag_∈SchemaDocument', [implementedFlag], ([flag])
 it.prop(
   '∀flag_SchemaDocumentFlag_∈Implemented',
   [documentedFlag],
-  ([flag]) => flag in analyzeFlags && implementedFlags.includes(flag),
+  ([flag]) => Object.keys(analyzeFlags).includes(flag),
 )
 
 it.prop(

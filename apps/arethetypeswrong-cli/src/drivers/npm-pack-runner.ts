@@ -39,10 +39,15 @@ const makeWorkspace = (
 
 const spawnedPack = (
   spawner: ChildProcessSpawner['Service'],
+  workspace: PackWorkspace,
   directory: string,
 ): Effect.Effect<string, PackRunnerSpawnRefused> =>
   Effect.mapError(
-    spawner.string(ChildProcess.make('npm', ['pack', '--ignore-scripts']).pipe(ChildProcess.setCwd(directory))),
+    spawner.string(
+      ChildProcess.make('npm', ['pack', '--ignore-scripts', directory]).pipe(
+        ChildProcess.setCwd(workspace.temporary),
+      ),
+    ),
     (cause) => new PackRunnerSpawnRefused({ directory, cause }),
   )
 
@@ -99,7 +104,7 @@ const packInWorkspace = (
   directory: string,
 ): Effect.Effect<PackResult, PackRunnerSpawnRefused | PackRunnerOutputUnreadable> =>
   Effect.flatMap(
-    spawnedPack(spawner, directory),
+    spawnedPack(spawner, workspace, directory),
     (output) => tarballIn(workspace, directory, output),
   )
 const packedScoped = (

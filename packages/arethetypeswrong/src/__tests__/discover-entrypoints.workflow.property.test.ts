@@ -3,11 +3,12 @@ import { Equal, Result } from 'effect'
 import * as Match from 'effect/Match'
 import * as S from 'effect/Schema'
 import { Arbitrary } from 'effect/unstable/arbitrary'
-
 import {
   DiscoverEntrypoints,
   discoverEntrypoints,
   type DiscoverEntrypointsDecision,
+  type ObservedDeclaredFile,
+  type ObservedPackageJson,
 } from '../discover-entrypoints.workflow.js'
 import type { ManifestExportsConditions, ManifestExportsTarget, PackageManifest } from '../PackageManifest.schema.js'
 
@@ -29,6 +30,10 @@ const observedDecision = (command: DiscoverEntrypoints): PlainDecision =>
           status: 'discovered',
           entrypoints: entrypoints.map(({ subpath, isWildcard }) => ({ subpath, isWildcard })),
         })),
+        Match.tag('ProxiesDiscovered', ({ proxies }): PlainDecision => ({
+          status: 'discovered',
+          entrypoints: proxies.map((subpath) => ({ subpath, isWildcard: subpath.includes('*') })),
+        })),
         Match.tag('EntrypointsNotDeclared', (): PlainDecision => ({ status: 'notDeclared' })),
         Match.exhaustive,
       ),
@@ -40,12 +45,49 @@ const manifest = (exports?: ManifestExportsTarget): PackageManifest => ({
   exports,
 })
 
+const declared = (fileName: string, isDeclaration: boolean): ObservedDeclaredFile => ({ fileName, isDeclaration })
+
+const packageJsonFile = (
+  path: string,
+  name: string | null,
+  hasMain: boolean,
+  ancestors: ReadonlyArray<string>,
+  parsed = true,
+): ObservedPackageJson => ({ path, name, hasMain, parsed, ancestors: [...ancestors] })
+
+const rootAncestors: ReadonlyArray<string> = [
+  '/node_modules/pkg/package.json',
+  '/node_modules/pkg',
+  '/node_modules',
+  '/',
+]
+
+const vendorAncestors: ReadonlyArray<string> = [
+  '/node_modules/pkg/vendor/package.json',
+  '/node_modules/pkg/vendor',
+  '/node_modules/pkg',
+  '/node_modules',
+  '/',
+]
+
+const nestedVendorAncestors: ReadonlyArray<string> = [
+  '/node_modules/pkg/vendor/nested/package.json',
+  '/node_modules/pkg/vendor/nested',
+  '/node_modules/pkg/vendor',
+  '/node_modules/pkg',
+  '/node_modules',
+  '/',
+]
+
 const command = (overrides: {
   readonly packageName?: string
   readonly manifest?: PackageManifest
   readonly entrypoints?: ReadonlyArray<string> | null
   readonly include?: ReadonlyArray<string>
   readonly exclude?: ReadonlyArray<string>
+  readonly legacy?: boolean
+  readonly declaredFiles?: ReadonlyArray<ObservedDeclaredFile>
+  readonly packageJsonFiles?: ReadonlyArray<ObservedPackageJson>
 }): DiscoverEntrypoints =>
   new DiscoverEntrypoints({
     packageName: 'pkg',
@@ -53,6 +95,9 @@ const command = (overrides: {
     entrypoints: null,
     include: [],
     exclude: [],
+    legacy: false,
+    declaredFiles: [],
+    packageJsonFiles: [],
     ...overrides,
   })
 
@@ -63,7 +108,7 @@ const discovered = (entrypoints: ReadonlyArray<PlainEntrypoint>): PlainDecision 
 const entrypoint = (subpath: string, isWildcard = false): PlainEntrypoint => ({ subpath, isWildcard })
 
 const INTENDED_VERDICTS: ReadonlyArray<readonly [DiscoverEntrypoints, PlainDecision]> = [
-  [command({ entrypoints: ['.'] }), discovered([entrypoint('.')])],
+  [command({ entrypoints: ['pkg-suffix', 'other'] }), discovered([entrypoint('./pkg-suffix'), entrypoint('./other')])],
   [
     command({ entrypoints: ['one', 'pkg/two', 'pkg'] }),
     discovered([
@@ -118,17 +163,218 @@ const INTENDED_VERDICTS: ReadonlyArray<readonly [DiscoverEntrypoints, PlainDecis
     }),
     { status: 'notDeclared' },
   ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      declaredFiles: [declared('/node_modules/pkg/index.js', false), declared('/node_modules/pkg/index.d.ts', true)],
+    }),
+    discovered([entrypoint('./index.js')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      declaredFiles: [
+        declared('/node_modules/pkg/src/main.mjs', false),
+        declared('/node_modules/pkg/package.json', false),
+      ],
+    }),
+    discovered([entrypoint('./src/main.mjs')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      declaredFiles: [
+        declared('/node_modules/pkg/a.jsx', false),
+        declared('/node_modules/pkg/b.tsx', false),
+        declared('/node_modules/pkg/c.js', false),
+        declared('/node_modules/pkg/d.ts', false),
+        declared('/node_modules/pkg/e.mjs', false),
+        declared('/node_modules/pkg/f.cjs', false),
+        declared('/node_modules/pkg/g.mts', false),
+      ],
+    }),
+    discovered([
+      entrypoint('./a.jsx'),
+      entrypoint('./b.tsx'),
+      entrypoint('./c.js'),
+      entrypoint('./d.ts'),
+      entrypoint('./e.mjs'),
+      entrypoint('./f.cjs'),
+      entrypoint('./g.mts'),
+    ]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', false, rootAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/package.json', '', true, vendorAncestors),
+      ],
+    }),
+    discovered([entrypoint('./vendor')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      declaredFiles: [declared('/node_modules/pkg/index.d.ts', true)],
+    }),
+    discovered([]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: false,
+      declaredFiles: [declared('/node_modules/pkg/index.js', false)],
+    }),
+    { status: 'notDeclared' },
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0', main: './index.js' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', true, rootAncestors),
+        packageJsonFile('/node_modules/pkg/proxy/package.json', 'pkg', true, [
+          '/node_modules/pkg/proxy/package.json',
+          '/node_modules/pkg/proxy',
+          '/node_modules/pkg',
+          '/node_modules',
+          '/',
+        ]),
+      ],
+    }),
+    discovered([entrypoint('.'), entrypoint('./proxy')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', false, rootAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/package.json', 'foreign-dep', true, vendorAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/nested/package.json', 'pkg', true, nestedVendorAncestors),
+        packageJsonFile('/node_modules/pkg/broken/package.json', null, false, [], false),
+      ],
+      declaredFiles: [declared('/node_modules/pkg/index.js', false)],
+    }),
+    discovered([entrypoint('./index.js')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', false, rootAncestors),
+        packageJsonFile('/node_modules/pkg/zulu/package.json', 'pkg', true, [
+          '/node_modules/pkg/zulu/package.json',
+          '/node_modules/pkg/zulu',
+          '/node_modules/pkg',
+          '/node_modules',
+          '/',
+        ]),
+        packageJsonFile('/node_modules/pkg/Alpha/package.json', 'pkg', true, [
+          '/node_modules/pkg/Alpha/package.json',
+          '/node_modules/pkg/Alpha',
+          '/node_modules/pkg',
+          '/node_modules',
+          '/',
+        ]),
+      ],
+    }),
+    discovered([entrypoint('./zulu'), entrypoint('./Alpha')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      declaredFiles: [declared('/node_modules/pkg/index.cts', false)],
+    }),
+    discovered([]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', false, rootAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/package.json', 'foreign-dep', true, vendorAncestors),
+      ],
+    }),
+    { status: 'notDeclared' },
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', false, rootAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/package.json', 'vendor-pkg', true, vendorAncestors),
+      ],
+    }),
+    { status: 'notDeclared' },
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', true, rootAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/package.json', 'foreign-dep', true, vendorAncestors),
+        packageJsonFile('/node_modules/pkg/vendor/nested/package.json', 'pkg', true, nestedVendorAncestors),
+      ],
+    }),
+    discovered([entrypoint('.')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', true, rootAncestors),
+        packageJsonFile('/node_modules/pkg/broken/package.json', null, true, [], false),
+      ],
+    }),
+    discovered([entrypoint('.')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      legacy: true,
+      declaredFiles: [declared('/node_modules/pkg/index.js', false)],
+      packageJsonFiles: [
+        packageJsonFile('/node_modules/pkg/package.json', 'pkg', true, rootAncestors),
+      ],
+    }),
+    discovered([entrypoint('.')]),
+  ],
+  [
+    command({
+      manifest: { name: 'pkg', version: '1.0.0' },
+      packageJsonFiles: [],
+    }),
+    { status: 'notDeclared' },
+  ],
 ]
-
 const intendedRowArbitrary: Arbitrary.Arbitrary<(typeof INTENDED_VERDICTS)[number]> = Arbitrary.flatMap(
   Arbitrary.schema(S.Int.pipe(S.check(S.isBetween({ minimum: 0, maximum: INTENDED_VERDICTS.length - 1 })))),
   (index) => Arbitrary.Constant(INTENDED_VERDICTS[index]),
 )
 
-it.prop('∀command_DiscoverEntrypoints_≡IntendedVerdictTable', [intendedRowArbitrary], ([row]) => {
-  const [candidate, intended] = row
-  return Equal.equals(observedDecision(candidate), intended)
-})
+it.prop(
+  '∀command_DiscoverEntrypoints_≡IntendedVerdictTable',
+  [intendedRowArbitrary],
+  ([row]) => Equal.equals(observedDecision(row[0]), row[1]),
+)
+
+const legacyExtensions: ReadonlyArray<string> = ['.jsx', '.tsx', '.js', '.ts', '.mjs', '.cjs', '.mts']
+
+const legacyExtensionOf = (fileName: string): string => fileName.slice(fileName.lastIndexOf('.'))
+
+const referenceIsLegacyDeclared = (declared: ObservedDeclaredFile): boolean =>
+  !declared.isDeclaration && legacyExtensions.includes(legacyExtensionOf(declared.fileName))
+
+const referenceDeclaredSubpaths = (command: DiscoverEntrypoints): ReadonlyArray<string> =>
+  command.declaredFiles
+    .filter(referenceIsLegacyDeclared)
+    .map((declared) => `.${declared.fileName.slice(`/node_modules/${command.packageName}`.length)}`)
 
 const isConditionsTarget = (target: ManifestExportsTarget): target is ManifestExportsConditions =>
   typeof target === 'object' && target !== null && !Array.isArray(target)
@@ -168,6 +414,25 @@ const referenceFormat = (path: string, packageName: string): string => {
   return formatted.trim()
 }
 
+const referenceProxies = (command: DiscoverEntrypoints): ReadonlyArray<string> => {
+  const root = `/node_modules/${command.packageName}`
+  const vendors: Array<string> = []
+  const proxies: Array<string> = []
+  for (const row of command.packageJsonFiles) {
+    if (!row.parsed) {
+      continue
+    }
+    if (typeof row.name === 'string' && row.name !== '' && !row.name.startsWith(command.packageName)) {
+      vendors.push(row.path.slice(0, row.path.lastIndexOf('/')))
+      continue
+    }
+    if (row.hasMain && !row.ancestors.some((directory) => vendors.includes(directory))) {
+      proxies.push(`.${row.path.slice(root.length, row.path.lastIndexOf('/'))}`)
+    }
+  }
+  return proxies
+}
+
 const referenceDecision = (command: DiscoverEntrypoints): PlainDecision => {
   const format = (path: string): PlainEntrypoint => {
     const subpath = referenceFormat(path, command.packageName)
@@ -178,6 +443,13 @@ const referenceDecision = (command: DiscoverEntrypoints): PlainDecision => {
   }
   const exports = command.manifest.exports
   if (exports === undefined) {
+    const proxies = referenceProxies(command)
+    if (proxies.length > 0) {
+      return discovered(proxies.map(format))
+    }
+    if (command.legacy) {
+      return discovered(referenceDeclaredSubpaths(command).map(format))
+    }
     return { status: 'notDeclared' }
   }
   const subpaths = referenceSubpaths(exports)
@@ -211,6 +483,9 @@ const withIgnoredManifestFields = (command: DiscoverEntrypoints): DiscoverEntryp
     entrypoints: command.entrypoints === null ? null : [...command.entrypoints],
     include: [...command.include],
     exclude: [...command.exclude],
+    legacy: command.legacy,
+    declaredFiles: [...command.declaredFiles],
+    packageJsonFiles: [...command.packageJsonFiles],
   })
 
 it.prop(
@@ -223,8 +498,9 @@ const decisionDecided = (decision: DiscoverEntrypointsDecision): boolean =>
   Match.value(decision).pipe(
     Match.tag('EntrypointsDiscovered', ({ entrypoints }) =>
       entrypoints.every(({ subpath, isWildcard }) => isWildcard === subpath.includes('*'))),
-    Match.tag('EntrypointsNotDeclared', () =>
+    Match.tag('ProxiesDiscovered', () =>
       true),
+    Match.tag('EntrypointsNotDeclared', () => true),
     Match.exhaustive,
   )
 

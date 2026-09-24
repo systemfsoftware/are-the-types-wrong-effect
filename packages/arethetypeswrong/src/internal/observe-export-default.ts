@@ -1,18 +1,17 @@
 import './typescript-internals.js'
 import { Effect, Option } from 'effect'
 import ts from 'typescript'
-import { moduleSourcesOf } from '../compiled-package.handle.js'
+import { moduleSourcesOf, resolveModulePair } from '../compiled-package.handle.js'
 import type { BoundModuleSources } from '../compiled-package.handle.js'
-import { moduleKindOf, resolveModulePair } from '../compiled-package.handle.js'
 import type {
   ExportDefaultDisagreementObservation,
   ImplementationDefaultFacts,
   TypesDefaultFacts,
 } from '../Observation.schema.js'
+import type { ModuleKind } from '../Problem.schema.js'
 import { type ObservationQuery } from './entrypoint-observation.js'
 import { isNonEmptyText, nullOrModuleKind, nullOrText, viewFileName } from './entrypoint-observation.js'
 import { getProbableExports } from './probable-exports.js'
-import { resolutionOptionOf } from './resolution-option.js'
 import { getSourceFileSymbol, isFunctionBlock, typeHasCallOrConstructSignatures } from './typescript-nodes.js'
 
 /** @internal */
@@ -49,21 +48,25 @@ const observationOf = (
   facts: DisagreementFacts,
 ): ExportDefaultDisagreementObservation => {
   const pair = resolveModulePair(query.self, query)
-  const resolutionOption = resolutionOptionOf(query.resolutionKind)
   return {
     typesFileName: nullOrText(viewFileName(pair.types)),
     implementationFileName: nullOrText(viewFileName(pair.implementation)),
     resolutionKind: query.resolutionKind,
-    typesModuleKind: nullOrModuleKind(
-      moduleKindOf(query.self, { fileName: viewFileName(pair.types), resolutionOption }),
-    ),
-    implementationModuleKind: nullOrModuleKind(
-      moduleKindOf(query.self, { fileName: viewFileName(pair.implementation), resolutionOption }),
-    ),
+    typesModuleKind: nullOrModuleKind(kindAt(query.node16ModuleKinds, viewFileName(pair.types))),
+    implementationModuleKind: nullOrModuleKind(kindAt(query.node16ModuleKinds, viewFileName(pair.implementation))),
     types: facts.types,
     implementation: facts.implementation,
   }
 }
+
+const kindAt = (
+  kinds: Record<string, ModuleKind> | undefined,
+  fileName: string | undefined,
+): ModuleKind | undefined =>
+  Option.getOrUndefined(
+    Option.flatMap(Option.all([Option.fromNullishOr(kinds), Option.fromNullishOr(fileName)]), ([table, name]) =>
+      Option.fromNullishOr(table[name])),
+  )
 
 const factsOf = (query: ObservationQuery): Effect.Effect<DisagreementFacts> =>
   Effect.suspend(() => {

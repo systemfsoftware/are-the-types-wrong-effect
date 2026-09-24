@@ -1,6 +1,9 @@
 import { Schema } from 'effect'
 
-import { documentedEnvelopeKeys, documentedFlags, implementedFlags } from './AttwHandler.js'
+import { documentedEnvelopeKeys, documentedFlags } from './describe-cli-surface.command.js'
+import { analyzeFlags } from './run-attw.command.js'
+
+const implementedFlags: readonly string[] = Object.keys(analyzeFlags)
 
 const constantOrFallback = (values: readonly string[], fallback: string): Schema.Schema<string> =>
   Schema.Literals(values.length > 0 ? values : [fallback])

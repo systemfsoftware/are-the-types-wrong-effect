@@ -49,6 +49,7 @@ export const make = (pkg: Package): AnalysisSpec =>
     entrypoints: undefined,
     includeEntrypoints: [],
     excludeEntrypoints: [],
+    entrypointsLegacy: false,
     modes: allModes,
   })
 
@@ -78,6 +79,9 @@ export const excludeEntrypoints: {
   (spec: AnalysisSpec, entrypoints: ReadonlyArray<ExcludedEntrypoint>): AnalysisSpec =>
     makeProto({ ...spec.request, excludeEntrypoints: [...entrypoints] }),
 )
+export const withLegacyEntrypoints: {
+  (spec: AnalysisSpec): AnalysisSpec
+} = (spec: AnalysisSpec): AnalysisSpec => makeProto({ ...spec.request, entrypointsLegacy: true })
 
 export const withTypesCompanion: {
   (companion: Package): (spec: AnalysisSpec) => AnalysisSpec

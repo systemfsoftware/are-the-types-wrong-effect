@@ -15,6 +15,8 @@ export interface AttwConfigRequest {
   readonly configPath: string
 }
 
+export type LoadAttwConfigAnswer = AttwConfigLoaded | AttwConfigAbsent | ConfigInvalid
+
 type LoadConfigCommand = (typeof LoadAttwConfigCommand)['Encoded']
 
 const absentRaw = (configPath: string): LoadConfigCommand => ({

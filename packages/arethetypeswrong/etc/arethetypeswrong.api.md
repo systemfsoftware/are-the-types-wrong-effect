@@ -16,7 +16,7 @@ import { YieldableError } from 'effect/Cause';
 
 // @public (undocumented)
 export namespace Analysis {
-    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withModes, withTypesCompanion$1 as withTypesCompanion };
+    export { AnalysisError, AnalysisRequest, AnalysisSpec, CompilerFailed, ExcludedEntrypoint, LexerUnavailable, ManifestUnreadable, PackageReport, Report, TypeId, TypesFromCompanion, TypesIncluded, UntypedReport, excludeEntrypoints, includeEntrypoints, make, withEntrypoints, withLegacyEntrypoints, withModes, withTypesCompanion$1 as withTypesCompanion };
 }
 
 // @public (undocumented)

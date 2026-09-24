@@ -11,8 +11,8 @@ import {
   RegistryStatusObserved,
   RegistryUnreadableShapeObserved,
 } from '../classify-registry-failure.workflow.js'
-import { failureOutcome } from '../failure-shaping.js'
 import { type AttwFailure, FailureDocumentSchema } from '../Failure.schema.js'
+import { failureOutcome } from '../render-report.cell.js'
 
 type StatusClass = 'notFound' | 'answered' | 'badResponse'
 

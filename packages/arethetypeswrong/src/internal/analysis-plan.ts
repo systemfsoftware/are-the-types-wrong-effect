@@ -304,20 +304,15 @@ const implementationFile = (cell: CellPlan): ReadonlyArray<string> =>
     onSome: (resolution) => [resolution.fileName],
   })
 
-const runsForCell = (plan: AnalysisPlan, cell: CellPlan, cellIndex: number): ReadonlyArray<ProblemRun> =>
-  Match.value(plan.modes.includes(cell.resolutionKind)).pipe(
-    Match.when(false, (): ReadonlyArray<ProblemRun> => []),
-    Match.when(true, () => [
-      runOf('entrypointResolution', plan, cell, cellIndex),
-      runOf('moduleKindDisagreement', plan, cell, cellIndex),
-      runOf('exportDefaultDisagreement', plan, cell, cellIndex),
-      runOf('namedExports', plan, cell, cellIndex),
-      runOf('cjsOnlyExportsDefault', plan, cell, cellIndex),
-      ...fileRuns('unexpectedModuleSyntax', plan, cell, cellIndex),
-      ...fileRuns('internalResolutionError', plan, cell, cellIndex),
-    ]),
-    Match.exhaustive,
-  )
+const runsForCell = (plan: AnalysisPlan, cell: CellPlan, cellIndex: number): ReadonlyArray<ProblemRun> => [
+  runOf('entrypointResolution', plan, cell, cellIndex),
+  runOf('moduleKindDisagreement', plan, cell, cellIndex),
+  runOf('exportDefaultDisagreement', plan, cell, cellIndex),
+  runOf('namedExports', plan, cell, cellIndex),
+  runOf('cjsOnlyExportsDefault', plan, cell, cellIndex),
+  ...fileRuns('unexpectedModuleSyntax', plan, cell, cellIndex),
+  ...fileRuns('internalResolutionError', plan, cell, cellIndex),
+]
 
 /** @internal */
 export const runListOf = (plan: AnalysisPlan): ReadonlyArray<ProblemRun> =>

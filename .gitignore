@@ -5,6 +5,7 @@ coverage/
 reports/
 temp/
 .stryker-tmp/
+.vitest/
 *.tsbuildinfo
 
 .mcp.json

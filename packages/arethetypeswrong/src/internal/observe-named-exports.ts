@@ -2,7 +2,7 @@ import './typescript-internals.js'
 import { Effect, Option } from 'effect'
 import ts from 'typescript'
 import type { BoundTypesProgram, CompiledPackage, ResolvedModulePair } from '../compiled-package.handle.js'
-import { esmNamespaceOf, moduleKindOf, resolveModulePair, typesProgramOf } from '../compiled-package.handle.js'
+import { esmNamespaceOf, resolveModulePair, typesProgramOf } from '../compiled-package.handle.js'
 import type { NamedExportsObservation } from '../Observation.schema.js'
 import type { ModuleKind } from '../Problem.schema.js'
 import type { ObservationQuery } from './entrypoint-observation.js'
@@ -45,12 +45,24 @@ const kindedNameFields = (
 const typesModuleKindFor = (
   query: ObservationQuery,
   typesFileName: string | undefined,
-): ModuleKind | undefined => moduleKindOf(query.self, { fileName: typesFileName, resolutionOption: 'node16' })
+): ModuleKind | undefined =>
+  Option.getOrUndefined(
+    Option.map(
+      Option.fromNullishOr(query.node16ModuleKinds),
+      (kinds) => kinds[typesFileName ?? ''],
+    ),
+  )
 
 const implementationModuleKindFor = (
   query: ObservationQuery,
   implementationFileName: string | undefined,
-): ModuleKind | undefined => moduleKindOf(query.self, { fileName: implementationFileName, resolutionOption: 'node16' })
+): ModuleKind | undefined =>
+  Option.getOrUndefined(
+    Option.map(
+      Option.fromNullishOr(query.node16ModuleKinds),
+      (kinds) => kinds[implementationFileName ?? ''],
+    ),
+  )
 const typesFileNameForNamedExports = (pair: ResolvedModulePair): string | undefined => scriptFileNameOf(pair.types)
 
 const scriptFileNameOf = (view: ResolvedModulePair['types']): string | undefined => {

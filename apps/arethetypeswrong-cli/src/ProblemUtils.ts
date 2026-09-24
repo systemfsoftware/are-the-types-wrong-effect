@@ -1,4 +1,5 @@
 import type { CheckResult, Problem, ProblemKind, ResolutionKind } from '@systemfsoftware/arethetypeswrong'
+import { Function } from 'effect'
 
 export const CliProblemFlags = [
   'no-resolution',
@@ -72,11 +73,46 @@ const isIgnoredProblem = (
 ): boolean =>
   conflictsWithIgnoredRule(problem, ignoredRules) || conflictsWithIgnoredResolution(problem, ignoredResolutions)
 
-export const isVisibleProblem = (
-  problem: Problem,
-  ignoredRules: readonly string[],
-  ignoredResolutions: readonly string[],
-): boolean => !isIgnoredProblem(problem, ignoredRules, ignoredResolutions)
+export const isVisibleProblem: {
+  (
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): (problem: Problem) => boolean
+  (
+    problem: Problem,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean
+} = Function.dual(
+  3,
+  (
+    problem: Problem,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean => !isIgnoredProblem(problem, ignoredRules, ignoredResolutions),
+)
 
 export const isUntypedResult = (result: CheckResult): result is Extract<CheckResult, { types: false }> =>
   'types' in result && result.types === false
+
+export const hasVisibleProblem: {
+  (
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): (result: CheckResult) => boolean
+  (
+    result: CheckResult,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean
+} = Function.dual(
+  3,
+  (
+    result: CheckResult,
+    ignoredRules: readonly string[],
+    ignoredResolutions: readonly string[],
+  ): boolean =>
+    isUntypedResult(result)
+      ? false
+      : result.problems.some((problem) => isVisibleProblem(problem, ignoredRules, ignoredResolutions)),
+)
