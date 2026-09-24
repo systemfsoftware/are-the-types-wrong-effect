@@ -37,14 +37,11 @@ const autoWidthPolicy = (terminalWidth: number): RenderPolicyAnswer =>
 const renderPolicyOf = (request: RenderPolicyRequest): Option.Option<RenderPolicyAnswer> =>
   Match.value(request).pipe(
     Match.when({ quiet: true }, (): Option.Option<RenderPolicyAnswer> => Option.some({ mode: 'quiet' })),
-    Match.when({ requestedFormat: 'json' }, (): Option.Option<RenderPolicyAnswer> => Option.some({ mode: 'envelope' })),
     Match.when({ requestedFormat: 'table' }, (): Option.Option<RenderPolicyAnswer> => Option.some({ mode: 'table' })),
     Match.when({ requestedFormat: 'table-flipped' }, (): Option.Option<RenderPolicyAnswer> =>
       Option.some({ mode: 'table-flipped' })),
     Match.when({ requestedFormat: 'ascii' }, (): Option.Option<RenderPolicyAnswer> =>
       Option.some({ mode: 'ascii' })),
-    Match.when({ requestedFormat: 'auto', isTty: false }, (): Option.Option<RenderPolicyAnswer> =>
-      Option.some({ mode: 'envelope' })),
     Match.when({ requestedFormat: 'auto', isTty: true }, (auto): Option.Option<RenderPolicyAnswer> =>
       Option.some(autoWidthPolicy(auto.terminalWidth))),
     Match.orElse((): Option.Option<RenderPolicyAnswer> =>
@@ -90,20 +87,32 @@ const problemFlagOf = (kind: ProblemKind): CliProblemFlag =>
     Match.exhaustive,
   )
 
-const problemResolutionKindOf = (problem: Problem): string =>
+const problemResolutionKindOf = (problem: Problem): Option.Option<string> =>
   Match.value(problem).pipe(
-    Match.when({ kind: 'NoResolution' }, ({ resolutionKind }): string => resolutionKind),
-    Match.when({ kind: 'UntypedResolution' }, ({ resolutionKind }): string => resolutionKind),
-    Match.when({ kind: 'CJSResolvesToESM' }, ({ resolutionKind }): string => resolutionKind),
-    Match.when({ kind: 'FallbackCondition' }, ({ resolutionKind }): string => resolutionKind),
-    Match.orElse((): string => ''),
+    Match.when({ kind: 'NoResolution' }, ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind)),
+    Match.when(
+      { kind: 'UntypedResolution' },
+      ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind),
+    ),
+    Match.when(
+      { kind: 'CJSResolvesToESM' },
+      ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind),
+    ),
+    Match.when(
+      { kind: 'FallbackCondition' },
+      ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind),
+    ),
+    Match.orElse((): Option.Option<string> => Option.none()),
   )
 
 const ignoredRuleOf = (problem: Problem, ignoredRules: readonly string[]): boolean =>
   ignoredRules.includes(problemFlagOf(problem.kind))
 
 const ignoredResolutionOf = (problem: Problem, ignoredResolutions: readonly string[]): boolean =>
-  ignoredResolutions.includes(problemResolutionKindOf(problem))
+  Option.exists(
+    problemResolutionKindOf(problem),
+    (resolutionKind) => ignoredResolutions.includes(resolutionKind),
+  )
 
 const visibleProblemOf = (
   problem: Problem,

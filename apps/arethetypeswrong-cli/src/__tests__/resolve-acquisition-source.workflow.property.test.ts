@@ -10,7 +10,13 @@ import {
   type PayloadKind,
   payloadLimit,
 } from '../RegistryUrl.js'
-import { resolveAcquisitionSource, ResolveAcquisitionSourceCommand } from '../resolve-acquisition-source.workflow.js'
+import {
+  type AcquisitionSourceDecision,
+  type InvalidPackageSpec,
+  resolveAcquisitionSource,
+  ResolveAcquisitionSourceCommand,
+  type TargetNotPackable,
+} from '../resolve-acquisition-source.workflow.js'
 
 const registryBase = 'https://registry.npmjs.org'
 const defaultTag = 'latest'
@@ -182,6 +188,156 @@ const weldedSpec: Arbitrary.Arbitrary<string> = oneArbitrary([
   weldedWithPrefix,
 ])
 
+const acceptedSpecRecovery = (fix: string): string =>
+  `${fix} Expected \`pkg\`, \`pkg@1.2.3\`, \`pkg@^1.2.3\`, \`pkg@next\`, or \`@scope/pkg\`.`
+
+interface AuthoredRefusal {
+  readonly tag: 'InvalidPackageSpec' | 'TargetNotPackable'
+  readonly message: string
+  readonly recovery: string
+}
+
+const controlCharacterRefusal: AuthoredRefusal = {
+  tag: 'InvalidPackageSpec',
+  message: 'The package spec contains an ASCII control character.',
+  recovery: acceptedSpecRecovery('Remove it and rerun the same command.'),
+}
+
+const urlMarkerRefusal: AuthoredRefusal = {
+  tag: 'InvalidPackageSpec',
+  message: 'The package spec contains a URL query or fragment marker.',
+  recovery: acceptedSpecRecovery('Drop the URL syntax and rerun the same command.'),
+}
+
+const percentEncodingRefusal: AuthoredRefusal = {
+  tag: 'InvalidPackageSpec',
+  message: 'The package spec contains percent-encoding.',
+  recovery: acceptedSpecRecovery('Write the name literally and rerun the same command.'),
+}
+
+const overlengthRefusal: AuthoredRefusal = {
+  tag: 'InvalidPackageSpec',
+  message: 'The package spec is longer than 214 characters.',
+  recovery: acceptedSpecRecovery('Shorten it and rerun the same command.'),
+}
+
+const versionShapeRefusal: AuthoredRefusal = {
+  tag: 'InvalidPackageSpec',
+  message: 'The version in the package spec is neither an exact version, a range, nor a dist-tag.',
+  recovery: acceptedSpecRecovery('Pass an exact version, a range, or a published tag, and rerun the same command.'),
+}
+
+const unparseableRefusal: AuthoredRefusal = {
+  tag: 'InvalidPackageSpec',
+  message: 'The package spec is not a package name npm accepts.',
+  recovery: acceptedSpecRecovery('Correct the package spec and rerun the same command.'),
+}
+
+const notPackableRefusal: AuthoredRefusal = {
+  tag: 'TargetNotPackable',
+  message: 'The target is not a package tarball this tool can read.',
+  recovery:
+    'Pass --pack with a directory, an existing .tgz path, or a package name with --from-npm, then rerun the same command.',
+}
+
+const holdsAuthoredRefusal = (
+  outcome: Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable>,
+  expected: AuthoredRefusal,
+): boolean =>
+  Result.match(outcome, {
+    onSuccess: () => false,
+    onFailure: (refusal) =>
+      Predicate.isTagged(refusal, expected.tag) &&
+      refusal.message === expected.message &&
+      refusal.recovery === expected.recovery,
+  })
+
+const tagVersionCommand = (version: string): ResolveAcquisitionSourceCommand =>
+  new ResolveAcquisitionSourceCommand({
+    target: `demo@${version}`,
+    fromNpm: true,
+    parsed: Option.some<ParsedPackageSpec>({ name: 'demo', version, versionKind: 'tag' }),
+  })
+
+const nameTailRun = (minLength: number, maxLength: number): Arbitrary.Arbitrary<string> =>
+  Arbitrary.map(Arbitrary.array(nameTail, { minLength, maxLength }), (tail) => tail.join(''))
+
+const controlCharacterTarget: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([bareName, oneArbitrary([intBetween(0x00, 0x1f), Arbitrary.Constant(0x7f)])]),
+  ([name, code]) => `${name}${String.fromCharCode(code)}`,
+)
+
+const urlMarkerTarget: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([bareName, oneOf(['?', '#']), nameTailRun(0, 8)]),
+  ([name, marker, tail]) => `${name}${marker}${tail}`,
+)
+
+const percentEncodingTarget: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([bareName, nameTailRun(0, 8)]),
+  ([name, tail]) => `${name}%${tail}`,
+)
+
+const nonDistTagVersion: Arbitrary.Arbitrary<string> = oneArbitrary([
+  Arbitrary.map(
+    Arbitrary.all([oneOf(['!', '-', '_', '.', '+']), nameTailRun(1, 8)]),
+    ([lead, tail]) => `${lead}${tail}`,
+  ),
+  Arbitrary.map(Arbitrary.all([nameHead, oneOf(['!', '+', '~', ' '])]), ([head, trail]) => `${head}${trail}`),
+])
+
+const unknownBareName: Arbitrary.Arbitrary<string> = Arbitrary.map(nameTailRun(0, 24), (tail) => `z${tail}`)
+
+const notPackableTarget: Arbitrary.Arbitrary<string> = oneArbitrary([
+  Arbitrary.map(nameTailRun(0, 10), (middle) => `./${middle}x`),
+  Arbitrary.map(Arbitrary.all([nameHead, nameTailRun(1, 8)]), ([head, tail]) => `${head}${tail}/x`),
+  Arbitrary.map(nameTailRun(0, 10), (middle) => `.tar.gz-${middle}x`),
+])
+
+const tarballTarget: Arbitrary.Arbitrary<string> = Arbitrary.map(
+  Arbitrary.all([bareName, oneOf(['.tgz', '.tar.gz'])]),
+  ([name, suffix]) => `${name}${suffix}`,
+)
+
+const specLengthBoundary: Arbitrary.Arbitrary<number> = oneArbitrary([
+  Arbitrary.Constant(213),
+  Arbitrary.Constant(214),
+  Arbitrary.Constant(215),
+])
+
+const boundaryCommand = (length: number): ResolveAcquisitionSourceCommand =>
+  new ResolveAcquisitionSourceCommand({
+    target: 'q'.repeat(length),
+    fromNpm: true,
+    parsed: Option.some<ParsedPackageSpec>({ name: 'q'.repeat(length), version: '', versionKind: 'none' }),
+  })
+
+const isRegistryPackage = (
+  outcome: Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable>,
+): boolean =>
+  Result.match(outcome, {
+    onSuccess: (decision) =>
+      Match.value(decision).pipe(Match.tag('RegistryPackage', () => true), Match.orElse(() => false)),
+    onFailure: () => false,
+  })
+
+const isExistingTarball = (
+  outcome: Result.Result<AcquisitionSourceDecision, InvalidPackageSpec | TargetNotPackable>,
+): boolean =>
+  Result.match(outcome, {
+    onSuccess: (decision) =>
+      Match.value(decision).pipe(Match.tag('ExistingTarball', () => true), Match.orElse(() => false)),
+    onFailure: () => false,
+  })
+
+const holdsSpecLengthBoundary = (length: number): boolean => {
+  const outcome = resolveAcquisitionSource(boundaryCommand(length))
+  return Match.value(length <= 214).pipe(
+    Match.when(true, () => isRegistryPackage(outcome)),
+    Match.when(false, () => holdsAuthoredRefusal(outcome, overlengthRefusal)),
+    Match.exhaustive,
+  )
+}
+
 const codeUnit = intBetween(0, 0xff)
 
 interface InjectedCodeUnit {
@@ -343,6 +499,60 @@ it.prop(
   '∀target,code_ControlCharacterSpec_=authoredRefusal',
   [injectedCodeUnit],
   ([injected]) => refusedAsControlCharacter(injected.target) === authoredControlRefusal(injected.code),
+)
+
+it.prop(
+  '∀target_ControlCharacterRefusal_=authoredText',
+  [controlCharacterTarget],
+  ([target]) => holdsAuthoredRefusal(decisionOf(target, true), controlCharacterRefusal),
+)
+
+it.prop(
+  '∀target_UrlMarkerRefusal_=authoredText',
+  [urlMarkerTarget],
+  ([target]) => holdsAuthoredRefusal(decisionOf(target, true), urlMarkerRefusal),
+)
+
+it.prop(
+  '∀target_PercentEncodingRefusal_=authoredText',
+  [percentEncodingTarget],
+  ([target]) => holdsAuthoredRefusal(decisionOf(target, true), percentEncodingRefusal),
+)
+
+it.prop(
+  '∀target_OverlengthRefusal_=authoredText',
+  [overlengthName],
+  ([target]) => holdsAuthoredRefusal(decisionOf(target, true), overlengthRefusal),
+)
+
+it.prop(
+  '∀version_NonDistTagVersion_=authoredText',
+  [nonDistTagVersion],
+  ([version]) => holdsAuthoredRefusal(resolveAcquisitionSource(tagVersionCommand(version)), versionShapeRefusal),
+)
+
+it.prop(
+  '∀target_UnknownBareName_=authoredText',
+  [unknownBareName],
+  ([target]) => holdsAuthoredRefusal(decisionOf(target, true), unparseableRefusal),
+)
+
+it.prop(
+  '∀target_NotBareNotTarball_=authoredText',
+  [notPackableTarget],
+  ([target]) => holdsAuthoredRefusal(decisionOf(target, false), notPackableRefusal),
+)
+
+it.prop(
+  '∀target_TarballSuffix_∃ExistingTarball',
+  [tarballTarget],
+  ([target]) => isExistingTarball(decisionOf(target, false)),
+)
+
+it.prop(
+  '∀length_SpecLengthBoundary_=authoredLimit',
+  [specLengthBoundary],
+  ([length]) => holdsSpecLengthBoundary(length),
 )
 
 it.prop(

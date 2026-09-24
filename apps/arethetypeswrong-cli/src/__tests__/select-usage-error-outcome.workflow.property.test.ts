@@ -5,6 +5,7 @@ import { Arbitrary } from 'effect/unstable/arbitrary'
 import {
   selectUsageErrorOutcome,
   SelectUsageErrorOutcomeCommand,
+  UsageErrorDocumentSchema,
   type UsageErrorOutcomeDecision,
 } from '../select-usage-error-outcome.workflow.js'
 
@@ -79,6 +80,43 @@ const oneOfValues = <T>(values: readonly T[]): Arbitrary.Arbitrary<T> =>
 
 const decidedOf = (command: SelectUsageErrorOutcomeCommand): UsageErrorOutcomeDecision =>
   Result.getOrThrow(selectUsageErrorOutcome(command))
+
+const everyUsageErrorDocument: Arbitrary.Arbitrary<readonly string[]> = Arbitrary.Constant([
+  '{"status":"error","kind":"ShowHelp","message":"attw --help","recovery":"Run `attw --help` to see the accepted commands and flags."}',
+])
+
+const everyRefusedUsageErrorDocument: Arbitrary.Arbitrary<readonly string[]> = Arbitrary.Constant([
+  '{"status":"ok","kind":"ShowHelp","message":"attw --help","recovery":"Run `attw --help`."}',
+  '{"kind":"ShowHelp","message":"attw --help","recovery":"Run `attw --help`."}',
+  '{"status":"error","message":"attw --help","recovery":"Run `attw --help`."}',
+  '{"status":"error","kind":"ShowHelp","message":"attw --help"}',
+  '{"status":"error","kind":1,"message":"attw --help","recovery":"Run `attw --help`."}',
+  '{"status":"error","kind":"ShowHelp","message":"attw --help","recovery":false}',
+])
+
+it.prop(
+  '∀document_UsageErrorDocument_=Decoded',
+  [everyUsageErrorDocument],
+  ([documents]) =>
+    documents.every((document) =>
+      Result.match(Schema.decodeResult(Schema.fromJsonString(UsageErrorDocumentSchema))(document), {
+        onSuccess: (decoded) =>
+          decoded.kind === 'ShowHelp' &&
+          decoded.message === 'attw --help' &&
+          decoded.recovery === 'Run `attw --help` to see the accepted commands and flags.',
+        onFailure: () => false,
+      })
+    ),
+)
+
+it.prop(
+  '∀document_NotUsageErrorDocument_⊥Decode',
+  [everyRefusedUsageErrorDocument],
+  ([documents]) =>
+    documents.every((document) =>
+      Result.isFailure(Schema.decodeResult(Schema.fromJsonString(UsageErrorDocumentSchema))(document))
+    ),
+)
 
 it.prop('∀row_SelectUsageErrorOutcome_=authoredTable', [oneOfValues(usageErrorRows)], ([row]) => {
   const decision = decidedOf(

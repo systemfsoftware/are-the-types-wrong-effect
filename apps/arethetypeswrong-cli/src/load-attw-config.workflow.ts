@@ -24,8 +24,6 @@ export type AttwConfig = S.Schema.Type<typeof AttwConfigSchema>
 const acceptedKeys =
   'ignoreRules, ignoreResolutions, format, quiet, summary, emoji, color, entrypoints, includeEntrypoints, excludeEntrypoints, entrypointsLegacy, fromNpm, pack, registry'
 
-const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim()
-
 const AttwConfigDecisionTypeId: unique symbol = Symbol.for(
   '@systemfsoftware/arethetypeswrong-cli/AttwConfigDecision',
 )
@@ -65,6 +63,8 @@ export class AttwConfigAbsent extends S.TaggedClass<AttwConfigAbsent>()('AttwCon
 }
 
 export type AttwConfigDecision = AttwConfigLoaded | AttwConfigAbsent
+
+const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
 const configInvalid = (filePath: string, issue: string): ConfigInvalid =>
   new ConfigInvalid({

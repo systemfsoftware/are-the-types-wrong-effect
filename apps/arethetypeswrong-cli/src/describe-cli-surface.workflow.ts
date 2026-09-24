@@ -16,7 +16,7 @@ export class RenderSchemaDocumentCommand extends S.Class<RenderSchemaDocumentCom
   version: S.String,
   target: S.Option(S.String),
 }) {
-  static readonly [Workflow.InstrumentationBrand] = { version: 'app.attw.version' } as const
+  static readonly [Workflow.InstrumentationBrand] = {} as const
 }
 
 export class SchemaRendered extends S.TaggedClass<SchemaRendered>()('SchemaRendered', { version: S.String }) {

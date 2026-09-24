@@ -131,10 +131,7 @@ export class ResolveAcquisitionSourceCommand extends S.Class<ResolveAcquisitionS
   pack: S.optional(S.Boolean),
   parsed: S.Option(ParsedPackageSpecSchema),
 }) {
-  static readonly [Workflow.InstrumentationBrand] = {
-    target: 'app.attw.target',
-    fromNpm: 'app.attw.from.npm',
-  } as const
+  static readonly [Workflow.InstrumentationBrand] = {} as const
 }
 
 export class PackDirectory extends S.TaggedClass<PackDirectory>()('PackDirectory', {}) {

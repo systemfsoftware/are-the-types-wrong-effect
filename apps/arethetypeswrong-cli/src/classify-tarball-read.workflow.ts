@@ -31,7 +31,7 @@ export class ClassifyTarballReadCommand extends S.TaggedClass<ClassifyTarballRea
     bytes: S.Option(S.Uint8Array),
   },
 ) {
-  static readonly [Workflow.InstrumentationBrand] = { tarballPath: 'app.attw.tarball.path' } as const
+  static readonly [Workflow.InstrumentationBrand] = {} as const
 }
 
 const packedRef = (directory: string, tarballPath: string) => ({

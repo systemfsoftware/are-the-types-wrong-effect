@@ -96,11 +96,17 @@ const rawStatusObservation: Arbitrary.Arbitrary<RawStatusObservation> = Arbitrar
   })),
 )
 
+const authoredNotFoundMessage = 'The registry has no package or version matching that target.'
+const authoredNotFoundRecovery = 'Check the package name and version, then rerun the same command.'
+
 const holdsBoundaryRow = (row: { readonly status: number; readonly expected: StatusClass }): boolean =>
   Match.value(classificationOf(new RegistryStatusObserved({ status: row.status }))).pipe(
     Match.tag('Success', ({ success: decided }) =>
       Match.value(row.expected).pipe(
-        Match.when('notFound', () => Predicate.isTagged(decided, 'RegistryNotFound')),
+        Match.when('notFound', () =>
+          Predicate.isTagged(decided, 'RegistryNotFound') &&
+          decided.message === authoredNotFoundMessage &&
+          decided.recovery === authoredNotFoundRecovery),
         Match.when('badResponse', () =>
           Predicate.isTagged(decided, 'RegistryBadResponse') &&
           decided.message.includes(String(row.status))),

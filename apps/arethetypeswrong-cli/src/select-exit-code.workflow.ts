@@ -1,7 +1,7 @@
 import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import type { Problem } from '@systemfsoftware/arethetypeswrong'
 import { Workflow } from '@systemfsoftware/effect-cell-types'
-import { Match, Result } from 'effect'
+import { Match, Option, Result } from 'effect'
 import * as S from 'effect/Schema'
 
 import type { CliProblemFlag } from './ProblemUtils.js'
@@ -30,19 +30,31 @@ const ruleFlagOf = (kind: Problem['kind']): CliProblemFlag =>
     Match.exhaustive,
   )
 
-const problemResolutionKindOf = (problem: Problem): string =>
+const problemResolutionKindOf = (problem: Problem): Option.Option<string> =>
   Match.value(problem).pipe(
-    Match.when({ kind: 'NoResolution' }, ({ resolutionKind }): string => resolutionKind),
-    Match.when({ kind: 'UntypedResolution' }, ({ resolutionKind }): string => resolutionKind),
-    Match.when({ kind: 'CJSResolvesToESM' }, ({ resolutionKind }): string => resolutionKind),
-    Match.when({ kind: 'FallbackCondition' }, ({ resolutionKind }): string => resolutionKind),
-    Match.orElse((): string => ''),
+    Match.when({ kind: 'NoResolution' }, ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind)),
+    Match.when(
+      { kind: 'UntypedResolution' },
+      ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind),
+    ),
+    Match.when(
+      { kind: 'CJSResolvesToESM' },
+      ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind),
+    ),
+    Match.when(
+      { kind: 'FallbackCondition' },
+      ({ resolutionKind }): Option.Option<string> => Option.some(resolutionKind),
+    ),
+    Match.orElse((): Option.Option<string> => Option.none()),
   )
 
 const isVisibleProblem = (request: SuppressionRequest): boolean =>
   Match.value({
     rule: request.ignoredRules.includes(ruleFlagOf(request.problem.kind)),
-    resolution: request.ignoredResolutions.includes(problemResolutionKindOf(request.problem)),
+    resolution: Option.exists(
+      problemResolutionKindOf(request.problem),
+      (resolutionKind) => request.ignoredResolutions.includes(resolutionKind),
+    ),
   }).pipe(
     Match.when({ rule: true }, (): boolean => false),
     Match.when({ resolution: true }, (): boolean => false),

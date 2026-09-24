@@ -30,7 +30,7 @@ export class ClassifyPackOutcomeCommand extends S.TaggedClass<ClassifyPackOutcom
     tarballPath: S.Option(S.String),
   },
 ) {
-  static readonly [Workflow.InstrumentationBrand] = { directory: 'app.attw.directory' } as const
+  static readonly [Workflow.InstrumentationBrand] = {} as const
 }
 
 const packFailed = (): PackFailed =>

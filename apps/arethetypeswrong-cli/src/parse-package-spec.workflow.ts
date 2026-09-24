@@ -40,27 +40,22 @@ export class ParsePackageSpecCommand extends S.TaggedClass<ParsePackageSpecComma
   nameErrors: S.Array(S.String),
   versionShape: S.Literals(['none', 'exact', 'range', 'tag']),
 }) {
-  static readonly [Workflow.InstrumentationBrand] = { target: 'app.attw.target' } as const
+  static readonly [Workflow.InstrumentationBrand] = {} as const
+}
+
+const splitAt = (target: string, fromIndex: number) => {
+  const at = target.indexOf('@', fromIndex)
+  return Match.value(at).pipe(
+    Match.when(-1, () => ({ name: target, version: '' })),
+    Match.orElse((separator) => ({ name: target.slice(0, separator), version: target.slice(separator + 1) })),
+  )
 }
 
 const splitNameAndVersion = (target: string, scopeShape: 'unscoped' | 'scoped' | 'malformed') =>
   Match.value(scopeShape).pipe(
-    Match.when('unscoped', () => {
-      const at = target.indexOf('@')
-      return Match.value(at).pipe(
-        Match.when(-1, () => ({ name: target, version: '' })),
-        Match.orElse((separator) => ({ name: target.slice(0, separator), version: target.slice(separator + 1) })),
-      )
-    }),
-    Match.when('scoped', () => {
-      const slash = target.indexOf('/', 1)
-      const at = target.indexOf('@', slash + 1)
-      return Match.value(at).pipe(
-        Match.when(-1, () => ({ name: target, version: '' })),
-        Match.orElse((separator) => ({ name: target.slice(0, separator), version: target.slice(separator + 1) })),
-      )
-    }),
-    Match.when('malformed', () => ({ name: target, version: '' })),
+    Match.when('unscoped', () => splitAt(target, 0)),
+    Match.when('scoped', () => splitAt(target, target.indexOf('/'))),
+    Match.when('malformed', () => splitAt(target, 0)),
     Match.exhaustive,
   )
 

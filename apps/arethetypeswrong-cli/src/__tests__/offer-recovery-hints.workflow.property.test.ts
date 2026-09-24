@@ -82,6 +82,20 @@ const packlessDirectory = new DecideHintsCommand({ request: new PacklessDirector
 
 const noHints: readonly Hint[] = []
 
+const authoredHintText: Readonly<Record<HintId, string>> = {
+  expansion:
+    'The envelope omits fields. Rerun with --include entrypoints, buildTools, programInfo, traces to include any of them.',
+  untyped:
+    'This package ships no types, so the envelope status is "untyped" and carries no problems. Read the status discriminator, not the exit code, to tell typed from untyped.',
+  directoryWithoutPack:
+    'Pass --pack with a directory, an existing .tgz path, or a package name with --from-npm, then rerun the same command.',
+}
+
+const authoredRefusal = {
+  message: 'The --include flag names a field this tool does not accept.',
+  recovery: 'Pass --include with a comma-separated list of entrypoints, buildTools, programInfo, traces.',
+}
+
 const hintsOf = (command: DecideHintsCommand): readonly Hint[] =>
   Match.value(Result.getOrThrow(offerRecoveryHints(command))).pipe(
     Match.tag('HintsOffered', ({ hints }) => hints),
@@ -215,6 +229,11 @@ it.prop('∀situation_Hints_=authoredTable', [oneOf(situationNames)], ([situatio
   return ids.length === spec.hints.length && ids.every((id, index) => id === spec.hints[index])
 })
 
+it.prop('∀situation_HintText_=authoredText', [oneOf(situationNames)], ([situation]) => {
+  const hints = hintsOf(situationTable[situation].state)
+  return hints.every((hint) => hint.text === authoredHintText[hint.id])
+})
+
 it.prop('∀inputs_Hints_=nameIndependent∧∌ESC', [hostileRunInputs], ([inputs]) => {
   const hostile = hintsOf(runNamed(inputs, inputs.packageName))
   const benign = hintsOf(runNamed(inputs, 'benign-package'))
@@ -252,7 +271,8 @@ it.prop(
     Result.match(offerRecoveryHints(run({ include: [token] })), {
       onFailure: (refusal) =>
         Predicate.isTagged(refusal, 'InvalidPackageSpec') &&
-        EnvelopeMaskFields.every((field) => refusal.recovery.includes(field)),
+        refusal.message === authoredRefusal.message &&
+        refusal.recovery === authoredRefusal.recovery,
       onSuccess: () => false,
     }),
 )

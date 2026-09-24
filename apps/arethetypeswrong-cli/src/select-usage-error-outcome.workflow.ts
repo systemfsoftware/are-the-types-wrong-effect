@@ -4,12 +4,14 @@ import * as S from 'effect/Schema'
 
 const usageErrorRecovery = 'Run `attw --help` to see the accepted commands and flags.'
 
-const UsageErrorDocument = S.fromJsonString(S.Struct({
+export const UsageErrorDocumentSchema = S.Struct({
   status: S.Literal('error'),
   kind: S.String,
   message: S.String,
   recovery: S.String,
-}))
+})
+
+const UsageErrorDocument = S.fromJsonString(UsageErrorDocumentSchema)
 
 const UsageErrorOutcomeDecisionTypeId: unique symbol = Symbol.for(
   '@systemfsoftware/arethetypeswrong-cli/UsageErrorOutcomeDecision',

@@ -188,9 +188,15 @@ const holdsSpecSpectrum = (row: SpecRow): boolean =>
       decided.spec.versionKind === row.versionKind,
   })
 
-it.prop('∀row_SpecParity_=authoredTag', [oneOf(specRowTable)], ([row]) => tagOf(row.target) === row.expected)
+const everySpecRow: Arbitrary.Arbitrary<ReadonlyArray<SpecRow>> = Arbitrary.Constant(specRowTable)
 
-it.prop('∀row_SpecParse_=authoredSpectrum', [oneOf(specRowTable)], ([row]) => holdsSpecSpectrum(row))
+it.prop(
+  '∀rows_SpecParity_=authoredTag',
+  [everySpecRow],
+  ([rows]) => rows.every((row) => tagOf(row.target) === row.expected),
+)
+
+it.prop('∀rows_SpecParse_=authoredSpectrum', [everySpecRow], ([rows]) => rows.every((row) => holdsSpecSpectrum(row)))
 
 it.prop('∀target_VersionedSpec_∃Kind', [versionedSpec], ([target]) => Option.isSome(expectedKind(target)))
 
