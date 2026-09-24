@@ -52,26 +52,29 @@ Problems replace the `✔` with `✘` and are named above the table, so the exit
 
 ## Using the Engine
 
-`checkPackage` returns an Effect, so compose it into your own program and let your edge interpret it once:
+`Analysis.make(pkg).run` is an Effect, so compose it into your own program and let your edge interpret it once:
 
 ```bash
 pnpm add @systemfsoftware/arethetypeswrong
 ```
 
-import { checkPackage } from '@systemfsoftware/arethetypeswrong'
+```ts
+import { Analysis } from '@systemfsoftware/arethetypeswrong'
 import { createPackageFromTarballData } from '@systemfsoftware/npm-package'
 import { Effect } from 'effect'
 import * as FileSystem from 'effect/FileSystem'
 
 const check = Effect.gen(function*() {
-const fs = yield* FileSystem.FileSystem
-const tarball = yield* fs.readFile('./my-package-1.0.0.tgz')
-const analysis = yield* checkPackage(createPackageFromTarballData(tarball))
-
-// analysis.entrypoints — a resolution record per subpath
-// analysis.problems — what failed, with the position of the offending syntax
-return analysis
+  const fs = yield* FileSystem.FileSystem
+  const tarball = yield* fs.readFile('./my-package-1.0.0.tgz')
+  return yield* Analysis.make(createPackageFromTarballData(tarball)).run
 })
+// yields a report: `entrypoints` is what each subpath resolved to
+// under every resolution kind, and `problems` is what failed, with
+// the position of the offending syntax where there is one
+```
+
+Entrypoint selection is a combinator on the spec — `Analysis.includeEntrypoints`, `Analysis.excludeEntrypoints`, `Analysis.withEntrypoints`, `Analysis.withLegacyEntrypoints`, and `Analysis.withTypesCompanion` each return a new spec, and a package that ships no types yields a report with `types: false`. See the [engine API reference](packages/arethetypeswrong/README.md) for the full surface.
 
 Interpret it once, at the edge of your program: `yield*` it into a larger Effect, or run that Effect with `NodeRuntime.runMain` if it is a script that terminates. Keep one edge — `runMain` sets the exit code and installs the interrupt handlers, and wrapping it in a second runtime leaves the outer edge with no reach over the fibers doing the work.
 

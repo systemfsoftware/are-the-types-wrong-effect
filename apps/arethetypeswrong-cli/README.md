@@ -235,6 +235,21 @@ pnpm pack && attw *.tgz
 
 Invalid JSON or an unrecognized key is a failure — exit `1` with a `ConfigInvalid` document on stderr — never a silent skip.
 
+## Architecture
+
+`attw` runs one composed cell. The command definitions only translate argv into that cell's input; the stages after it are cells and workflows of their own:
+
+| Stage               | What it does                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Load config         | Reads `.attw.json` from the working directory and merges it beneath the flags.                                                                                           |
+| Acquire the tarball | Decides the source, then reads an existing `.tgz`, runs `npm pack` in the target directory and reads the tarball back, or resolves the registry manifest and fetches it. |
+| Analyze             | Builds an `Analysis.make(pkg)` spec from the acquired bytes and runs it.                                                                                                 |
+| Render              | Selects the output mode from the terminal and the flags, and writes stdout.                                                                                              |
+| Offer hints         | Writes any applicable recovery hints to stderr.                                                                                                                          |
+| Select exit code    | A workflow decides the exit code from the final outcome.                                                                                                                 |
+
+Four capabilities sit behind service contracts — terminal, filesystem, pack runner, and registry — and their real drivers are bound once, in `main.ts`, at the process edge. A run that cannot proceed becomes one of the typed failures above rather than an exception, and it writes its failure document instead of an envelope.
+
 ## Migrating from 4.x
 
 Two caller-visible breaks:
