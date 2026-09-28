@@ -36,7 +36,7 @@ catalog:
   "@vitest/coverage-v8": ^5.0.1
   "@vitest/snapshot": ^5.0.1
   cjs-module-lexer: ^2.2.1
-  effect: 4.0.0-rc.116
+  effect: 4.0.0-rc.117
   fast-check: ^4.10.0
   husky: ^9.1.7
   lint-staged: ^17.5.1
@@ -61,7 +61,7 @@ packages:
   - packages/*
   - packages/arethetypeswrong/*
 overrides:
-  effect: 4.0.0-rc.116
+  effect: 4.0.0-rc.117
   "@effect/platform-node": 4.0.0-rc.116
   "@effect/platform-node-shared": 4.0.0-rc.116
   "@effect/vitest": 4.0.0-rc.116
