@@ -140,7 +140,7 @@ catalogs:
 overrides:
   effect: 4.0.0-rc.116
   '@effect/platform-node': 4.0.0-rc.116
-  '@effect/platform-node-shared': 4.0.0-rc.116
+  '@effect/platform-node-shared': 4.0.0-rc.117
   '@effect/vitest': 4.0.0-rc.116
 
 importers:
@@ -190,8 +190,8 @@ importers:
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@effect/platform-node-shared':
-        specifier: 4.0.0-rc.116
-        version: 4.0.0-rc.116(effect@4.0.0-rc.116)
+        specifier: 4.0.0-rc.117
+        version: 4.0.0-rc.117(effect@4.0.0-rc.116)
       '@effect/vitest':
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
@@ -618,8 +618,8 @@ packages:
       '@opentelemetry/sdk-trace-web':
         optional: true
 
-  '@effect/platform-node-shared@4.0.0-rc.116':
-    resolution: {integrity: sha512-4FB6UriGqArWFUaFqVchhfCRmmtOVzmD/k/bH6LErlKY8a9amt5dk6c3Arsi7AvUpChsdO+3jsG+P85HsxMkNA==}
+  '@effect/platform-node-shared@4.0.0-rc.117':
+    resolution: {integrity: sha512-GyRkEfLBG49MwJe+/XDPiXYcQ44RA9p2z0AurlsWhR1cd1PqOUMEZU1pORL+/R5hR8aH6ZuqoJYD8lAc6h+wlA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       effect: 4.0.0-rc.116
@@ -3610,7 +3610,7 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 2.11.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-trace-node': 2.11.0(@opentelemetry/api@1.9.1)
 
-  '@effect/platform-node-shared@4.0.0-rc.116(effect@4.0.0-rc.116)':
+  '@effect/platform-node-shared@4.0.0-rc.117(effect@4.0.0-rc.116)':
     dependencies:
       '@types/ws': 8.18.1
       effect: 4.0.0-rc.116
@@ -3621,7 +3621,7 @@ snapshots:
 
   '@effect/platform-node@4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-rc.116(effect@4.0.0-rc.116)
+      '@effect/platform-node-shared': 4.0.0-rc.117(effect@4.0.0-rc.116)
       effect: 4.0.0-rc.116
       redis: 6.2.1(@opentelemetry/api@1.9.1)
       undici: 8.10.2
@@ -4770,7 +4770,7 @@ snapshots:
     dependencies:
       '@effect/opentelemetry': 4.0.0-rc.116(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)
       '@effect/platform-node': 4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
-      '@effect/platform-node-shared': 4.0.0-rc.116(effect@4.0.0-rc.116)
+      '@effect/platform-node-shared': 4.0.0-rc.117(effect@4.0.0-rc.116)
       '@noble/hashes': 2.4.0
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/exporter-metrics-otlp-http': 0.222.0(@opentelemetry/api@1.9.1)
