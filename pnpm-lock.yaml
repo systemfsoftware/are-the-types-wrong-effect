@@ -32,23 +32,23 @@ catalogs:
       specifier: ^4.2.0
       version: 4.2.0
     '@systemfsoftware/effect-cell-types':
-      specifier: ^10.1.0
-      version: 10.1.0
+      specifier: ^10.2.0
+      version: 10.2.0
     '@systemfsoftware/effect-gherkin-spec':
-      specifier: ^4.3.0
-      version: 4.3.0
+      specifier: ^4.4.0
+      version: 4.4.0
     '@systemfsoftware/effect-memfs':
       specifier: ^3.1.0
       version: 3.1.0
     '@systemfsoftware/effect-schema-law':
-      specifier: 2.3.0
-      version: 2.3.0
+      specifier: 2.4.0
+      version: 2.4.0
     '@systemfsoftware/effect-schema-vite':
-      specifier: ^2.2.2
-      version: 2.2.2
+      specifier: ^2.2.4
+      version: 2.2.4
     '@systemfsoftware/npm-package':
-      specifier: ^0.4.0
-      version: 0.4.0
+      specifier: ^0.4.1
+      version: 0.4.1
     '@systemfsoftware/oxlint-config-recommended':
       specifier: ^2.0.1
       version: 2.0.1
@@ -59,8 +59,8 @@ catalogs:
       specifier: ^0.1.1
       version: 0.1.1
     '@systemfsoftware/stryker-js':
-      specifier: ^10.1.1
-      version: 10.1.1
+      specifier: ^10.2.0
+      version: 10.2.0
     '@systemfsoftware/stryker-js-typescript-checker':
       specifier: ^7.0.5
       version: 7.0.5
@@ -92,8 +92,8 @@ catalogs:
       specifier: ^2.2.1
       version: 2.2.1
     fast-check:
-      specifier: ^4.10.0
-      version: 4.10.0
+      specifier: ^4.10.2
+      version: 4.10.2
     husky:
       specifier: ^9.1.7
       version: 9.1.7
@@ -104,8 +104,8 @@ catalogs:
       specifier: ~1.82.0
       version: 1.82.0
     oxlint-tsgolint:
-      specifier: 7.0.2001
-      version: 7.0.2001
+      specifier: 7.0.2003
+      version: 7.0.2003
     rimraf:
       specifier: ^6.1.3
       version: 6.1.3
@@ -128,8 +128,8 @@ catalogs:
       specifier: ^8.0.0
       version: 8.0.0
     vite:
-      specifier: ^8.2.2
-      version: 8.2.2
+      specifier: ^8.3.1
+      version: 8.3.1
     vite-tsconfig-paths:
       specifier: ^6.1.1
       version: 6.1.1
@@ -173,10 +173,10 @@ importers:
         version: 17.5.1
       oxlint:
         specifier: 'catalog:'
-        version: 1.82.0(oxlint-tsgolint@7.0.2001)
+        version: 1.82.0(oxlint-tsgolint@7.0.2003)
       oxlint-tsgolint:
         specifier: 'catalog:'
-        version: 7.0.2001
+        version: 7.0.2003
       turbo:
         specifier: 'catalog:'
         version: 2.10.12
@@ -203,22 +203,22 @@ importers:
         version: link:../../packages/arethetypeswrong-recipes
       '@systemfsoftware/effect-cell-types':
         specifier: 'catalog:'
-        version: 10.1.0(effect@4.0.0-rc.116)
+        version: 10.2.0(effect@4.0.0-rc.116)
       '@systemfsoftware/effect-gherkin-spec':
         specifier: 'catalog:'
-        version: 4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 4.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-law':
         specifier: 'catalog:'
-        version: 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-vite':
         specifier: 'catalog:'
-        version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
+        version: 2.2.4(@systemfsoftware/effect-schema-law@2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
       '@systemfsoftware/npm-package':
         specifier: 'catalog:'
-        version: 0.4.0(effect@4.0.0-rc.116)
+        version: 0.4.1(effect@4.0.0-rc.116)
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'
-        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)
+        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)
       '@systemfsoftware/stryker-ignorer-effect-schema-declarations':
         specifier: 'catalog:'
         version: 0.1.1(rolldown@1.2.8)
@@ -227,7 +227,7 @@ importers:
         version: 0.1.1(rolldown@1.2.8)
       '@systemfsoftware/stryker-js':
         specifier: 'catalog:'
-        version: 10.1.1(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
+        version: 10.2.0(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))(vitest@5.0.1)
       '@systemfsoftware/stryker-js-typescript-checker':
         specifier: 'catalog:'
         version: 7.0.5(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.8)(supports-color@8.1.1)
@@ -257,10 +257,10 @@ importers:
         version: 4.0.0-rc.116
       fast-check:
         specifier: 'catalog:'
-        version: 4.10.0
+        version: 4.10.2
       oxlint:
         specifier: 'catalog:'
-        version: 1.82.0(oxlint-tsgolint@7.0.2001)
+        version: 1.82.0(oxlint-tsgolint@7.0.2003)
       rimraf:
         specifier: 'catalog:'
         version: 6.1.3
@@ -275,13 +275,13 @@ importers:
         version: 8.0.0
       vite:
         specifier: 'catalog:'
-        version: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+        version: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
       vite-tsconfig-paths:
         specifier: 'catalog:'
-        version: 6.1.1(supports-color@8.1.1)(typescript@7.0.2)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+        version: 6.1.1(supports-color@8.1.1)(typescript@7.0.2)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   apps/arethetypeswrong-cli-e2e:
     devDependencies:
@@ -296,10 +296,10 @@ importers:
         version: link:../../packages/arethetypeswrong-recipes
       '@systemfsoftware/npm-package':
         specifier: 'catalog:'
-        version: 0.4.0(effect@4.0.0-rc.116)
+        version: 0.4.1(effect@4.0.0-rc.116)
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'
-        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)
+        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)
       '@systemfsoftware/tsconfig':
         specifier: 'catalog:'
         version: 2.0.1
@@ -311,7 +311,7 @@ importers:
         version: 4.0.0-rc.116
       oxlint:
         specifier: 'catalog:'
-        version: 1.82.0(oxlint-tsgolint@7.0.2001)
+        version: 1.82.0(oxlint-tsgolint@7.0.2003)
       testcontainers:
         specifier: 'catalog:'
         version: 12.1.0(supports-color@8.1.1)
@@ -320,10 +320,10 @@ importers:
         version: 7.0.2
       vite:
         specifier: 'catalog:'
-        version: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+        version: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   packages/arethetypeswrong:
     dependencies:
@@ -332,7 +332,7 @@ importers:
         version: 1.0.6
       '@systemfsoftware/npm-package':
         specifier: 'catalog:'
-        version: 0.4.0(effect@4.0.0-rc.116)
+        version: 0.4.1(effect@4.0.0-rc.116)
       cjs-module-lexer:
         specifier: 'catalog:'
         version: 2.2.1
@@ -363,40 +363,40 @@ importers:
         version: link:../arethetypeswrong-recipes
       '@systemfsoftware/effect-cell-types':
         specifier: 'catalog:'
-        version: 10.1.0(effect@4.0.0-rc.116)
+        version: 10.2.0(effect@4.0.0-rc.116)
       '@systemfsoftware/effect-gherkin-spec':
         specifier: 'catalog:'
-        version: 4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 4.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-memfs':
         specifier: 'catalog:'
         version: 3.1.0(effect@4.0.0-rc.116)(typescript@6.0.3)
       '@systemfsoftware/effect-schema-law':
         specifier: 'catalog:'
-        version: 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-vite':
         specifier: 'catalog:'
-        version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
+        version: 2.2.4(@systemfsoftware/effect-schema-law@2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'
-        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)
+        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@6.0.3)
       '@systemfsoftware/stryker-ignorer-effect-schema-declarations':
         specifier: 'catalog:'
-        version: 0.1.1(rolldown@1.2.8)
+        version: 0.1.1(rolldown@1.2.11)
       '@systemfsoftware/stryker-ignorer-in-source-vitest-block':
         specifier: 'catalog:'
-        version: 0.1.1(rolldown@1.2.8)
+        version: 0.1.1(rolldown@1.2.11)
       '@systemfsoftware/stryker-js':
         specifier: 'catalog:'
-        version: 10.1.1(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
+        version: 10.2.0(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))(vitest@5.0.1)
       '@systemfsoftware/stryker-js-typescript-checker':
         specifier: 'catalog:'
-        version: 7.0.5(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.8)(supports-color@8.1.1)
+        version: 7.0.5(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.11)(supports-color@8.1.1)
       '@systemfsoftware/stryker-js-vitest-runner':
         specifier: 'catalog:'
         version: 7.1.1(@opentelemetry/api@1.9.1)(effect@4.0.0-rc.116)(supports-color@8.1.1)(vitest@5.0.1)
       '@systemfsoftware/stryker-test-contribution':
         specifier: 'catalog:'
-        version: 3.0.3(effect@4.0.0-rc.116)(rolldown@1.2.8)
+        version: 3.0.3(effect@4.0.0-rc.116)(rolldown@1.2.11)
       '@systemfsoftware/tsconfig':
         specifier: 'catalog:'
         version: 2.0.1
@@ -417,10 +417,10 @@ importers:
         version: 5.0.1
       fast-check:
         specifier: 'catalog:'
-        version: 4.10.0
+        version: 4.10.2
       oxlint:
         specifier: 'catalog:'
-        version: 1.82.0(oxlint-tsgolint@7.0.2001)
+        version: 1.82.0(oxlint-tsgolint@7.0.2003)
       rimraf:
         specifier: 'catalog:'
         version: 6.1.3
@@ -429,23 +429,23 @@ importers:
         version: 0.23.0(typescript@6.0.3)
       vite:
         specifier: 'catalog:'
-        version: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+        version: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+        version: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   packages/arethetypeswrong-recipes:
     dependencies:
       '@systemfsoftware/npm-package':
         specifier: 'catalog:'
-        version: 0.4.0(effect@4.0.0-rc.116)
+        version: 0.4.1(effect@4.0.0-rc.116)
       effect:
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116
     devDependencies:
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'
-        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)
+        version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)
       '@systemfsoftware/tsconfig':
         specifier: 'catalog:'
         version: 2.0.1
@@ -454,7 +454,7 @@ importers:
         version: 24.13.4
       oxlint:
         specifier: 'catalog:'
-        version: 1.82.0(oxlint-tsgolint@7.0.2001)
+        version: 1.82.0(oxlint-tsgolint@7.0.2003)
       rimraf:
         specifier: 'catalog:'
         version: 6.1.3
@@ -1210,33 +1210,36 @@ packages:
   '@oxc-project/types@0.150.0':
     resolution: {integrity: sha512-rDS5/31E9HfPl/CIzGrn0DOlvBbXFseQ5URJ9sYMfstbKLD/c6Gm9vmRzRGDdAXyOIL4zmO37lc9RIwYqVruZw==}
 
-  '@oxlint-tsgolint/darwin-arm64@7.0.2001':
-    resolution: {integrity: sha512-CUJEdbSZ54+Xy9OXqOhWLTKZKV0BBiV7C2i/ygyVmXtkUNXx5YCzN8DpSSshTAKktoL7S+tnQ/ftFG/i7X896w==}
+  '@oxc-project/types@0.151.0':
+    resolution: {integrity: sha512-J1yXrIlNDZVzE3ada310xeAw7nH8yCAyLPuUIsjKatFPmfn5bS1oW+cM+QsGOtVWd5nhSpbwZWx/rue+r5Z+PA==}
+
+  '@oxlint-tsgolint/darwin-arm64@7.0.2003':
+    resolution: {integrity: sha512-TgV33rXr6ueXBwvc+0nssUkTBSXHJxv77I8p4RCjDjCnvexHtmoPiudVRDfj3S3puMDdeQdHW6jdUgUPy3nr/w==}
     cpu: [arm64]
     os: [darwin]
 
-  '@oxlint-tsgolint/darwin-x64@7.0.2001':
-    resolution: {integrity: sha512-pXfBb5BqONCcgrXQNUZWXgiYmRSWJzd97S8i41VVOh6ut0tyo+cJ5FKFpczDHxiVNfj/3e7c9B4MtztNdpIVCw==}
+  '@oxlint-tsgolint/darwin-x64@7.0.2003':
+    resolution: {integrity: sha512-hY3FMAjIaPDdK3FNxyRXRfHPOFeoBn6dmnLyKZgQ2IbTTD1adXhl6PfCIqHhCPvurigv7nf7mYuWZZ19MmJzmg==}
     cpu: [x64]
     os: [darwin]
 
-  '@oxlint-tsgolint/linux-arm64@7.0.2001':
-    resolution: {integrity: sha512-roP7zujb/QDPzDwEKsFFpzNHHy91/Y7oX9vQXk78ekyZtcQj1QXDIMH33gjDdHBfRl4K9pZ36xhRgrP4Zr+R8A==}
+  '@oxlint-tsgolint/linux-arm64@7.0.2003':
+    resolution: {integrity: sha512-eAET4JpyfBbg8SO0K74o4R55tEjVC292pIyxGOw2XGf8x/HrPNyxwQ478jMYOM54FIVOHc8sJ6VRHxluy6lucw==}
     cpu: [arm64]
     os: [linux]
 
-  '@oxlint-tsgolint/linux-x64@7.0.2001':
-    resolution: {integrity: sha512-UDezNqdECVmngu2TPnjaS1YoAmcTaBoI5lV9vk3VahBxoi+I5r9k3iJTT7qZoYWOXTD/7T7bNcwRgrocR6BscQ==}
+  '@oxlint-tsgolint/linux-x64@7.0.2003':
+    resolution: {integrity: sha512-GXdyO/XyqDJ3s/llR/oOktLsYNjZtWSQBy0JMc+/0gsNPvTcseKPhn9c6KcFyWmnr6H4vljYALbujonqSzzEGw==}
     cpu: [x64]
     os: [linux]
 
-  '@oxlint-tsgolint/win32-arm64@7.0.2001':
-    resolution: {integrity: sha512-uJZhqB6pdXLuN+AD1F5082byyQti/NPmJA77GtcFlmT2HzRelqbNls3SaIqxpjdFgvSBF9g0yOKGBkGFg7kX8Q==}
+  '@oxlint-tsgolint/win32-arm64@7.0.2003':
+    resolution: {integrity: sha512-TWauXnPfet0VgpmrstoAK58eJ4gbuwPUuUTQmYQAzE/RG1CpnxXtrKUJULf6lyerPE4KN3gM+DflIA1hOH+38Q==}
     cpu: [arm64]
     os: [win32]
 
-  '@oxlint-tsgolint/win32-x64@7.0.2001':
-    resolution: {integrity: sha512-FkDRm8hx9OwzGQqyWG1tO5QrTLRApff9DzSgpz9QZau37BR8d1VYKOxMLGf6shPZntJFoTwIIJYT68VndYDCog==}
+  '@oxlint-tsgolint/win32-x64@7.0.2003':
+    resolution: {integrity: sha512-DoRmfe7j8VqNlukp8liRVW45GQDhzRccNenjD/pdzelgtffW47pCMd1xbJLkPaPbKnTwID3onn3VZlL7JbebEA==}
     cpu: [x64]
     os: [win32]
 
@@ -1436,10 +1439,22 @@ packages:
     peerDependencies:
       '@redis/client': ^6.2.1
 
+  '@rolldown/binding-android-arm-eabi@1.2.11':
+    resolution: {integrity: sha512-A5kXfGKvKWWZE0TtPrfsvT+q4Y5d1QG8gGUzpYjGydM+fARM9MuX90PrXYXe0XbsDVgyxxNzHo6giCj90bsFNw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [android]
+
   '@rolldown/binding-android-arm-eabi@1.2.8':
     resolution: {integrity: sha512-tN5aztYkKCte4i5SIrrz5yK/HMjEuCqCSCJa418jOV8tZ1cBY3YF2otxB1ktPxzsLA1BeTqwapK0bfjxNvHJVw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
+    os: [android]
+
+  '@rolldown/binding-android-arm64@1.2.11':
+    resolution: {integrity: sha512-z6cTycz+iJ4PVkuL4HHW4DfTfoeU/2nqYYuSOrTmH7yHK5Y0LCOnA03V4ZNxavyVaU1oOqUgIg2klN/s+USGOA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
     os: [android]
 
   '@rolldown/binding-android-arm64@1.2.8':
@@ -1448,10 +1463,22 @@ packages:
     cpu: [arm64]
     os: [android]
 
+  '@rolldown/binding-darwin-arm64@1.2.11':
+    resolution: {integrity: sha512-jShvqNtP6vDC6/A5JOAzbVV+DkgHqhl/ScVCJEbt+TUY6QYz7YnXcrg3sLtFBniro0f/Ld50ZwCWA6f7KYD1nQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [darwin]
+
   '@rolldown/binding-darwin-arm64@1.2.8':
     resolution: {integrity: sha512-PCSDQGXD2IyTEFrcgPyBM8jJuGmrbCMuoIOXdbEGVemruKACXoLQJrb+A45Z0L5t1RQkdfJprAYPkikbh7dzdA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
+    os: [darwin]
+
+  '@rolldown/binding-darwin-x64@1.2.11':
+    resolution: {integrity: sha512-f2i2xiNWq1Z1l2++q2fuhZRdLAT3aqxD6vRNm1RAxpUoBcdqNB3C0s1Bt+K+PbEx2F5F4gQp6hqKkphCY/xF9w==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
     os: [darwin]
 
   '@rolldown/binding-darwin-x64@1.2.8':
@@ -1460,17 +1487,36 @@ packages:
     cpu: [x64]
     os: [darwin]
 
+  '@rolldown/binding-freebsd-x64@1.2.11':
+    resolution: {integrity: sha512-4Ir5FSOKIAMr4r0kExpt1s3bMgzJU3rA45AYOHtQpls0oNeqcYBKrWMlckrYH4KCfGLfkfn1tN1dmZPMVsdXow==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [freebsd]
+
   '@rolldown/binding-freebsd-x64@1.2.8':
     resolution: {integrity: sha512-DjszaTEVogPqA5bYzsEeqDCQxbcp2fexQwKcRspYji2yzR68fCf+e4fx6kBSRDwX5/brZaHw/hWS9+A/+/w9sQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [freebsd]
 
+  '@rolldown/binding-linux-arm-gnueabihf@1.2.11':
+    resolution: {integrity: sha512-/gnRDM+39BROzAN/k1OZjDPnDMcZxB/0EUxKjONO5yVkNEvlsoMDrxGNKgZi/ttFriS2gwlDNzB65pvNbFOXIQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
   '@rolldown/binding-linux-arm-gnueabihf@1.2.8':
     resolution: {integrity: sha512-zmwa7FTmdzB6aaEEuuls18H6Ap5JmJPSoPTuXixeJZV6tG40SyLkApQtz1g8ptZtiEKqj9OM0oNLPh1AgvE31Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
+
+  '@rolldown/binding-linux-arm64-gnu@1.2.11':
+    resolution: {integrity: sha512-PFaK8HwvAHbaKbBcDNQihjMKYvFnA5hiENx/l5tphTDz1E0WFp32l0A7aq7lyUwGsRw/xSrNIy/gIK4thrSCrw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
 
   '@rolldown/binding-linux-arm64-gnu@1.2.8':
     resolution: {integrity: sha512-KdYQDPHwJVnbFwdTGMgxsI9SqblBlz6STGM+w1We/d5B8OWWidYH0MwkU/uA1wM5fIpO2MkOVxXrNzzuZhw9ew==}
@@ -1479,6 +1525,13 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@rolldown/binding-linux-arm64-musl@1.2.11':
+    resolution: {integrity: sha512-AskzJUIKRLPxkruR1wLKewGbOw+EYfU/9lOrBFj4AFrEA8hPpKFnODWNu2WLaNs0QNkEb9QIJufmVZZIL/bJlg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
   '@rolldown/binding-linux-arm64-musl@1.2.8':
     resolution: {integrity: sha512-jFJTifHnNPY+yzOoNZQfSIysrVyXzEQPhPnOUjmD1bcQGHH6s7c8cViKWar8YplQImE5N9JRqMCLrM2CdxOrZA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1486,10 +1539,24 @@ packages:
     os: [linux]
     libc: [musl]
 
+  '@rolldown/binding-linux-ppc64-gnu@1.2.11':
+    resolution: {integrity: sha512-qlUGAheh2yh8afH7QBgx0PrRHN85hKnNd78x8MeMhXivuevgd8vgf6/CstOzmNKY/lLTHvNTrPy98cLnAugzJw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
   '@rolldown/binding-linux-ppc64-gnu@1.2.8':
     resolution: {integrity: sha512-FhiOziBDWPBjbcmRzfLyIJnaP7AVMFXT7YCXPjXxj7wKU3vx24RjrCNN/zjvVa+N2vVoHJwCoUBvsrN/DG3zIA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rolldown/binding-linux-s390x-gnu@1.2.11':
+    resolution: {integrity: sha512-secpEad+0vCbSfn8upFySkDskv+bGPk3THSDS9Y89yc4rb4kzqHp8Dmyd9BkQW4SnhNXBZCl/6CrO//hZahNJQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [s390x]
     os: [linux]
     libc: [glibc]
 
@@ -1500,12 +1567,26 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@rolldown/binding-linux-x64-gnu@1.2.11':
+    resolution: {integrity: sha512-mOVBT3dPpkWm8XBWPmU4bf+U6dYDLeMo/9ojUmis4N0L5uu10qra5vOyngZ7/PSdoE4G9KvRt4bloRxNjLas7A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
   '@rolldown/binding-linux-x64-gnu@1.2.8':
     resolution: {integrity: sha512-H9tRr5ibfXFVLxbPOseVewewFpl28zcEdjRDt2FTUZU7odxP0gEv1ki4/kGmcGOh78oRwZuuQllGLZ9zTJp84g==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@rolldown/binding-linux-x64-musl@1.2.11':
+    resolution: {integrity: sha512-Is78i9A8Ui4SqcxUwFJ9uMmjDn58IbVTjFWYdQestFEgeuEmHMLGNriXnVJKkwG2YiZjw8cP0zCTyDMdDGtOOg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
 
   '@rolldown/binding-linux-x64-musl@1.2.8':
     resolution: {integrity: sha512-UefiqfM3D6IVNlZ8tSGs9+Ejjud2T+oxO0IHADU45Y+lyEjD2dVFyZHbkfX0LUb5Zugo/oIv1eCO/KVYhgYJYA==}
@@ -1514,16 +1595,34 @@ packages:
     os: [linux]
     libc: [musl]
 
+  '@rolldown/binding-openharmony-arm64@1.2.11':
+    resolution: {integrity: sha512-dUCXneZ87INUMyQ0D+C0HrEBNUPNXHaPmU5GTjyKTJEiussw9Kaj5Ln8UztPe4epV/ffvgNBEadksdYhmW6xJA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [openharmony]
+
   '@rolldown/binding-openharmony-arm64@1.2.8':
     resolution: {integrity: sha512-637Ke4kWSy6rp9cxQ9gMOXlxPgIw/c1beASV4M//3+9I4uwBVOOl74G+e3zyU3u19U7RkRl/HuewixZ/Z6+Rjg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
 
+  '@rolldown/binding-win32-arm64-msvc@1.2.11':
+    resolution: {integrity: sha512-jByxb6qfd+bH1xUd0qnfFnb17i9sWBPY2tOavJ0l3tdr3OTu+Kvtm8cd/JV5nFt657b1VqGltxg9olOEfofXWw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [win32]
+
   '@rolldown/binding-win32-arm64-msvc@1.2.8':
     resolution: {integrity: sha512-xWBkPOF1Q9k/Gv1nQXnVdLxKu74jXppuOM4Z3mnypVUJJJwLsMl7hNJGRAUJoG8A5MgOI1ACKM+wBFxSJzKy4A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
+    os: [win32]
+
+  '@rolldown/binding-win32-x64-msvc@1.2.11':
+    resolution: {integrity: sha512-/PzKqzAJ03i19oy2ItPvyvaVjOjBCNnfaJs8yvUdGBKmiESgnrJSQ2awd81QzFbbnAmu7YO9ZnJrDCb9VSJPRA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
     os: [win32]
 
   '@rolldown/binding-win32-x64-msvc@1.2.8':
@@ -1581,8 +1680,8 @@ packages:
     engines: {node: '>=24'}
     hasBin: true
 
-  '@systemfsoftware/effect-cell-types@10.1.0':
-    resolution: {integrity: sha512-uXzW5JtNSdyKVWCNKaQHqx8HYkAD3mcoT8cqas14sxlMvFmKagalSOPACxgIKrkzblCyy7fzIs6Ftie/68ypcQ==}
+  '@systemfsoftware/effect-cell-types@10.2.0':
+    resolution: {integrity: sha512-zyDq6k8lG9hCiyArQX9DwYcCGjp2ttiX3BLZAiPav5/eFGHVCb0xkbQfgQ9GER20Fv8W1ULXmpEbjbx0KnqONQ==}
     peerDependencies:
       effect: 4.0.0-rc.116
 
@@ -1591,8 +1690,8 @@ packages:
     peerDependencies:
       effect: 4.0.0-rc.116
 
-  '@systemfsoftware/effect-gherkin-spec@4.3.0':
-    resolution: {integrity: sha512-zFlRQXn9+GuL0vp+o5no16h1pG+CRt22bYEi76hapQQ8VjgtQweKB+CFpvolkwO9eNpHbuSs2uv5Y2VXwiBWzw==}
+  '@systemfsoftware/effect-gherkin-spec@4.4.0':
+    resolution: {integrity: sha512-K55zURwJdk1EZ0Z7PLq69NW/9EmqlKy5GSpX6HkMRNLAesn2izcRpYC84/eCDLf3uiekkL7R+GbeWS1QM9CdNw==}
     peerDependencies:
       '@effect/vitest': 4.0.0-rc.116
       effect: 4.0.0-rc.116
@@ -1604,38 +1703,38 @@ packages:
       effect: 4.0.0-rc.116
       typescript: '>=5.0.0'
 
-  '@systemfsoftware/effect-schema-discovery@1.0.5':
-    resolution: {integrity: sha512-KKiArYpYc+kdeiIhRKXBLjnZ7jOYjbYtaLDPPDwseUUH2bR0mIX5RRhHtUx8CjqW6KxzQmVr+etdizr5yT+FUw==}
+  '@systemfsoftware/effect-schema-discovery@1.0.6':
+    resolution: {integrity: sha512-x9FUdxaGZrprS1YotzSJmq7Ew5KUqNzm8/88kgRoo6HPtvHagGK4dahwscaTorMOLvxtbTnKULVutqb94FguEQ==}
 
-  '@systemfsoftware/effect-schema-law@2.3.0':
-    resolution: {integrity: sha512-KssD57+w+FPzf3CJbAnw4YgSkJbG/PoL2UdsSGdu6TS4dLMuHlsCz5XsOOZAJdvjSZ4DVsyJalVEwhJ2fPyZbw==}
+  '@systemfsoftware/effect-schema-law@2.4.0':
+    resolution: {integrity: sha512-5q4OpQl+lLBJk+mLuBVRK+t8vKaM81X4UlYbr5ZLLq9efpB26tc43TbNgGGLHwG1+fHfRnyDtV1dJnmn9YNyyQ==}
     peerDependencies:
       '@effect/vitest': 4.0.0-rc.116
       effect: 4.0.0-rc.116
       vitest: ^5
 
-  '@systemfsoftware/effect-schema-recursion-budget@1.0.0':
-    resolution: {integrity: sha512-TGp041+e9T8iSMpH14naOwGIa5M7tlqUda3DnPP2hf+f2VxdILAovWIvI9BhB1omlBN6e46svwxa/AYbKW9wsA==}
+  '@systemfsoftware/effect-schema-recursion-budget@1.0.1':
+    resolution: {integrity: sha512-VHEszS5EDnaGCA7gLgdv8rs2RcoWe6TFcjvaNY6YO1Hf1jhb2Jt2TiT6Dyo8OMMgq48CkpltfPUgBJL9d/HNAA==}
     peerDependencies:
       effect: 4.0.0-rc.116
 
-  '@systemfsoftware/effect-schema-vite@2.2.2':
-    resolution: {integrity: sha512-0sMoYoBDYhAehpvS5qjwnw6ic/6RiA1XvziGYOzMOq+zIJkMAO5MuxTXSTBfC9aMoHRYNwe5yuzyEYQrWHkbCw==}
+  '@systemfsoftware/effect-schema-vite@2.2.4':
+    resolution: {integrity: sha512-RZJldUlUXidtOTUEh3rbTpShMTPwoKzlsFP05GcCp5E8Byh0RMkPH6nj+n2Vy73hMzGkR4M+FAS76aBLXWmPKg==}
     peerDependencies:
-      '@systemfsoftware/effect-schema-law': 2.3.0
+      '@systemfsoftware/effect-schema-law': 2.4.0
       effect: 4.0.0-rc.116
       vite: '>5.0.0'
       vitest: ^5
 
-  '@systemfsoftware/effect-spec-runtime@0.1.0':
-    resolution: {integrity: sha512-nNIHZIq7RF/EwqT9QyLcwVrAfZEL4n90kWwykmIIG7LXfh/hAY1esNkMdT8Zg3N6J6MPYsyxIINwSvDD+7Hneg==}
+  '@systemfsoftware/effect-spec-runtime@0.2.0':
+    resolution: {integrity: sha512-wtiT20fhlDURU2H2lovnBFH486ZXqCyCk27LkZkzy+zS1LYoy4n0Y9qsizoIDajaaHxOvCY84jmQSNH3Pj6EGA==}
     peerDependencies:
       '@effect/vitest': 4.0.0-rc.116
       effect: 4.0.0-rc.116
       vitest: ^5
 
-  '@systemfsoftware/npm-package@0.4.0':
-    resolution: {integrity: sha512-VHf7EX0BtEkgwuahXFe50ZRwnlTWeaAlBJvCMdHLEHVqxLyjkS+DinufP7QRN5tz7kHLKuSSeCk5KHg3jbkz2Q==}
+  '@systemfsoftware/npm-package@0.4.1':
+    resolution: {integrity: sha512-bqpQhcmlS5zGPiAzanlw8AzX1YMfDn2TEXaaoxu61svOEbHprkPT1vdfHTf+t4niiOxUS37zwRsZC1dUHeZ7QA==}
     engines: {node: '>=24'}
     peerDependencies:
       effect: 4.0.0-rc.116
@@ -1732,9 +1831,9 @@ packages:
       effect: 4.0.0-rc.116
       vitest: '>=4.1.0'
 
-  '@systemfsoftware/stryker-js@10.1.1':
-    resolution: {integrity: sha512-9N4RpfJ2StXyYv2JfigQ7wr4myHe5laf8rPRxGGcxBc5oL9cQpioanf9W8DbVLHCn6PyheKOPNfvre8BOa/xXg==}
-    engines: {node: '>=22.18.0'}
+  '@systemfsoftware/stryker-js@10.2.0':
+    resolution: {integrity: sha512-cWApWA4p1cRKGf2Irm4eYlYv6Pfo7GpGpNAhEKCDhz0xxItBw+26jqWQGuQHvLCJ2dNDR4mDbgz5i+NGOCr9ng==}
+    engines: {node: '>=24.13.1'}
     hasBin: true
     peerDependencies:
       effect: 4.0.0-rc.116
@@ -1743,6 +1842,13 @@ packages:
     resolution: {integrity: sha512-Gyae8ewQI/uEa0zKhIV+ysQU/exUj/1UZF9biKGC3iqGjPrMuSzKd3swS0rttLBsYWo+9mIQmdvMb4cnUowbMg==}
     peerDependencies:
       effect: 4.0.0-rc.116
+
+  '@systemfsoftware/stryker-vm-harness@1.0.0':
+    resolution: {integrity: sha512-vIn+VwKl2gIpeoUIpDBb/0uilCkPlJn5sOAFDW9Qce3YhrupspXIvjq6dZ8T6XgidVt9whH5PsQh1kn5KE6dPA==}
+    engines: {node: '>=24.13.1'}
+    peerDependencies:
+      effect: 4.0.0-rc.116
+      vitest: '>=4.1.0'
 
   '@systemfsoftware/tsconfig@2.0.1':
     resolution: {integrity: sha512-to7HVa3ZY4la1y354tkWFBe0CjQcS4DKgj2C6JNwseLqJfNpvgrPwqK9Ra/qowJmKNgmHjC2e6q1gycH8Zh5tQ==}
@@ -2482,8 +2588,8 @@ packages:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
 
-  fast-check@4.10.0:
-    resolution: {integrity: sha512-hhqQL+IJllZi3aM4TKvmCj3bywLEcycNTTLZeLhA9ttMxBrCqM07q7Di4kl+j9EWSTXvJH1+EpIgsDbF/+8H5Q==}
+  fast-check@4.10.2:
+    resolution: {integrity: sha512-iK2f+YrcmoeGqk6fA0ea2bptcu/itMIm4NfEozq6N25+aG6h7s5HZbB/k1aV7b5w5sFLMCbbtRUsTVR+BgC3xw==}
     engines: {node: '>=12.17.0'}
 
   fast-deep-equal@3.1.3:
@@ -2849,8 +2955,8 @@ packages:
       rolldown:
         optional: true
 
-  oxlint-tsgolint@7.0.2001:
-    resolution: {integrity: sha512-KjK/XLcXr1DSyonKhsuFqJRiuKqcyG9j3LJ8nkOsrLzGvodBPqzHOKauy10asLMDI0sUpvb+1sxlzff3udZvfg==}
+  oxlint-tsgolint@7.0.2003:
+    resolution: {integrity: sha512-VnK4zlqgmgq/7ZcjzCk/WpN8kKFsYGcB85Io9qT3wL4K8Un3RKmJkp793crNETieMusPMKOA4a+Mw2wbteI6TQ==}
     hasBin: true
 
   oxlint@1.82.0:
@@ -3006,6 +3112,11 @@ packages:
         optional: true
       vue-tsc:
         optional: true
+
+  rolldown@1.2.11:
+    resolution: {integrity: sha512-qpSwIyz0jHQq5qXBTNxFmE6664rJ7O+4TvPFOiOaBSrz8IOHc1koKKSqTM2H6u1UG1+TveuC6vaDHKXFOvb1Kw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
 
   rolldown@1.2.8:
     resolution: {integrity: sha512-Z67nTmhZe7anqnM/EjI392w5i/ANUinjip7QYsOyN37oayduxt3ksdX0hf5OOamkAd53BiIHfbfSzfUmzKFQqQ==}
@@ -3290,13 +3401,13 @@ packages:
     peerDependencies:
       vite: '*'
 
-  vite@8.2.2:
-    resolution: {integrity: sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==}
+  vite@8.3.1:
+    resolution: {integrity: sha512-/bvH9E9tmCXRGp2uXY3WbOldqpTwFkbha/8ANaEQ6VkxhH60KyqLwgZq6lG2y+4uT55x9+9eUHMpQ7uGnOCKjA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
       '@types/node': ^20.19.0 || >=22.12.0
-      '@vitejs/devtools': ^0.4.0 || ^0.5.0
+      '@vitejs/devtools': ^0.7.1
       esbuild: ^0.27.0 || ^0.28.0
       jiti: '>=1.21.0'
       less: ^4.0.0
@@ -3663,7 +3774,7 @@ snapshots:
   '@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
       effect: 4.0.0-rc.116
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   '@eslint-community/regexpp@4.12.2': {}
 
@@ -4227,22 +4338,24 @@ snapshots:
 
   '@oxc-project/types@0.150.0': {}
 
-  '@oxlint-tsgolint/darwin-arm64@7.0.2001':
+  '@oxc-project/types@0.151.0': {}
+
+  '@oxlint-tsgolint/darwin-arm64@7.0.2003':
     optional: true
 
-  '@oxlint-tsgolint/darwin-x64@7.0.2001':
+  '@oxlint-tsgolint/darwin-x64@7.0.2003':
     optional: true
 
-  '@oxlint-tsgolint/linux-arm64@7.0.2001':
+  '@oxlint-tsgolint/linux-arm64@7.0.2003':
     optional: true
 
-  '@oxlint-tsgolint/linux-x64@7.0.2001':
+  '@oxlint-tsgolint/linux-x64@7.0.2003':
     optional: true
 
-  '@oxlint-tsgolint/win32-arm64@7.0.2001':
+  '@oxlint-tsgolint/win32-arm64@7.0.2003':
     optional: true
 
-  '@oxlint-tsgolint/win32-x64@7.0.2001':
+  '@oxlint-tsgolint/win32-x64@7.0.2003':
     optional: true
 
   '@oxlint/binding-android-arm-eabi@1.82.0':
@@ -4353,46 +4466,91 @@ snapshots:
     dependencies:
       '@redis/client': 6.2.1(@opentelemetry/api@1.9.1)
 
+  '@rolldown/binding-android-arm-eabi@1.2.11':
+    optional: true
+
   '@rolldown/binding-android-arm-eabi@1.2.8':
+    optional: true
+
+  '@rolldown/binding-android-arm64@1.2.11':
     optional: true
 
   '@rolldown/binding-android-arm64@1.2.8':
     optional: true
 
+  '@rolldown/binding-darwin-arm64@1.2.11':
+    optional: true
+
   '@rolldown/binding-darwin-arm64@1.2.8':
+    optional: true
+
+  '@rolldown/binding-darwin-x64@1.2.11':
     optional: true
 
   '@rolldown/binding-darwin-x64@1.2.8':
     optional: true
 
+  '@rolldown/binding-freebsd-x64@1.2.11':
+    optional: true
+
   '@rolldown/binding-freebsd-x64@1.2.8':
+    optional: true
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.2.11':
     optional: true
 
   '@rolldown/binding-linux-arm-gnueabihf@1.2.8':
     optional: true
 
+  '@rolldown/binding-linux-arm64-gnu@1.2.11':
+    optional: true
+
   '@rolldown/binding-linux-arm64-gnu@1.2.8':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-musl@1.2.11':
     optional: true
 
   '@rolldown/binding-linux-arm64-musl@1.2.8':
     optional: true
 
+  '@rolldown/binding-linux-ppc64-gnu@1.2.11':
+    optional: true
+
   '@rolldown/binding-linux-ppc64-gnu@1.2.8':
+    optional: true
+
+  '@rolldown/binding-linux-s390x-gnu@1.2.11':
     optional: true
 
   '@rolldown/binding-linux-s390x-gnu@1.2.8':
     optional: true
 
+  '@rolldown/binding-linux-x64-gnu@1.2.11':
+    optional: true
+
   '@rolldown/binding-linux-x64-gnu@1.2.8':
+    optional: true
+
+  '@rolldown/binding-linux-x64-musl@1.2.11':
     optional: true
 
   '@rolldown/binding-linux-x64-musl@1.2.8':
     optional: true
 
+  '@rolldown/binding-openharmony-arm64@1.2.11':
+    optional: true
+
   '@rolldown/binding-openharmony-arm64@1.2.8':
     optional: true
 
+  '@rolldown/binding-win32-arm64-msvc@1.2.11':
+    optional: true
+
   '@rolldown/binding-win32-arm64-msvc@1.2.8':
+    optional: true
+
+  '@rolldown/binding-win32-x64-msvc@1.2.11':
     optional: true
 
   '@rolldown/binding-win32-x64-msvc@1.2.8':
@@ -4447,7 +4605,7 @@ snapshots:
 
   '@systemfsoftware/arethetypeswrong-cli@4.2.0': {}
 
-  '@systemfsoftware/effect-cell-types@10.1.0(effect@4.0.0-rc.116)':
+  '@systemfsoftware/effect-cell-types@10.2.0(effect@4.0.0-rc.116)':
     dependencies:
       effect: 4.0.0-rc.116
 
@@ -4455,120 +4613,120 @@ snapshots:
     dependencies:
       effect: 4.0.0-rc.116
 
-  '@systemfsoftware/effect-gherkin-spec@4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@systemfsoftware/effect-gherkin-spec@4.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
       '@effect/vitest': 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
-      '@systemfsoftware/effect-spec-runtime': 0.1.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@systemfsoftware/effect-spec-runtime': 0.2.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   '@systemfsoftware/effect-memfs@3.1.0(effect@4.0.0-rc.116)(typescript@6.0.3)':
     dependencies:
-      '@systemfsoftware/effect-cell-types': 10.1.0(effect@4.0.0-rc.116)
+      '@systemfsoftware/effect-cell-types': 10.2.0(effect@4.0.0-rc.116)
       effect: 4.0.0-rc.116
       memfs: 4.79.0
       typescript: 6.0.3
 
-  '@systemfsoftware/effect-schema-discovery@1.0.5':
+  '@systemfsoftware/effect-schema-discovery@1.0.6':
     dependencies:
       '@oxc-project/types': 0.150.0
       oxc-parser: 0.150.0
 
-  '@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@systemfsoftware/effect-schema-law@2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
       '@effect/vitest': 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
-  '@systemfsoftware/effect-schema-recursion-budget@1.0.0(effect@4.0.0-rc.116)':
+  '@systemfsoftware/effect-schema-recursion-budget@1.0.1(effect@4.0.0-rc.116)':
     dependencies:
       '@oxc-project/types': 0.150.0
       effect: 4.0.0-rc.116
       oxc-parser: 0.150.0
 
-  '@systemfsoftware/effect-schema-vite@2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)':
+  '@systemfsoftware/effect-schema-vite@2.2.4(@systemfsoftware/effect-schema-law@2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)':
     dependencies:
       '@oxc-project/types': 0.150.0
-      '@systemfsoftware/effect-schema-discovery': 1.0.5
-      '@systemfsoftware/effect-schema-law': 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
-      '@systemfsoftware/effect-schema-recursion-budget': 1.0.0(effect@4.0.0-rc.116)
+      '@systemfsoftware/effect-schema-discovery': 1.0.6
+      '@systemfsoftware/effect-schema-law': 2.4.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@systemfsoftware/effect-schema-recursion-budget': 1.0.1(effect@4.0.0-rc.116)
       effect: 4.0.0-rc.116
       oxc-parser: 0.150.0
-      vite: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vite: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
-  '@systemfsoftware/effect-spec-runtime@0.1.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@systemfsoftware/effect-spec-runtime@0.2.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
       '@effect/vitest': 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
-  '@systemfsoftware/npm-package@0.4.0(effect@4.0.0-rc.116)':
+  '@systemfsoftware/npm-package@0.4.1(effect@4.0.0-rc.116)':
     dependencies:
       '@andrewbranch/untar.js': 1.0.4
       effect: 4.0.0-rc.116
       fflate: 0.8.3
 
-  '@systemfsoftware/oxlint-config-cell-architecture@1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)':
+  '@systemfsoftware/oxlint-config-cell-architecture@1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@6.0.3)':
     dependencies:
       '@systemfsoftware/oxlint-plugin-cell-architecture': 2.0.0(effect@4.0.0-rc.116)(typescript@6.0.3)
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
       typescript: 6.0.3
 
-  '@systemfsoftware/oxlint-config-cell-architecture@1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)':
+  '@systemfsoftware/oxlint-config-cell-architecture@1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)':
     dependencies:
       '@systemfsoftware/oxlint-plugin-cell-architecture': 2.0.0(effect@4.0.0-rc.116)(typescript@7.0.2)
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
       typescript: 7.0.2
 
-  '@systemfsoftware/oxlint-config-dmmf@1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)':
+  '@systemfsoftware/oxlint-config-dmmf@1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@6.0.3)':
     dependencies:
-      '@systemfsoftware/oxlint-plugin-dmmf-workflow': 6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@6.0.3)
+      '@systemfsoftware/oxlint-plugin-dmmf-workflow': 6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@6.0.3)
       '@systemfsoftware/oxlint-plugin-effect-schema': 5.5.1(effect@4.0.0-rc.116)(typescript@6.0.3)
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
-      oxlint-tsgolint: 7.0.2001
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
+      oxlint-tsgolint: 7.0.2003
       typescript: 6.0.3
     transitivePeerDependencies:
       - vite-plus
 
-  '@systemfsoftware/oxlint-config-dmmf@1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)':
+  '@systemfsoftware/oxlint-config-dmmf@1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)':
     dependencies:
-      '@systemfsoftware/oxlint-plugin-dmmf-workflow': 6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@7.0.2)
+      '@systemfsoftware/oxlint-plugin-dmmf-workflow': 6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@7.0.2)
       '@systemfsoftware/oxlint-plugin-effect-schema': 5.5.1(effect@4.0.0-rc.116)(typescript@7.0.2)
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
-      oxlint-tsgolint: 7.0.2001
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
+      oxlint-tsgolint: 7.0.2003
       typescript: 7.0.2
     transitivePeerDependencies:
       - vite-plus
 
-  '@systemfsoftware/oxlint-config-recommended@2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)':
+  '@systemfsoftware/oxlint-config-recommended@2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@6.0.3)':
     dependencies:
       '@effect/tsgo': 0.45.0
-      '@systemfsoftware/oxlint-config-cell-architecture': 1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)
-      '@systemfsoftware/oxlint-config-dmmf': 1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)
-      '@systemfsoftware/oxlint-plugin-effect-platform': 1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@6.0.3)
+      '@systemfsoftware/oxlint-config-cell-architecture': 1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@6.0.3)
+      '@systemfsoftware/oxlint-config-dmmf': 1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@6.0.3)
+      '@systemfsoftware/oxlint-plugin-effect-platform': 1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@6.0.3)
       '@systemfsoftware/oxlint-plugin-test-discipline': 3.8.0(effect@4.0.0-rc.116)(typescript@6.0.3)
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
-      oxlint-tsgolint: 7.0.2001
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
+      oxlint-tsgolint: 7.0.2003
       typescript: 6.0.3
     transitivePeerDependencies:
       - vite-plus
 
-  '@systemfsoftware/oxlint-config-recommended@2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)':
+  '@systemfsoftware/oxlint-config-recommended@2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)':
     dependencies:
       '@effect/tsgo': 0.45.0
-      '@systemfsoftware/oxlint-config-cell-architecture': 1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)
-      '@systemfsoftware/oxlint-config-dmmf': 1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@7.0.2)
-      '@systemfsoftware/oxlint-plugin-effect-platform': 1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@7.0.2)
+      '@systemfsoftware/oxlint-config-cell-architecture': 1.0.2(effect@4.0.0-rc.116)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)
+      '@systemfsoftware/oxlint-config-dmmf': 1.1.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(oxlint@1.82.0(oxlint-tsgolint@7.0.2003))(typescript@7.0.2)
+      '@systemfsoftware/oxlint-plugin-effect-platform': 1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@7.0.2)
       '@systemfsoftware/oxlint-plugin-test-discipline': 3.8.0(effect@4.0.0-rc.116)(typescript@7.0.2)
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
-      oxlint-tsgolint: 7.0.2001
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
+      oxlint-tsgolint: 7.0.2003
       typescript: 7.0.2
     transitivePeerDependencies:
       - vite-plus
@@ -4587,45 +4745,45 @@ snapshots:
       effect: 4.0.0-rc.116
       typescript: 7.0.2
 
-  '@systemfsoftware/oxlint-plugin-dmmf-workflow@6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@6.0.3)':
+  '@systemfsoftware/oxlint-plugin-dmmf-workflow@6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@6.0.3)':
     dependencies:
       '@oxc-project/types': 0.150.0
       '@oxlint/plugins': 1.82.0
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
       typescript: 6.0.3
     transitivePeerDependencies:
       - oxlint-tsgolint
       - vite-plus
 
-  '@systemfsoftware/oxlint-plugin-dmmf-workflow@6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@7.0.2)':
+  '@systemfsoftware/oxlint-plugin-dmmf-workflow@6.0.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@7.0.2)':
     dependencies:
       '@oxc-project/types': 0.150.0
       '@oxlint/plugins': 1.82.0
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
       typescript: 7.0.2
     transitivePeerDependencies:
       - oxlint-tsgolint
       - vite-plus
 
-  '@systemfsoftware/oxlint-plugin-effect-platform@1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@6.0.3)':
+  '@systemfsoftware/oxlint-plugin-effect-platform@1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@6.0.3)':
     dependencies:
       '@oxc-project/types': 0.150.0
       '@oxlint/plugins': 1.82.0
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
       typescript: 6.0.3
     transitivePeerDependencies:
       - oxlint-tsgolint
       - vite-plus
 
-  '@systemfsoftware/oxlint-plugin-effect-platform@1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(typescript@7.0.2)':
+  '@systemfsoftware/oxlint-plugin-effect-platform@1.3.0(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2003)(typescript@7.0.2)':
     dependencies:
       '@oxc-project/types': 0.150.0
       '@oxlint/plugins': 1.82.0
       effect: 4.0.0-rc.116
-      oxlint: 1.82.0(oxlint-tsgolint@7.0.2001)
+      oxlint: 1.82.0(oxlint-tsgolint@7.0.2003)
       typescript: 7.0.2
     transitivePeerDependencies:
       - oxlint-tsgolint
@@ -4659,10 +4817,24 @@ snapshots:
       effect: 4.0.0-rc.116
       typescript: 7.0.2
 
+  '@systemfsoftware/stryker-ignorer-effect-schema-declarations@0.1.1(rolldown@1.2.11)':
+    dependencies:
+      '@systemfsoftware/stryker-ignorer-interface': 0.1.1
+      '@systemfsoftware/stryker-ignorer-kit': 0.1.1(rolldown@1.2.11)
+    transitivePeerDependencies:
+      - rolldown
+
   '@systemfsoftware/stryker-ignorer-effect-schema-declarations@0.1.1(rolldown@1.2.8)':
     dependencies:
       '@systemfsoftware/stryker-ignorer-interface': 0.1.1
       '@systemfsoftware/stryker-ignorer-kit': 0.1.1(rolldown@1.2.8)
+    transitivePeerDependencies:
+      - rolldown
+
+  '@systemfsoftware/stryker-ignorer-in-source-vitest-block@0.1.1(rolldown@1.2.11)':
+    dependencies:
+      '@systemfsoftware/stryker-ignorer-interface': 0.1.1
+      '@systemfsoftware/stryker-ignorer-kit': 0.1.1(rolldown@1.2.11)
     transitivePeerDependencies:
       - rolldown
 
@@ -4675,12 +4847,33 @@ snapshots:
 
   '@systemfsoftware/stryker-ignorer-interface@0.1.1': {}
 
+  '@systemfsoftware/stryker-ignorer-kit@0.1.1(rolldown@1.2.11)':
+    dependencies:
+      '@oxc-project/types': 0.150.0
+      '@systemfsoftware/stryker-ignorer-interface': 0.1.1
+      oxc-parser: 0.150.0
+      oxc-walker: 1.1.1(@oxc-project/types@0.150.0)(oxc-parser@0.150.0)(rolldown@1.2.11)
+    transitivePeerDependencies:
+      - rolldown
+
   '@systemfsoftware/stryker-ignorer-kit@0.1.1(rolldown@1.2.8)':
     dependencies:
       '@oxc-project/types': 0.150.0
       '@systemfsoftware/stryker-ignorer-interface': 0.1.1
       oxc-parser: 0.150.0
       oxc-walker: 1.1.1(@oxc-project/types@0.150.0)(oxc-parser@0.150.0)(rolldown@1.2.8)
+    transitivePeerDependencies:
+      - rolldown
+
+  '@systemfsoftware/stryker-js-instrumenter@8.0.2(rolldown@1.2.11)':
+    dependencies:
+      '@eslint-community/regexpp': 4.12.2
+      '@oxc-project/types': 0.150.0
+      '@systemfsoftware/effect-cell-types': 8.3.2(effect@4.0.0-rc.116)
+      angular-html-parser: 10.12.0
+      effect: 4.0.0-rc.116
+      oxc-parser: 0.150.0
+      oxc-walker: 1.1.1(@oxc-project/types@0.150.0)(oxc-parser@0.150.0)(rolldown@1.2.11)
     transitivePeerDependencies:
       - rolldown
 
@@ -4696,6 +4889,14 @@ snapshots:
     transitivePeerDependencies:
       - rolldown
 
+  '@systemfsoftware/stryker-js-plugin-interface@7.2.1(rolldown@1.2.11)':
+    dependencies:
+      '@systemfsoftware/stryker-js-instrumenter': 8.0.2(rolldown@1.2.11)
+      effect: 4.0.0-rc.116
+    transitivePeerDependencies:
+      - rolldown
+      - svelte
+
   '@systemfsoftware/stryker-js-plugin-interface@7.2.1(rolldown@1.2.8)':
     dependencies:
       '@systemfsoftware/stryker-js-instrumenter': 8.0.2(rolldown@1.2.8)
@@ -4703,6 +4904,29 @@ snapshots:
     transitivePeerDependencies:
       - rolldown
       - svelte
+
+  '@systemfsoftware/stryker-js-plugin-runtime@5.0.3(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.11)':
+    dependencies:
+      '@effect/opentelemetry': 4.0.0-rc.116(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)
+      '@effect/platform-node': 4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
+      '@opentelemetry/api': 1.9.1
+      '@opentelemetry/exporter-trace-otlp-http': 0.208.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-trace-base': 2.11.0(@opentelemetry/api@1.9.1)
+      '@systemfsoftware/stryker-js-plugin-interface': 7.2.1(rolldown@1.2.11)
+      effect: 4.0.0-rc.116
+    transitivePeerDependencies:
+      - '@opentelemetry/api-logs'
+      - '@opentelemetry/resources'
+      - '@opentelemetry/sdk-logs'
+      - '@opentelemetry/sdk-metrics'
+      - '@opentelemetry/sdk-trace-node'
+      - '@opentelemetry/sdk-trace-web'
+      - '@opentelemetry/semantic-conventions'
+      - bufferutil
+      - redis
+      - rolldown
+      - svelte
+      - utf-8-validate
 
   '@systemfsoftware/stryker-js-plugin-runtime@5.0.3(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.8)':
     dependencies:
@@ -4724,6 +4948,33 @@ snapshots:
       - bufferutil
       - redis
       - rolldown
+      - svelte
+      - utf-8-validate
+
+  '@systemfsoftware/stryker-js-typescript-checker@7.0.5(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.11)(supports-color@8.1.1)':
+    dependencies:
+      '@opentelemetry/exporter-trace-otlp-http': 0.222.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-node': 0.222.0(@opentelemetry/api@1.9.1)(supports-color@8.1.1)
+      '@opentelemetry/sdk-trace-base': 2.11.0(@opentelemetry/api@1.9.1)
+      '@systemfsoftware/effect-cell-types': 8.3.2(effect@4.0.0-rc.116)
+      '@systemfsoftware/stryker-js-instrumenter': 8.0.2(rolldown@1.2.11)
+      '@systemfsoftware/stryker-js-plugin-interface': 7.2.1(rolldown@1.2.11)
+      '@systemfsoftware/stryker-js-plugin-runtime': 5.0.3(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.1))(rolldown@1.2.11)
+      effect: 4.0.0-rc.116
+      typescript: 7.0.2
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/api-logs'
+      - '@opentelemetry/resources'
+      - '@opentelemetry/sdk-logs'
+      - '@opentelemetry/sdk-metrics'
+      - '@opentelemetry/sdk-trace-node'
+      - '@opentelemetry/sdk-trace-web'
+      - '@opentelemetry/semantic-conventions'
+      - bufferutil
+      - redis
+      - rolldown
+      - supports-color
       - svelte
       - utf-8-validate
 
@@ -4761,12 +5012,12 @@ snapshots:
       '@opentelemetry/sdk-trace-base': 2.11.0(@opentelemetry/api@1.9.1)
       '@systemfsoftware/effect-cell-types': 8.3.2(effect@4.0.0-rc.116)
       effect: 4.0.0-rc.116
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
     transitivePeerDependencies:
       - '@opentelemetry/api'
       - supports-color
 
-  '@systemfsoftware/stryker-js@10.1.1(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))':
+  '@systemfsoftware/stryker-js@10.2.0(@opentelemetry/api-logs@0.222.0)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))(vitest@5.0.1)':
     dependencies:
       '@effect/opentelemetry': 4.0.0-rc.116(@opentelemetry/api-logs@0.222.0)(@opentelemetry/api@1.9.1)(@opentelemetry/resources@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-logs@0.222.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-metrics@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-node@2.11.0(@opentelemetry/api@1.9.1))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.116)
       '@effect/platform-node': 4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
@@ -4778,6 +5029,7 @@ snapshots:
       '@opentelemetry/sdk-metrics': 2.11.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-trace-base': 2.11.0(@opentelemetry/api@1.9.1)
       '@systemfsoftware/effect-cell-types': 8.3.2(effect@4.0.0-rc.116)
+      '@systemfsoftware/stryker-vm-harness': 1.0.0(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
     transitivePeerDependencies:
       - '@opentelemetry/api-logs'
@@ -4789,6 +5041,15 @@ snapshots:
       - bufferutil
       - redis
       - utf-8-validate
+      - vitest
+
+  '@systemfsoftware/stryker-test-contribution@3.0.3(effect@4.0.0-rc.116)(rolldown@1.2.11)':
+    dependencies:
+      '@systemfsoftware/stryker-js-plugin-interface': 7.2.1(rolldown@1.2.11)
+      effect: 4.0.0-rc.116
+    transitivePeerDependencies:
+      - rolldown
+      - svelte
 
   '@systemfsoftware/stryker-test-contribution@3.0.3(effect@4.0.0-rc.116)(rolldown@1.2.8)':
     dependencies:
@@ -4797,6 +5058,12 @@ snapshots:
     transitivePeerDependencies:
       - rolldown
       - svelte
+
+  '@systemfsoftware/stryker-vm-harness@1.0.0(effect@4.0.0-rc.116)(vitest@5.0.1)':
+    dependencies:
+      '@systemfsoftware/effect-cell-types': 8.3.2(effect@4.0.0-rc.116)
+      effect: 4.0.0-rc.116
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   '@systemfsoftware/tsconfig@2.0.1': {}
 
@@ -4943,7 +5210,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
   '@vitest/istanbul-lib-coverage@1.0.1': {}
 
@@ -4951,14 +5218,14 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.1
 
-  '@vitest/mocker@5.0.1(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))':
+  '@vitest/mocker@5.0.1(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.1
       estree-walker: 3.0.3
       magic-string: 1.4.1
     optionalDependencies:
-      vite: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+      vite: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
 
   '@vitest/pretty-format@5.0.1':
     dependencies:
@@ -5387,7 +5654,7 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  fast-check@4.10.0:
+  fast-check@4.10.2:
     dependencies:
       pure-rand: 8.4.2
 
@@ -5698,22 +5965,28 @@ snapshots:
       '@oxc-parser/binding-win32-ia32-msvc': 0.150.0
       '@oxc-parser/binding-win32-x64-msvc': 0.150.0
 
+  oxc-walker@1.1.1(@oxc-project/types@0.150.0)(oxc-parser@0.150.0)(rolldown@1.2.11):
+    optionalDependencies:
+      '@oxc-project/types': 0.150.0
+      oxc-parser: 0.150.0
+      rolldown: 1.2.11
+
   oxc-walker@1.1.1(@oxc-project/types@0.150.0)(oxc-parser@0.150.0)(rolldown@1.2.8):
     optionalDependencies:
       '@oxc-project/types': 0.150.0
       oxc-parser: 0.150.0
       rolldown: 1.2.8
 
-  oxlint-tsgolint@7.0.2001:
+  oxlint-tsgolint@7.0.2003:
     optionalDependencies:
-      '@oxlint-tsgolint/darwin-arm64': 7.0.2001
-      '@oxlint-tsgolint/darwin-x64': 7.0.2001
-      '@oxlint-tsgolint/linux-arm64': 7.0.2001
-      '@oxlint-tsgolint/linux-x64': 7.0.2001
-      '@oxlint-tsgolint/win32-arm64': 7.0.2001
-      '@oxlint-tsgolint/win32-x64': 7.0.2001
+      '@oxlint-tsgolint/darwin-arm64': 7.0.2003
+      '@oxlint-tsgolint/darwin-x64': 7.0.2003
+      '@oxlint-tsgolint/linux-arm64': 7.0.2003
+      '@oxlint-tsgolint/linux-x64': 7.0.2003
+      '@oxlint-tsgolint/win32-arm64': 7.0.2003
+      '@oxlint-tsgolint/win32-x64': 7.0.2003
 
-  oxlint@1.82.0(oxlint-tsgolint@7.0.2001):
+  oxlint@1.82.0(oxlint-tsgolint@7.0.2003):
     optionalDependencies:
       '@oxlint/binding-android-arm-eabi': 1.82.0
       '@oxlint/binding-android-arm64': 1.82.0
@@ -5734,7 +6007,7 @@ snapshots:
       '@oxlint/binding-win32-arm64-msvc': 1.82.0
       '@oxlint/binding-win32-ia32-msvc': 1.82.0
       '@oxlint/binding-win32-x64-msvc': 1.82.0
-      oxlint-tsgolint: 7.0.2001
+      oxlint-tsgolint: 7.0.2003
 
   package-json-from-dist@1.0.1: {}
 
@@ -5912,6 +6185,27 @@ snapshots:
       typescript: 7.0.2
     transitivePeerDependencies:
       - oxc-resolver
+
+  rolldown@1.2.11:
+    dependencies:
+      '@oxc-project/types': 0.151.0
+      '@rolldown/pluginutils': 1.0.1
+    optionalDependencies:
+      '@rolldown/binding-android-arm-eabi': 1.2.11
+      '@rolldown/binding-android-arm64': 1.2.11
+      '@rolldown/binding-darwin-arm64': 1.2.11
+      '@rolldown/binding-darwin-x64': 1.2.11
+      '@rolldown/binding-freebsd-x64': 1.2.11
+      '@rolldown/binding-linux-arm-gnueabihf': 1.2.11
+      '@rolldown/binding-linux-arm64-gnu': 1.2.11
+      '@rolldown/binding-linux-arm64-musl': 1.2.11
+      '@rolldown/binding-linux-ppc64-gnu': 1.2.11
+      '@rolldown/binding-linux-s390x-gnu': 1.2.11
+      '@rolldown/binding-linux-x64-gnu': 1.2.11
+      '@rolldown/binding-linux-x64-musl': 1.2.11
+      '@rolldown/binding-openharmony-arm64': 1.2.11
+      '@rolldown/binding-win32-arm64-msvc': 1.2.11
+      '@rolldown/binding-win32-x64-msvc': 1.2.11
 
   rolldown@1.2.8:
     dependencies:
@@ -6249,22 +6543,22 @@ snapshots:
 
   verkit@0.4.0: {}
 
-  vite-tsconfig-paths@6.1.1(supports-color@8.1.1)(typescript@7.0.2)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)):
+  vite-tsconfig-paths@6.1.1(supports-color@8.1.1)(typescript@7.0.2)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@7.0.2)
-      vite: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+      vite: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1):
+  vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
       postcss: 8.5.28
-      rolldown: 1.2.8
+      rolldown: 1.2.11
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 24.13.4
@@ -6272,10 +6566,10 @@ snapshots:
       jiti: 2.6.1
       yaml: 2.9.1
 
-  vitest@5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)):
+  vitest@5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.1(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
+      '@vitest/mocker': 5.0.1(vite@8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -6286,7 +6580,7 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
+      vite: 8.3.1(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
