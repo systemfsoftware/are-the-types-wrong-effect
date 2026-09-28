@@ -141,7 +141,7 @@ overrides:
   effect: 4.0.0-rc.116
   '@effect/platform-node': 4.0.0-rc.116
   '@effect/platform-node-shared': 4.0.0-rc.116
-  '@effect/vitest': 4.0.0-rc.116
+  '@effect/vitest': 4.0.0-rc.117
 
 importers:
 
@@ -193,8 +193,8 @@ importers:
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116(effect@4.0.0-rc.116)
       '@effect/vitest':
-        specifier: 4.0.0-rc.116
-        version: 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
+        specifier: 4.0.0-rc.117
+        version: 4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/arethetypeswrong':
         specifier: workspace:*
         version: link:../../packages/arethetypeswrong
@@ -206,13 +206,13 @@ importers:
         version: 10.1.0(effect@4.0.0-rc.116)
       '@systemfsoftware/effect-gherkin-spec':
         specifier: 'catalog:'
-        version: 4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 4.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-law':
         specifier: 'catalog:'
-        version: 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-vite':
         specifier: 'catalog:'
-        version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
+        version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
       '@systemfsoftware/npm-package':
         specifier: 'catalog:'
         version: 0.4.0(effect@4.0.0-rc.116)
@@ -289,8 +289,8 @@ importers:
         specifier: 4.0.0-rc.116
         version: 4.0.0-rc.116(effect@4.0.0-rc.116)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@effect/vitest':
-        specifier: 4.0.0-rc.116
-        version: 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
+        specifier: 4.0.0-rc.117
+        version: 4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/arethetypeswrong-recipes':
         specifier: workspace:^
         version: link:../../packages/arethetypeswrong-recipes
@@ -350,8 +350,8 @@ importers:
         version: 8.0.0
     devDependencies:
       '@effect/vitest':
-        specifier: 4.0.0-rc.116
-        version: 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
+        specifier: 4.0.0-rc.117
+        version: 4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@microsoft/api-extractor':
         specifier: 'catalog:'
         version: 7.59.2(@types/node@24.13.4)
@@ -366,16 +366,16 @@ importers:
         version: 10.1.0(effect@4.0.0-rc.116)
       '@systemfsoftware/effect-gherkin-spec':
         specifier: 'catalog:'
-        version: 4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 4.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-memfs':
         specifier: 'catalog:'
         version: 3.1.0(effect@4.0.0-rc.116)(typescript@6.0.3)
       '@systemfsoftware/effect-schema-law':
         specifier: 'catalog:'
-        version: 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+        version: 2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-vite':
         specifier: 'catalog:'
-        version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
+        version: 2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)
       '@systemfsoftware/oxlint-config-recommended':
         specifier: 'catalog:'
         version: 2.0.1(effect@4.0.0-rc.116)(oxlint-tsgolint@7.0.2001)(oxlint@1.82.0(oxlint-tsgolint@7.0.2001))(typescript@6.0.3)
@@ -670,8 +670,8 @@ packages:
     resolution: {integrity: sha512-gPG0ixVHgtYBUe5DbKX9vzHlhqd9+ZEfs4m/XWy0808av0A2XqMzaG3F5rnPBN7EUJRPlo9TluIi8WHx/pBV+A==}
     hasBin: true
 
-  '@effect/vitest@4.0.0-rc.116':
-    resolution: {integrity: sha512-q42ue4hAa5AcPBwqi8rvMvR1Jstr+JjsyyxEBUoBk+WWm8otnqFxQ+XbWslW1QSwdg5+2Fdgd7z59IValt9Oiw==}
+  '@effect/vitest@4.0.0-rc.117':
+    resolution: {integrity: sha512-jJg9M7T3OhTcvoD9Zi28S5+0H+axlSHAYjXM8TYeLJy/FVlPe0B/Vc3ZfaqUF0rwkfQ6ziyCdjiBS46+182H1Q==}
     peerDependencies:
       effect: 4.0.0-rc.116
       vitest: '>=5.0.0 <6.0.0'
@@ -1594,7 +1594,7 @@ packages:
   '@systemfsoftware/effect-gherkin-spec@4.3.0':
     resolution: {integrity: sha512-zFlRQXn9+GuL0vp+o5no16h1pG+CRt22bYEi76hapQQ8VjgtQweKB+CFpvolkwO9eNpHbuSs2uv5Y2VXwiBWzw==}
     peerDependencies:
-      '@effect/vitest': 4.0.0-rc.116
+      '@effect/vitest': 4.0.0-rc.117
       effect: 4.0.0-rc.116
       vitest: ^5
 
@@ -1610,7 +1610,7 @@ packages:
   '@systemfsoftware/effect-schema-law@2.3.0':
     resolution: {integrity: sha512-KssD57+w+FPzf3CJbAnw4YgSkJbG/PoL2UdsSGdu6TS4dLMuHlsCz5XsOOZAJdvjSZ4DVsyJalVEwhJ2fPyZbw==}
     peerDependencies:
-      '@effect/vitest': 4.0.0-rc.116
+      '@effect/vitest': 4.0.0-rc.117
       effect: 4.0.0-rc.116
       vitest: ^5
 
@@ -1630,7 +1630,7 @@ packages:
   '@systemfsoftware/effect-spec-runtime@0.1.0':
     resolution: {integrity: sha512-nNIHZIq7RF/EwqT9QyLcwVrAfZEL4n90kWwykmIIG7LXfh/hAY1esNkMdT8Zg3N6J6MPYsyxIINwSvDD+7Hneg==}
     peerDependencies:
-      '@effect/vitest': 4.0.0-rc.116
+      '@effect/vitest': 4.0.0-rc.117
       effect: 4.0.0-rc.116
       vitest: ^5
 
@@ -3660,7 +3660,7 @@ snapshots:
       '@effect/tsgo-win32-arm64': 0.45.0
       '@effect/tsgo-win32-x64': 0.45.0
 
-  '@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
       effect: 4.0.0-rc.116
       vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
@@ -4455,10 +4455,10 @@ snapshots:
     dependencies:
       effect: 4.0.0-rc.116
 
-  '@systemfsoftware/effect-gherkin-spec@4.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@systemfsoftware/effect-gherkin-spec@4.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
-      '@effect/vitest': 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
-      '@systemfsoftware/effect-spec-runtime': 0.1.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@effect/vitest': 4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@systemfsoftware/effect-spec-runtime': 0.1.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
       vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
@@ -4474,9 +4474,9 @@ snapshots:
       '@oxc-project/types': 0.150.0
       oxc-parser: 0.150.0
 
-  '@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
-      '@effect/vitest': 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@effect/vitest': 4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
       vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
@@ -4486,20 +4486,20 @@ snapshots:
       effect: 4.0.0-rc.116
       oxc-parser: 0.150.0
 
-  '@systemfsoftware/effect-schema-vite@2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)':
+  '@systemfsoftware/effect-schema-vite@2.2.2(@systemfsoftware/effect-schema-law@2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))(vitest@5.0.1)':
     dependencies:
       '@oxc-project/types': 0.150.0
       '@systemfsoftware/effect-schema-discovery': 1.0.5
-      '@systemfsoftware/effect-schema-law': 2.3.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@systemfsoftware/effect-schema-law': 2.3.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)
       '@systemfsoftware/effect-schema-recursion-budget': 1.0.0(effect@4.0.0-rc.116)
       effect: 4.0.0-rc.116
       oxc-parser: 0.150.0
       vite: 8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1)
       vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 
-  '@systemfsoftware/effect-spec-runtime@0.1.0(@effect/vitest@4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
+  '@systemfsoftware/effect-spec-runtime@0.1.0(@effect/vitest@4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1))(effect@4.0.0-rc.116)(vitest@5.0.1)':
     dependencies:
-      '@effect/vitest': 4.0.0-rc.116(effect@4.0.0-rc.116)(vitest@5.0.1)
+      '@effect/vitest': 4.0.0-rc.117(effect@4.0.0-rc.116)(vitest@5.0.1)
       effect: 4.0.0-rc.116
       vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@24.13.4)(@vitest/coverage-v8@5.0.1)(vite@8.2.2(@types/node@24.13.4)(jiti@2.6.1)(yaml@2.9.1))
 

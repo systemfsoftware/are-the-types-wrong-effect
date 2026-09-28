@@ -12,7 +12,7 @@ catalog:
   "@effect/platform-node": 4.0.0-rc.116
   "@effect/platform-node-shared": 4.0.0-rc.116
   "@effect/tsgo": ^0.45.0
-  "@effect/vitest": 4.0.0-rc.116
+  "@effect/vitest": 4.0.0-rc.117
   "@loaderkit/resolve": ^1.0.6
   "@microsoft/api-extractor": ^7.59.1
   "@systemfsoftware/arethetypeswrong-cli": ^4.2.0
@@ -64,7 +64,7 @@ overrides:
   effect: 4.0.0-rc.116
   "@effect/platform-node": 4.0.0-rc.116
   "@effect/platform-node-shared": 4.0.0-rc.116
-  "@effect/vitest": 4.0.0-rc.116
+  "@effect/vitest": 4.0.0-rc.117
 minimumReleaseAgeExclude:
   - "@systemfsoftware/effect-cell-types@10.1.0"
   - "@systemfsoftware/effect-gherkin-spec@4.3.0"
