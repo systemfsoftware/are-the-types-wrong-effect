@@ -9,13 +9,9 @@ permissions:
 
 jobs:
   require-changeset:
-    if: github.head_ref != 'changeset-release/main'
-    name: a publishable-package change needs a changeset
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: denoland/setup-deno@v2
-      - name: Require a changeset for publishable-package changes
-        run: ./scripts/check-changeset.ts ${{ github.event.pull_request.base.sha }}
+    uses: systemfsoftware/pnpm-release-management/.github/workflows/changeset-check.yml@prm/toolchain
+    with:
+      tools-ref: prm/toolchain
+    permissions:
+      contents: read
+      pull-requests: read
