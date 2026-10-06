@@ -133,10 +133,6 @@
       "cache": false,
       "outputLogs": "new-only"
     },
-    "//#test:scripts": {
-      "cache": false,
-      "outputLogs": "new-only"
-    },
     "clean": {
       "cache": false
     }

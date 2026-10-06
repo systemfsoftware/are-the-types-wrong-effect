@@ -18,7 +18,15 @@ pnpm change --bump <none|patch|minor|major> --summary "<changelog entry>" [<pkg>
 - This README is NOT a changeset: the gate requires a file whose frontmatter
   parses as `"<pkg>": <none|patch|minor|major>`.
 
-Publishing uses npm OIDC trusted publishing from `.github/workflows/release.yml`.
-Register `@systemfsoftware/arethetypeswrong-cli` and `@systemfsoftware/arethetypeswrong` as trusted publishers on npmjs.com
-pointing at this repository and that workflow filename before the first new
-version can ship. OIDC cannot debut a package npm has never seen.
+The release pipeline is the shared toolchain in
+`systemfsoftware/pnpm-release-management`, consumed as a reusable workflow
+(`.github/workflows/release.yml` and `changeset-check.yml` are thin callers
+pinned to its `prm/toolchain` ref). On a push to `main` it opens or updates the
+version PR when intents are pending, and otherwise tags each released version
+`<pkg>@vX.Y.Z` and cuts a GitHub Release from its authored changelog. A version
+with no such tag is what the pipeline treats as owed a release.
+
+Distribution is Nix flakes consumed from git refs, not an npm registry: the git
+tag, pinned downstream by a consumer's `flake.lock` rev + narHash, is the
+durable record that a version shipped. There is no registry step to debut a
+package.

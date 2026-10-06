@@ -16,25 +16,17 @@ _Avoid:_ changeset — the file format is a changeset, but the concept here is t
 
 ### Release set
 
-The workspace packages owed a release in the current run — those whose manifest version is not yet served by the package registry. Membership is a fact about the registry, not about version control: a package leaves the set when its version is published, never when a branch advances or a tag is written.
+The workspace packages owed a release in the current run — those whose manifest version carries no `<pkg>@vX.Y.Z` git tag yet. Membership is a git fact: a package leaves the set when its tag is written (which the shared release pipeline does as it tags the version and cuts its GitHub Release), not when a branch advances. There is no registry to probe — Nix flakes consumed from git refs are the distribution, so the tag is the record that a version shipped.
 
 ### Release phase
 
-The stage the release pipeline decides it is in, derived rather than configured. `publish` when the release set is non-empty; `version` when nothing is owed but unconsumed change intents remain; `none` when neither holds. Each phase gates a distinct job, so a phase derived from a wrong signal skips work silently rather than failing. An intent file that still exists after consumption is recorded is not pending.
+The stage the release pipeline decides it is in, derived rather than configured. `release` when the release set is non-empty (tag the untagged versions and cut their GitHub Releases); `version` when nothing is owed but unconsumed change intents remain; `none` when neither holds. The shared toolchain derives the phase from repository state on each push to `main`, so a half-finished release resumes on the next push. An intent file that still exists after consumption is recorded is not pending.
 
-### Published version
+### Released version
 
-A version the package registry serves for a package. The registry is the authority on this: neither a git tag nor a changelog file establishes it, and both are written downstream of a successful publish.
-
-### Git tag as release evidence
-
-Rejected as a release signal. Tags are written _after_ the step that a missing tag would cause to fail, so a detector reading tag absence cannot make its own precondition true. Recorded here because the term still appears in the pipeline's history and in older workflow steps.
+A version that carries its `<pkg>@vX.Y.Z` git tag. The tag is the authority on this: the shared release pipeline writes it as it tags the version and cuts the GitHub Release, and a consumer pins it downstream through `flake.lock` (rev + narHash). An untagged manifest version is owed a release; a tagged one is done. Tagging and the GitHub Release are both idempotent on tag existence, so a half-finished release resumes safely on the next push to main.
 
 ## Registry resolution
-
-### Registry probe
-
-A query against the package registry asking whether a given package version is published. It has three outcomes, not two: published, unpublished, and _cannot tell_. The last is a failure, never a "no" — folding it into unpublished reclassifies a published package as owed a release.
 
 ### Scoped name
 

@@ -1,0 +1,25 @@
+{
+  // The release pipeline is the shared systemfsoftware/pnpm-release-management
+  // toolchain, consumed as a reusable workflow (see .github/workflows/release.yml
+  // and changeset-check.yml, pinned to prm/toolchain). This config is the only
+  // repo-local input it reads. Distribution is Nix flakes consumed from git
+  // refs: a <pkg>@vX.Y.Z git tag is the durable record a version shipped, so
+  // there is no npm-registry publish step.
+  "base": "main",
+  "branch": "changeset-release/main",
+  "changesetDir": ".changeset",
+  "changelogDir": ".changeset/changelogs",
+  // pnpm-native versioning: the two public packages carry independent versions,
+  // bumped per package by `pnpm version -r` as it consumes the intents.
+  "versioning": { "strategy": "pnpm" },
+  // paths gate: the shared changeset-check workflow does not install this repo's
+  // dependencies, so a turbo-strategy gate has no turbo binary to pin against.
+  // Paths evidence reads the git diff and attributes a change to the package
+  // whose directory contains it — the strategy that works without a workspace
+  // install.
+  "gate": { "strategy": "paths" },
+  "pr": {
+    "title": "chore(release): version packages",
+    "body": "Consumes the pending .changeset intents.\n\nMerging tags the released versions and creates GitHub releases.",
+  },
+}
