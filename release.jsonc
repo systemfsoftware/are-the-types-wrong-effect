@@ -12,7 +12,12 @@
   // pnpm-native versioning: the two public packages carry independent versions,
   // bumped per package by `pnpm version -r` as it consumes the intents.
   "versioning": { "strategy": "pnpm" },
-  "gate": { "strategy": "turbo", "task": "build" },
+  // paths gate: the shared changeset-check workflow does not install this repo's
+  // dependencies, so a turbo-strategy gate has no turbo binary to pin against.
+  // Paths evidence reads the git diff and attributes a change to the package
+  // whose directory contains it — the strategy that works without a workspace
+  // install.
+  "gate": { "strategy": "paths" },
   "pr": {
     "title": "chore(release): version packages",
     "body": "Consumes the pending .changeset intents.\n\nMerging tags the released versions and creates GitHub releases.",
