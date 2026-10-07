@@ -9,9 +9,9 @@ permissions:
 
 jobs:
   require-changeset:
-    uses: systemfsoftware/pnpm-release-management/.github/workflows/changeset-check.yml@prm/toolchain
+    uses: systemfsoftware/pnpm-release-management/.github/workflows/changeset-check.yml@main
     with:
-      tools-ref: prm/toolchain
+      tools-ref: main
     permissions:
       contents: read
       pull-requests: read
