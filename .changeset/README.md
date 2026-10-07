@@ -21,7 +21,7 @@ pnpm change --bump <none|patch|minor|major> --summary "<changelog entry>" [<pkg>
 The release pipeline is the shared toolchain in
 `systemfsoftware/pnpm-release-management`, consumed as a reusable workflow
 (`.github/workflows/release.yml` and `changeset-check.yml` are thin callers
-pinned to its `prm/toolchain` ref). On a push to `main` it opens or updates the
+pinned to its `main` ref). On a push to `main` it opens or updates the
 version PR when intents are pending, and otherwise tags each released version
 `<pkg>@vX.Y.Z` and cuts a GitHub Release from its authored changelog. A version
 with no such tag is what the pipeline treats as owed a release.
