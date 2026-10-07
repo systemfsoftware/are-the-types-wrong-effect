@@ -11,7 +11,7 @@ catalog:
   "@commitlint/types": ^21.2.0
   "@effect/platform-node": 4.0.0-rc.116
   "@effect/platform-node-shared": 4.0.0-rc.116
-  "@effect/tsgo": ^0.45.0
+  "@effect/tsgo": ^0.50.0
   "@effect/vitest": 4.0.0-rc.116
   "@loaderkit/resolve": ^1.0.6
   "@microsoft/api-extractor": ^7.59.1
@@ -82,3 +82,11 @@ minimumReleaseAgeExclude:
   - "@systemfsoftware/oxlint-plugin-effect-platform@1.3.0"
   - "@systemfsoftware/oxlint-plugin-test-discipline@3.8.0"
   - "@systemfsoftware/tsconfig@2.0.1"
+  - "@effect/tsgo-darwin-arm64@0.50.0"
+  - "@effect/tsgo-darwin-x64@0.50.0"
+  - "@effect/tsgo-linux-arm64@0.50.0"
+  - "@effect/tsgo-linux-arm@0.50.0"
+  - "@effect/tsgo-linux-x64@0.50.0"
+  - "@effect/tsgo-win32-arm64@0.50.0"
+  - "@effect/tsgo-win32-x64@0.50.0"
+  - "@effect/tsgo@0.50.0"
