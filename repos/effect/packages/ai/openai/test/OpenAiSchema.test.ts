@@ -2,9 +2,9 @@ import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai"
 import * as OpenAiSchema from "@effect/ai-openai/OpenAiSchema"
 import { assert, describe, it } from "@effect/vitest"
 import { Effect, Layer, Schema, Stream } from "effect"
-import { LanguageModel } from "effect/unstable/ai"
-import * as Sse from "effect/unstable/encoding/Sse"
-import { HttpClientRequest, HttpClientResponse } from "effect/unstable/http"
+import { LanguageModel } from "effect/ai"
+import * as Sse from "effect/encoding/Sse"
+import { HttpClientRequest, HttpClientResponse } from "effect/http"
 
 const makeResponse = (overrides: Record<string, unknown> = {}) => ({
   id: "resp_123",
@@ -457,6 +457,7 @@ describe("OpenAiSchema", () => {
       OpenAiClient.OpenAiClient,
       OpenAiClient.OpenAiClient.of({
         client: undefined as any,
+        createDecisions: () => Effect.die("unexpected"),
         createResponse: () => Effect.die("unexpected"),
         createResponseStream: () =>
           Effect.succeed([
