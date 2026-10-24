@@ -8,6 +8,10 @@
   intents:
     - agent-first-cli
     - bright-spoons-invite
+"@systemfsoftware/arethetypeswrong-cli@4.2.1":
+  dir: apps/arethetypeswrong-cli
+  intents:
+    - cli-env-fallbacks
 "@systemfsoftware/arethetypeswrong@7.0.1":
   dir: packages/arethetypeswrong
   intents:
@@ -16,3 +20,7 @@
   dir: packages/arethetypeswrong
   intents:
     - agent-first-cli
+"@systemfsoftware/arethetypeswrong@8.0.0":
+  dir: packages/arethetypeswrong
+  intents:
+    - engine-analysis-builder
