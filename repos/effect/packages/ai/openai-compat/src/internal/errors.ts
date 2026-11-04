@@ -1,19 +1,19 @@
+import * as AiError from "effect/ai/AiError"
+import type * as Response from "effect/ai/Response"
 import * as Arr from "effect/Array"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
+import type * as Sse from "effect/encoding/Sse"
 import { dual } from "effect/Function"
+import type * as HttpClientError from "effect/http/HttpClientError"
+import type * as HttpClientRequest from "effect/http/HttpClientRequest"
+import type * as HttpClientResponse from "effect/http/HttpClientResponse"
 import * as Number from "effect/Number"
 import * as Option from "effect/Option"
 import * as Redactable from "effect/Redactable"
 import * as Schema from "effect/Schema"
 import * as SchemaTransformation from "effect/SchemaTransformation"
 import * as String from "effect/String"
-import * as AiError from "effect/unstable/ai/AiError"
-import type * as Response from "effect/unstable/ai/Response"
-import type * as Sse from "effect/unstable/encoding/Sse"
-import type * as HttpClientError from "effect/unstable/http/HttpClientError"
-import type * as HttpClientRequest from "effect/unstable/http/HttpClientRequest"
-import type * as HttpClientResponse from "effect/unstable/http/HttpClientResponse"
 import type { OpenAiErrorMetadata } from "../OpenAiError.ts"
 
 /** @internal */
@@ -230,7 +230,7 @@ export const mapStatusCodeToReason = ({ status, headers, message, metadata, http
     case 400:
       return new AiError.InvalidRequestError({
         description: errorDescription,
-        metadata: { openai: metadata },
+        metadata: { "openai-compat": metadata },
         http
       })
     case 401:
@@ -250,14 +250,14 @@ export const mapStatusCodeToReason = ({ status, headers, message, metadata, http
     case 404:
       return new AiError.InvalidRequestError({
         description: errorDescription,
-        metadata: { openai: metadata },
+        metadata: { "openai-compat": metadata },
         http
       })
     case 409:
     case 422:
       return new AiError.InvalidRequestError({
         description: errorDescription,
-        metadata: { openai: metadata },
+        metadata: { "openai-compat": metadata },
         http
       })
     case 429: {
@@ -268,7 +268,7 @@ export const mapStatusCodeToReason = ({ status, headers, message, metadata, http
         metadata.errorType?.includes("exhausted")
       ) {
         return new AiError.QuotaExhaustedError({
-          metadata: { openai: metadata },
+          metadata: { "openai-compat": metadata },
           http
         })
       }
@@ -276,7 +276,7 @@ export const mapStatusCodeToReason = ({ status, headers, message, metadata, http
       return new AiError.RateLimitError({
         retryAfter,
         metadata: {
-          openai: {
+          "openai-compat": {
             ...metadata,
             ...rateLimitMetadata
           }

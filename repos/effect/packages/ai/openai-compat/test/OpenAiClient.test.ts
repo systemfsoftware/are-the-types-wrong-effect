@@ -2,13 +2,7 @@ import { OpenAiClient } from "@effect/ai-openai-compat"
 import * as Errors from "@effect/ai-openai-compat/internal/errors"
 import { assert, describe, it } from "@effect/vitest"
 import { Context, Effect, Layer, Redacted, type Schema, Stream } from "effect"
-import {
-  Headers,
-  HttpClient,
-  type HttpClientError,
-  type HttpClientRequest,
-  HttpClientResponse
-} from "effect/unstable/http"
+import { Headers, HttpClient, type HttpClientError, type HttpClientRequest, HttpClientResponse } from "effect/http"
 
 describe("OpenAiClient", () => {
   describe("request behavior", () => {
@@ -190,7 +184,7 @@ describe("OpenAiClient", () => {
         ]
       }))))
 
-    it.effect("drops invalid JSON and continues streaming", () =>
+    it.effect("drops invalid JSON and streams valid events until [DONE]", () =>
       Effect.gen(function*() {
         const client = yield* OpenAiClient.OpenAiClient
 
@@ -221,7 +215,8 @@ describe("OpenAiClient", () => {
               }]
             })
           }\n\n`,
-          "data: [DONE]\n\n"
+          "data: [DONE]\n\n",
+          "data: {\"ignored\":\"after completion\"}\n\n"
         ].join("")
       }))))
 
