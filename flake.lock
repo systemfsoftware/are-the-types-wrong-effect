@@ -29,11 +29,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1786037097,
-        "narHash": "sha256-k3Z/oMLgS4OdCRJlakczcM1Rq2O+l67g0EChInZOYWk=",
+        "lastModified": 1790096829,
+        "narHash": "sha256-mnjMXjY/fo5OQH/iYNPijIqo0jAb/z7EhHtfXLlzOrs=",
         "owner": "Scrumplex",
         "repo": "importPnpmLock.nix",
-        "rev": "4bd9cc54e6a5431930b4d09898e1ef49cb2ed241",
+        "rev": "ca18d47b0e98a4b51404f69ce5ab51efb6ebc151",
         "type": "github"
       },
       "original": {
