@@ -65,6 +65,8 @@ overrides:
   "@effect/platform-node": 4.0.0-rc.116
   "@effect/platform-node-shared": 4.0.0-rc.116
   "@effect/vitest": 4.0.0-rc.116
+# Three days (minutes); the same in every systemfsoftware repo, so producer and consumer gates agree.
+minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - "@systemfsoftware/effect-cell-types@10.1.0"
   - "@systemfsoftware/effect-gherkin-spec@4.3.0"
