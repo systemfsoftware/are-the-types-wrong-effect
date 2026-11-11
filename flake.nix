@@ -7,6 +7,12 @@
       url = "github:systemfsoftware/comment-checker";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    pnpm-release-management = {
+      url = "github:systemfsoftware/pnpm-release-management";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.comment-checker.follows = "comment-checker";
+      inputs.importPnpmLock.follows = "importPnpmLock";
+    };
     # Hashless pnpm store: each lockfile integrity is the fetch hash.
     # fetchPnpmDeps needs a second store-wide hash that Dependabot cannot update.
     importPnpmLock = {
@@ -15,7 +21,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, comment-checker, importPnpmLock }:
+  outputs = { self, nixpkgs, comment-checker, importPnpmLock, pnpm-release-management }:
     let
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forEachSystem = fn: nixpkgs.lib.genAttrs systems (system: fn nixpkgs.legacyPackages.${system});
@@ -28,11 +34,21 @@
           cc = comment-checker.packages.${pkgs.system}.comment-checker;
           comment-checker-bwrap = pkgs.callPackage ./nix/comment-checker-bwrap.nix { comment-checker = cc; };
           attw = pkgs'.callPackage ./nix/attw.nix { };
-        in { inherit dprint attw comment-checker-bwrap; comment-checker = cc; default = dprint; });
+          # `workspace-tarballs` and one `<package>` output per public member.
+          # The builder requires `packageManager` to pin exactly this pnpm.
+          workspace = pnpm-release-management.lib.mkPnpmWorkspacePackages {
+            inherit pkgs;
+            src = self;
+            pname = "are-the-types-wrong";
+            pnpm = pkgs.pnpm_11;
+          };
+        in workspace // { inherit dprint attw comment-checker-bwrap; comment-checker = cc; default = dprint; });
 
-      # pnpm is deliberately absent: `packageManager` pins pnpm@11.21.0 and
+      # pnpm is deliberately absent: `packageManager` pins a pnpm and
       # corepack is the one thing allowed to resolve it. A second pnpm on PATH
       # would answer `pnpm install` with a version the lockfile never saw.
+      # The `workspace-tarballs` build runs the pnpm_11 nixpkgs provides, which
+      # `packageManager` must name exactly (evaluation fails otherwise).
       devShells = forEachSystem (pkgs: {
         default = pkgs.mkShell {
           packages = [
