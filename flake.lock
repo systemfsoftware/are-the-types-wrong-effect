@@ -58,11 +58,38 @@
         "type": "github"
       }
     },
+    "pnpm-release-management": {
+      "inputs": {
+        "comment-checker": [
+          "comment-checker"
+        ],
+        "importPnpmLock": [
+          "importPnpmLock"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794361130,
+        "narHash": "sha256-YrdXTri/aHIDNU+jqoj8h1gox7Jai/nL1yvq0Va+C0k=",
+        "owner": "systemfsoftware",
+        "repo": "pnpm-release-management",
+        "rev": "5bfdef9c9b63a7f5d1d305f92a96158b80fb6b1e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "systemfsoftware",
+        "repo": "pnpm-release-management",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "comment-checker": "comment-checker",
         "importPnpmLock": "importPnpmLock",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "pnpm-release-management": "pnpm-release-management"
       }
     },
     "rust-overlay": {
