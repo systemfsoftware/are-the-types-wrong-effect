@@ -9,15 +9,14 @@
   "branch": "changeset-release/main",
   "changesetDir": ".changeset",
   "changelogDir": ".changeset/changelogs",
-  // pnpm-native versioning: the two public packages carry independent versions,
-  // bumped per package by `pnpm version -r` as it consumes the intents.
-  "versioning": { "strategy": "pnpm" },
-  // paths gate: the shared changeset-check workflow does not install this repo's
-  // dependencies, so a turbo-strategy gate has no turbo binary to pin against.
-  // Paths evidence reads the git diff and attributes a change to the package
-  // whose directory contains it — the strategy that works without a workspace
-  // install.
-  "gate": { "strategy": "paths" },
+  // changesets versioning: the two public packages carry independent versions,
+  // bumped per package from the pending intents.
+  "versioning": { "strategy": "changesets" },
+  // turbo gate: the root turbo.json makes turbo the source of change evidence,
+  // and the paths gate refuses a repository that holds one. The shared
+  // changeset-check workflow fetches the Turbo binary the lockfile pins, so it
+  // needs no workspace install.
+  "gate": { "strategy": "turbo", "task": "build" },
   "pr": {
     "title": "chore(release): version packages",
     "body": "Consumes the pending .changeset intents.\n\nMerging tags the released versions and creates GitHub releases.",
