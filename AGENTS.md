@@ -19,7 +19,7 @@ Starter template for TypeScript / Effect libraries and tools.
 | `START-1` | Formatting passes dprint with no diffs              | `pnpm format:check` |
 | `START-2` | Typechecking succeeds workspace-wide with no errors | `pnpm typecheck`    |
 | `START-3` | All test suites pass                                | `pnpm test`         |
-| `START-4` | Full CI validation passes before completion         | `pnpm check:ci`     |
+| `START-4` | CI passes on the pushed head; never run the full gate locally | CI (`pnpm check:ci`) |
 
 The publishable CLI lives under `apps/`; `packages/` holds the published engine
 and the private recipes fixture. `turbo.json` mirrors both roots' `dist/**` as
@@ -27,4 +27,4 @@ build outputs — verify with `pnpm gate:dist`.
 
 ## End of Session
 
-Commit changes using conventional commits (`<type>(<scope>): <subject>`). Ensure the working tree is clean and `pnpm check:ci` passes.
+Commit changes using conventional commits (`<type>(<scope>): <subject>`). Ensure the working tree is clean and pushed; CI runs `pnpm check:ci`, never run it locally.
