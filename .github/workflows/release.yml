@@ -9,14 +9,16 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
 jobs:
   release:
-    uses: systemfsoftware/pnpm-release-management/.github/workflows/release.yml@main
+    uses: systemfsoftware/pnpm-release-management/.github/workflows/release.yml@7c976f10f0233a671caa340c5b20f9c2acaab433
     with:
-      tools-ref: main
+      ci-workflow: ci.yml
     permissions:
+      actions: write
       contents: write
       pull-requests: write
