@@ -44,10 +44,10 @@
           };
         in workspace // { inherit dprint attw comment-checker-bwrap; comment-checker = cc; default = dprint; });
 
-      # pnpm is deliberately absent: `packageManager` pins a pnpm and
-      # corepack is the one thing allowed to resolve it. A second pnpm on PATH
-      # would answer `pnpm install` with a version the lockfile never saw.
-      # The `workspace-tarballs` build runs the pnpm_11 nixpkgs provides, which
+      # pnpm is not a nixpkgs package here: `packageManager` pins pnpm@11.25.0
+      # and corepack resolves exactly that version. The shim gives the release
+      # plan a `pnpm` on PATH (`nix develop` runs this hook). The
+      # `workspace-tarballs` build runs the pnpm_11 nixpkgs provides, which
       # `packageManager` must name exactly (evaluation fails otherwise).
       devShells = forEachSystem (pkgs: {
         default = pkgs.mkShell {
@@ -58,6 +58,11 @@
             pkgs.deno
             pkgs.process-compose
           ];
+          shellHook = ''
+            mkdir -p "$HOME/.cache/corepack-shims"
+            corepack enable pnpm --install-directory "$HOME/.cache/corepack-shims"
+            export PATH="$HOME/.cache/corepack-shims:$PATH"
+          '';
         };
       });
     };
