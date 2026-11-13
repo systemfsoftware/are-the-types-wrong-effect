@@ -85,6 +85,13 @@ jobs:
               echo "::error title=nix-build-failed::${attr} did not build"
             fi
           done
+          # The dev shell every CI job enters: pushed with its closure, so a cold runner downloads it instead of building it.
+          if out=$(nix build --no-link --print-out-paths -L "${ref}#devShells.${SYSTEM}.default"); then
+            printf '%s\n' "$out" >> "$RUNNER_TEMP/out-paths"
+          else
+            echo "dev-shell" >> "$RUNNER_TEMP/build-failures"
+            echo "::error title=nix-build-failed::the dev shell did not build"
+          fi
 
       - name: Push the closures
         env:
