@@ -1,4 +1,17 @@
-import { BigDecimal, DateTime, Duration, HashMap, Option, Redacted, Result, Schema, SchemaGetter } from "effect"
+import { assert } from "@effect/vitest"
+import {
+  BigDecimal,
+  Chunk,
+  DateTime,
+  Duration,
+  HashMap,
+  HashSet,
+  Option,
+  Redacted,
+  Result,
+  Schema,
+  SchemaGetter
+} from "effect"
 import { describe, it } from "vitest"
 import { strictEqual } from "../utils/assert.ts"
 
@@ -195,18 +208,30 @@ describe("toFormatter", () => {
     strictEqual(format("a"), "A")
   })
 
-  it("preserves Union member encoding metadata for onBefore", () => {
-    const member = Schema.String.pipe(
-      Schema.decode({
-        decode: SchemaGetter.transform((s) => s),
-        encode: SchemaGetter.transform((s) => s)
-      })
-    )
-    const format = Schema.toFormatter(Schema.Union([member, Schema.Number]), {
-      onBefore: (ast) => ast.encoding ? () => "transformed" : undefined
+  it("passes type-side AST nodes to onBefore", () => {
+    const schema = Schema.Struct({ value: Schema.NumberFromString }).pipe(Schema.fromJsonString)
+    const format = Schema.toFormatter(schema, {
+      onBefore: (ast) => {
+        strictEqual(ast.encoding, undefined)
+        if (ast._tag === "Number") {
+          return (value: number) => `number:${value}`
+        }
+      }
     })
 
-    strictEqual(format("a"), "transformed")
+    strictEqual(format({ value: 1 }), `{ "value": number:1 }`)
+  })
+
+  it("selects decoded Union members when onBefore calls recur with a codec AST", () => {
+    const schema = Schema.Union([Schema.NumberFromString, Schema.Boolean])
+    const format = Schema.toFormatter(Schema.Unknown, {
+      onBefore: (ast, recur) => {
+        if (ast._tag === "Unknown") return recur(schema.ast)
+        if (ast._tag === "Number") return (value: number) => `number:${value}`
+      }
+    })
+
+    assert.strictEqual(format(1), "number:1")
   })
 
   describe("Tuple", () => {
@@ -249,6 +274,30 @@ describe("toFormatter", () => {
       ])
     )
     strictEqual(format(["head", "tail", 1, true, "last"]), `["head", "tail", 1, true, "last"]`)
+  })
+
+  describe("rest elements", () => {
+    // Pairwise distinct, so a rest element read at the wrong index is observable.
+    const Tagged = (label: string) =>
+      Schema.String.pipe(Schema.overrideToFormatter(() => (s: string) => `${label}:${s}`))
+    const A = Tagged("A")
+    const B = Tagged("B")
+    const C = Tagged("C")
+
+    it("one trailing element after the rest element", () => {
+      const format = Schema.toFormatter(Schema.TupleWithRest(Schema.Tuple([A]), [B, C]))
+      strictEqual(format(["x", "z"]), `[A:x, C:z]`)
+      strictEqual(format(["x", "y", "z"]), `[A:x, B:y, C:z]`)
+      strictEqual(format(["x", "y1", "y2", "z"]), `[A:x, B:y1, B:y2, C:z]`)
+    })
+
+    it("multiple trailing elements after the rest element", () => {
+      const D = Tagged("D")
+      const format = Schema.toFormatter(Schema.TupleWithRest(Schema.Tuple([A]), [B, C, D]))
+      strictEqual(format(["x", "z", "w"]), `[A:x, C:z, D:w]`)
+      strictEqual(format(["x", "y", "z", "w"]), `[A:x, B:y, C:z, D:w]`)
+      strictEqual(format(["x", "y1", "y2", "z", "w"]), `[A:x, B:y1, B:y2, C:z, D:w]`)
+    })
   })
 
   describe("Struct", () => {
@@ -315,6 +364,17 @@ describe("toFormatter", () => {
       strictEqual(format({ a: Option.some(1), b: Option.some(2) }), `{ "a": some(1) }`)
     })
 
+    it("Record with a transformed key should select keys by the decoded key", () => {
+      const UpperCase = Schema.String.check(Schema.isPattern(/^[a-z]+$/)).pipe(
+        Schema.decodeTo(Schema.String.check(Schema.isPattern(/^[A-Z]+$/)), {
+          decode: SchemaGetter.transform((s: string) => s.toUpperCase()),
+          encode: SchemaGetter.transform((s: string) => s.toLowerCase())
+        })
+      )
+      const format = Schema.toFormatter(Schema.Record(UpperCase, Schema.Option(Schema.Number)))
+      strictEqual(format({ A: Option.some(1) }), `{ "A": some(1) }`)
+    })
+
     it("Record(Symbol, Option(Number))", () => {
       const format = Schema.toFormatter(Schema.Record(Schema.Symbol, Schema.Option(Schema.Number)))
       strictEqual(format({ [Symbol.for("a")]: Option.some(1) }), `{ Symbol(a): some(1) }`)
@@ -335,11 +395,32 @@ describe("toFormatter", () => {
       a: Schema.Option(Schema.String)
     }) {}
     const format = Schema.toFormatter(A)
-    strictEqual(format({ a: Option.some("a") }), `A({ "a": some("a") })`)
-    strictEqual(format({ a: Option.none() }), `A({ "a": none() })`)
+    strictEqual(format(new A({ a: Option.some("a") })), `A({ "a": some("a") })`)
+    strictEqual(format(new A({ a: Option.none() })), `A({ "a": none() })`)
   })
 
   describe("suspend", () => {
+    it("compiles a recursive schema once", () => {
+      interface Tree {
+        readonly a: number
+        readonly as: ReadonlyArray<Tree>
+      }
+      let compiled = 0
+      const Tree = Schema.Struct({
+        a: Schema.Number.pipe(Schema.overrideToFormatter(() => {
+          compiled++
+          return String
+        })),
+        as: Schema.Array(Schema.suspend((): Schema.Codec<Tree> => Tree))
+      })
+      const format = Schema.toFormatter(Tree)
+      strictEqual(
+        format({ a: 1, as: [{ a: 2, as: [{ a: 3, as: [] }] }] }),
+        `{ "a": 1, "as": [{ "a": 2, "as": [{ "a": 3, "as": [] }] }] }`
+      )
+      strictEqual(compiled, 1)
+    })
+
     it("Tuple", () => {
       const Rec = Schema.suspend((): Schema.Codec<unknown> => schema)
       const schema = Schema.Tuple([
@@ -531,6 +612,37 @@ describe("toFormatter", () => {
     const format = Schema.toFormatter(Schema.HashMap(Schema.String, Schema.Option(Schema.Number)))
     strictEqual(format(HashMap.make(["a", Option.some(1)])), `HashMap(1) { "a" => some(1) }`)
     strictEqual(format(HashMap.make(["a", Option.none()])), `HashMap(1) { "a" => none() }`)
+  })
+
+  it("ReadonlySet(Symbol)", () => {
+    const format = Schema.toFormatter(Schema.ReadonlySet(Schema.Symbol))
+    strictEqual(format(new Set([Symbol.for("b"), Symbol.for("a")])), `ReadonlySet(2) { Symbol(a), Symbol(b) }`)
+  })
+
+  it("ReadonlyMap(Symbol, String)", () => {
+    const format = Schema.toFormatter(Schema.ReadonlyMap(Schema.Symbol, Schema.String))
+    strictEqual(
+      format(new Map([[Symbol.for("b"), "y"], [Symbol.for("a"), "x"]])),
+      `ReadonlyMap(2) { Symbol(a) => "x", Symbol(b) => "y" }`
+    )
+  })
+
+  it("HashSet(Symbol)", () => {
+    const format = Schema.toFormatter(Schema.HashSet(Schema.Symbol))
+    strictEqual(format(HashSet.make(Symbol.for("b"), Symbol.for("a"))), `HashSet(2) { Symbol(a), Symbol(b) }`)
+  })
+
+  it("HashMap(Symbol, String)", () => {
+    const format = Schema.toFormatter(Schema.HashMap(Schema.Symbol, Schema.String))
+    strictEqual(
+      format(HashMap.make([Symbol.for("b"), "y"], [Symbol.for("a"), "x"])),
+      `HashMap(2) { Symbol(a) => "x", Symbol(b) => "y" }`
+    )
+  })
+
+  it("Chunk(Symbol)", () => {
+    const format = Schema.toFormatter(Schema.Chunk(Schema.Symbol))
+    strictEqual(format(Chunk.make(Symbol.for("b"), Symbol.for("a"))), `Chunk(2) { Symbol(b), Symbol(a) }`)
   })
 
   describe("Redacted", () => {

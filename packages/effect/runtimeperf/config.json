@@ -12,6 +12,164 @@
   },
   "suites": [
     {
+      "name": "schema-checked-sources",
+      "fixtures": [
+        {
+          "file": "suites/schema-checked-sources/fixtures/cases.ts",
+          "defaults": {
+            "tier": 1,
+            "family": "jit",
+            "implementation": "effect-jit",
+            "astTags": ["Arrays", "Objects", "String", "Number"],
+            "operation": "decode",
+            "path": "valid",
+            "size": 1000
+          },
+          "cases": [
+            {
+              "name": "digits",
+              "export": "digits",
+              "scenario": "checked-sources-digits"
+            },
+            {
+              "name": "checked-source",
+              "export": "checkedSource",
+              "scenario": "checked-sources-checked-source"
+            },
+            {
+              "name": "unchecked-source",
+              "export": "uncheckedSource",
+              "scenario": "checked-sources-unchecked-source"
+            },
+            {
+              "name": "two-passes",
+              "export": "twoPasses",
+              "scenario": "checked-sources-two-passes"
+            },
+            {
+              "name": "checked-template-target",
+              "export": "checkedTemplateTarget",
+              "scenario": "checked-sources-checked-template-target",
+              "astTags": ["Arrays", "Objects", "String", "TemplateLiteral"]
+            },
+            {
+              "name": "unchecked-template-target",
+              "export": "uncheckedTemplateTarget",
+              "scenario": "checked-sources-unchecked-template-target",
+              "astTags": ["Arrays", "Objects", "String", "TemplateLiteral"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "schema-excess-properties",
+      "fixtures": [
+        {
+          "file": "suites/schema-excess-properties/fixtures/cases.ts",
+          "defaults": {
+            "tier": 1,
+            "family": "interpreted",
+            "implementation": "effect",
+            "astTags": ["Objects", "String", "Number", "Boolean"],
+            "operation": "decode",
+            "path": "valid",
+            "size": 3
+          },
+          "cases": [
+            {
+              "name": "interpreted-struct-default",
+              "export": "interpretedStructDefault",
+              "scenario": "excess-struct-default"
+            },
+            {
+              "name": "jit-struct-default",
+              "export": "jitStructDefault",
+              "scenario": "excess-struct-default",
+              "family": "jit",
+              "implementation": "effect-jit"
+            },
+            {
+              "name": "interpreted-struct-strict",
+              "export": "interpretedStructStrict",
+              "scenario": "excess-struct-strict"
+            },
+            {
+              "name": "jit-struct-strict",
+              "export": "jitStructStrict",
+              "scenario": "excess-struct-strict",
+              "family": "jit",
+              "implementation": "effect-jit"
+            },
+            {
+              "name": "interpreted-extra-strict",
+              "export": "interpretedExtraStrict",
+              "scenario": "excess-extra-strict",
+              "path": "invalid",
+              "size": 4
+            },
+            {
+              "name": "jit-extra-strict",
+              "export": "jitExtraStrict",
+              "scenario": "excess-extra-strict",
+              "family": "jit",
+              "implementation": "effect-jit",
+              "path": "invalid",
+              "size": 4
+            },
+            {
+              "name": "interpreted-strings-strict",
+              "export": "interpretedStringsStrict",
+              "scenario": "excess-strings-strict",
+              "astTags": ["Objects", "String", "Number"],
+              "size": 32
+            },
+            {
+              "name": "jit-strings-strict",
+              "export": "jitStringsStrict",
+              "scenario": "excess-strings-strict",
+              "family": "jit",
+              "implementation": "effect-jit",
+              "astTags": ["Objects", "String", "Number"],
+              "size": 32
+            },
+            {
+              "name": "interpreted-symbols-default",
+              "export": "interpretedSymbolsDefault",
+              "scenario": "excess-symbols-default",
+              "astTags": ["Objects", "Symbol", "Number"],
+              "size": 32
+            },
+            {
+              "name": "jit-symbols-default",
+              "export": "jitSymbolsDefault",
+              "scenario": "excess-symbols-default",
+              "family": "jit",
+              "implementation": "effect-jit",
+              "astTags": ["Objects", "Symbol", "Number"],
+              "size": 32
+            },
+            {
+              "name": "interpreted-symbols-strict",
+              "export": "interpretedSymbolsStrict",
+              "scenario": "excess-symbols-strict",
+              "astTags": ["Objects", "Symbol", "Number"],
+              "size": 32
+            },
+            {
+              "name": "jit-symbols-strict",
+              "export": "jitSymbolsStrict",
+              "scenario": "excess-symbols-strict",
+              "family": "jit",
+              "implementation": "effect-jit",
+              "astTags": ["Objects", "Symbol", "Number"],
+              "size": 32
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "arbitrary",
       "fixtures": [
         {
@@ -1312,6 +1470,24 @@
               "scenario": "schema-creation-encoded-record",
               "implementation": "effect",
               "operation": "schema"
+            },
+            {
+              "name": "schema-creation-encoded-object-8-effect",
+              "export": "effectSchemaCreationEncodedObject8",
+              "scenario": "schema-creation-encoded-object-8",
+              "implementation": "effect",
+              "operation": "schema",
+              "astTags": ["Objects", "Arrays", "String", "Number", "Boolean"],
+              "size": 8
+            },
+            {
+              "name": "first-make-encoded-object-8-effect",
+              "export": "effectFirstMakeEncodedObject8",
+              "scenario": "first-make-encoded-object-8",
+              "implementation": "effect",
+              "operation": "first-make",
+              "astTags": ["Objects", "Arrays", "String", "Number", "Boolean"],
+              "size": 8
             },
             {
               "name": "first-make-object-2-effect",
@@ -3229,6 +3405,149 @@
               "scenario": "compiler-rebuild-makeUnion",
               "operation": "make",
               "size": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "datetime",
+      "fixtures": [
+        {
+          "file": "suites/datetime/fixtures/cases.ts",
+          "defaults": {
+            "tier": 1,
+            "family": "datetime",
+            "implementation": "effect",
+            "astTags": [],
+            "operation": "construct",
+            "path": "valid",
+            "size": 1
+          },
+          "cases": [
+            {
+              "name": "make-number",
+              "export": "makeNumber",
+              "scenario": "datetime-make-number"
+            },
+            {
+              "name": "make-iso",
+              "export": "makeIso",
+              "scenario": "datetime-make-iso"
+            },
+            {
+              "name": "make-zoned-named",
+              "export": "makeZonedNamed",
+              "scenario": "datetime-make-zoned-named"
+            },
+            {
+              "name": "add-zoned-offset",
+              "export": "addZonedOffset",
+              "scenario": "datetime-add-zoned-offset",
+              "operation": "add"
+            },
+            {
+              "name": "parts-utc-first",
+              "export": "partsUtcFirst",
+              "scenario": "datetime-parts-utc-first",
+              "operation": "parts"
+            },
+            {
+              "name": "parts-offset-first",
+              "export": "partsOffsetFirst",
+              "scenario": "datetime-parts-offset-first",
+              "operation": "parts"
+            },
+            {
+              "name": "parts-named-first",
+              "export": "partsNamedFirst",
+              "scenario": "datetime-parts-named-first",
+              "operation": "parts"
+            },
+            {
+              "name": "get-parts-utc-first",
+              "export": "getPartsUtcFirst",
+              "scenario": "datetime-get-parts-utc-first",
+              "operation": "parts"
+            },
+            {
+              "name": "parts-utc-cached",
+              "export": "partsUtcCached",
+              "scenario": "datetime-parts-utc-cached",
+              "operation": "parts-cached"
+            },
+            {
+              "name": "parts-named-cached",
+              "export": "partsNamedCached",
+              "scenario": "datetime-parts-named-cached",
+              "operation": "parts-cached"
+            },
+            {
+              "name": "parts-mixed-cached",
+              "export": "partsMixedCached",
+              "scenario": "datetime-parts-mixed-cached",
+              "operation": "parts-cached"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "encoding",
+      "fixtures": [
+        {
+          "file": "suites/encoding/fixtures/base64url.ts",
+          "defaults": {
+            "tier": 1,
+            "family": "base64url",
+            "implementation": "effect",
+            "astTags": [],
+            "operation": "decode",
+            "path": "valid",
+            "size": 150
+          },
+          "cases": [
+            {
+              "name": "decode-small",
+              "export": "decodeSmall",
+              "scenario": "base64url-decode-small",
+              "size": 16
+            },
+            {
+              "name": "decode-jwt-signature",
+              "export": "decodeJwtSignature",
+              "scenario": "base64url-decode-jwt-signature",
+              "size": 86
+            },
+            {
+              "name": "decode-jwt-payload",
+              "export": "decodeJwtPayload",
+              "scenario": "base64url-decode-jwt-payload"
+            },
+            {
+              "name": "decode-large",
+              "export": "decodeLarge",
+              "scenario": "base64url-decode-large",
+              "size": 65536
+            },
+            {
+              "name": "decode-padded-crlf",
+              "export": "decodePaddedCrlf",
+              "scenario": "base64url-decode-padded-crlf",
+              "size": 1404
+            },
+            {
+              "name": "decode-string-jwt-payload",
+              "export": "decodeStringJwtPayload",
+              "scenario": "base64url-decode-string-jwt-payload",
+              "size": 168,
+              "operation": "decodeString"
+            },
+            {
+              "name": "decode-invalid",
+              "export": "decodeInvalid",
+              "scenario": "base64url-decode-invalid",
+              "path": "invalid"
             }
           ]
         }

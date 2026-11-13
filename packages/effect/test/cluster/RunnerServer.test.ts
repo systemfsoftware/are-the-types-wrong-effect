@@ -1,6 +1,5 @@
 import { assert, it } from "@effect/vitest"
 import { Deferred, Effect, Exit, Layer, Option, PubSub, Queue, Schema, Scope, Stream } from "effect"
-import { TestClock } from "effect/testing"
 import {
   ClusterSchema,
   Entity,
@@ -17,9 +16,10 @@ import {
   Sharding,
   ShardingConfig,
   Snowflake
-} from "effect/unstable/cluster"
-import { Headers } from "effect/unstable/http"
-import { Rpc, RpcMessage, type RpcSerialization, RpcServer, RpcTest } from "effect/unstable/rpc"
+} from "effect/cluster"
+import { Headers } from "effect/http"
+import { Rpc, RpcMessage, type RpcSerialization, RpcServer, RpcTest } from "effect/rpc"
+import { TestClock } from "effect/testing"
 
 const ReproEntity = Entity.make("ReproRunnerServer", [
   Rpc.make("ReproStream", { success: Schema.Int, payload: { id: Schema.Number }, stream: true })
@@ -83,29 +83,28 @@ const holeCodecHandlers = makeHandlers(
 )
 
 // A request for `entity`'s single RPC, addressed the way a sending runner would.
-const makeRequest = (
+const makeRequest = Effect.fnUntraced(function*(
   entity: Pick<Entity.Any, "type" | "getShardGroup">,
   entityId: string,
   options?: { readonly tag?: string; readonly payload?: unknown }
-) =>
-  Effect.gen(function*() {
-    const sharding = yield* Sharding.Sharding
-    const snowflake = yield* Snowflake.Generator
-    const id = EntityId.make(entityId)
-    const request: Envelope.PartialRequest = {
-      _tag: "Request",
-      requestId: snowflake.nextUnsafe(),
-      address: EntityAddress.make({
-        shardId: sharding.getShardId(id, entity.getShardGroup(id)),
-        entityType: EntityType.make(entity.type),
-        entityId: id
-      }),
-      tag: options?.tag ?? "ReproStream",
-      payload: options?.payload ?? { id: 1 },
-      headers: Headers.empty
-    }
-    return request
-  })
+) {
+  const sharding = yield* Sharding.Sharding
+  const snowflake = yield* Snowflake.Generator
+  const id = EntityId.make(entityId)
+  const request: Envelope.PartialRequest = {
+    _tag: "Request",
+    requestId: snowflake.nextUnsafe(),
+    address: EntityAddress.make({
+      shardId: sharding.getShardId(id, entity.getShardGroup(id)),
+      entityType: EntityType.make(entity.type),
+      entityId: id
+    }),
+    tag: options?.tag ?? "ReproStream",
+    payload: options?.payload ?? { id: 1 },
+    headers: Headers.empty
+  }
+  return request
+})
 
 // A runner RPC server whose replies are discarded.
 const makeServer = RpcServer.makeNoSerialization(Runners.Rpcs, { onFromServer: () => Effect.void })

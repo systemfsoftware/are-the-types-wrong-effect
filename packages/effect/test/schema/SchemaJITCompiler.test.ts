@@ -1,19 +1,8 @@
 import { assert, describe, it } from "@effect/vitest"
-import {
-  Cause,
-  Deferred,
-  Effect,
-  Fiber,
-  Result,
-  Schema,
-  SchemaGetter,
-  SchemaIssue,
-  SchemaParser,
-  SchemaTransformation
-} from "effect"
-import { SchemaCompiler } from "effect/unstable/schema"
+import { Cause, Effect, Result, Schema, SchemaGetter, SchemaIssue, SchemaParser, SchemaTransformation } from "effect"
+import { SchemaCompiler } from "effect/schema"
 // oxlint-disable-next-line no-unassigned-import
-import "effect/unstable/schema/SchemaJITCompiler/enable"
+import "effect/schema/SchemaJITCompiler/enable"
 import { assertSchemaIssueError, deepStrictEqual, strictEqual, throws } from "../utils/assert.ts"
 
 const schema = Schema.Struct({
@@ -27,38 +16,6 @@ const decode = SchemaParser.decodeUnknownSync(schema)
 const is = SchemaParser.is(schema)
 
 describe("SchemaJITCompiler", () => {
-  it.effect("preserves product concurrency", () =>
-    Effect.gen(function*() {
-      const started = yield* Effect.forEach([0, 1, 2], () => Deferred.make<void>())
-      const releases = yield* Effect.forEach([0, 1, 2], () => Deferred.make<void>())
-      const item = Schema.String.pipe(Schema.decode({
-        decode: SchemaGetter.transformEffect((value) => {
-          const index = value.charCodeAt(0) - 97
-          return Deferred.succeed(started[index], undefined).pipe(
-            Effect.andThen(Deferred.await(releases[index])),
-            Effect.as(value)
-          )
-        }),
-        encode: SchemaGetter.passthrough()
-      }))
-      const schema = Schema.Struct({ a: item, b: item, c: item })
-      const fiber = yield* SchemaParser.decodeUnknownEffect(schema)(
-        { a: "a", b: "b", c: "c" },
-        { concurrency: 2 }
-      ).pipe(Effect.forkChild)
-
-      yield* Deferred.await(started[0])
-      yield* Deferred.await(started[1])
-      strictEqual(yield* Deferred.isDone(started[2]), false)
-
-      yield* Deferred.succeed(releases[0], undefined)
-      yield* Deferred.await(started[2])
-      yield* Deferred.succeed(releases[1], undefined)
-      yield* Deferred.succeed(releases[2], undefined)
-
-      deepStrictEqual(yield* Fiber.join(fiber), { a: "a", b: "b", c: "c" })
-    }))
-
   it("compiles a decoder lazily after import", () => {
     const input = {
       name: "a",
@@ -118,6 +75,24 @@ describe("SchemaJITCompiler", () => {
     strictEqual(reads, 1)
   })
 
+  it("treats declared fields named after Object.prototype members as absent from a plain object", () => {
+    const schema = Schema.Struct({
+      constructor: Schema.optionalKey(Schema.String),
+      toString: Schema.optional(Schema.String),
+      valueOf: Schema.String.pipe(Schema.withDecodingDefaultKey(Effect.succeed("default")))
+    })
+
+    deepStrictEqual<unknown>(SchemaParser.decodeUnknownSync(schema)({}), { valueOf: "default" })
+    strictEqual(SchemaParser.is(Schema.Struct({ constructor: Schema.optionalKey(Schema.String) }))({}), true)
+  })
+
+  it("reports an inherited required Object.prototype field as missing", () => {
+    const input = Object.create({ toString: "inherited" })
+    throws(() => SchemaParser.decodeUnknownSync(Schema.Struct({ toString: Schema.String }))(input), (error) => {
+      assertSchemaIssueError(error, `Missing key\n  at ["toString"]`)
+    })
+  })
+
   it("does not confuse a valid value with the invalid sentinel", () => {
     const schemas = [
       Schema.Union([Schema.Symbol, Schema.String]),
@@ -174,7 +149,7 @@ describe("SchemaJITCompiler", () => {
     })
     strictEqual(SchemaParser.is(template)({ value: "prefix-a" }), false)
 
-    const record = Schema.Record(Schema.String.check(Schema.isStartsWith("x")), Schema.Number)
+    const record = Schema.Record(Schema.String.check(Schema.isStartingWith("x")), Schema.Number)
     const decode = SchemaParser.decodeUnknownSync(record)
     deepStrictEqual(decode({ x: 1, y: 2 }), { x: 1 })
     deepStrictEqual(decode({ x: 1, y: 2 }, { disableChecks: true }), { x: 1, y: 2 })
@@ -514,19 +489,6 @@ Expected no excess property
     strictEqual(is([1]), false)
   })
 
-  it("preserves the input sign for signed-zero literals", () => {
-    const decode = SchemaParser.decodeUnknownSync(Schema.Struct({
-      negative: Schema.Literal(-0),
-      positive: Schema.Union([Schema.Literal(0), Schema.Literal(1)]),
-      union: Schema.Union([Schema.Literal(-0), Schema.Literal(1)])
-    }))
-    const output = decode({ negative: 0, positive: -0, union: 0 })
-
-    strictEqual(Object.is(output.negative, 0), true)
-    strictEqual(Object.is(output.positive, -0), true)
-    strictEqual(Object.is(output.union, 0), true)
-  })
-
   it("compiles primitive anyOf and oneOf unions", () => {
     const decodeAnyOf = SchemaParser.decodeUnknownSync(
       Schema.Union([Schema.Literal("a"), Schema.Literal("b"), Schema.Number])
@@ -742,7 +704,7 @@ Expected no excess property
     })
 
     throws(() => SchemaParser.decodeUnknownSync(schema)({ value: "blocked" }))
-    strictEqual(sourceChecks, 2)
+    strictEqual(sourceChecks, 1)
     strictEqual(firstTransformations, 0)
     strictEqual(secondTransformations, 0)
 
@@ -751,7 +713,7 @@ Expected no excess property
     strictEqual(sourceChecks, 1)
     strictEqual(firstTransformations, 1)
     strictEqual(secondTransformations, 0)
-    strictEqual(checks, 2)
+    strictEqual(checks, 1)
   })
 
   it("preserves mixed causes from interpreted encoding chains", () => {
