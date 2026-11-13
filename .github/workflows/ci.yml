@@ -19,5 +19,5 @@ jobs:
     with:
       commitlint: true
       changeset: true
-      fast: pnpm format:check && export TURBO_SCM_BASE="$BASE" TURBO_SCM_HEAD="$HEAD" && pnpm exec turbo run lint typecheck typecheck:node build --affected
+      fast: pnpm format:check && export TURBO_SCM_BASE="$BASE" TURBO_SCM_HEAD="$HEAD" && pnpm exec turbo run typecheck typecheck:node lint attw --affected
       full: pnpm check:ci && pnpm test:e2e
