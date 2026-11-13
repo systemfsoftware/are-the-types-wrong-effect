@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   checks:
-    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-ci.yml@f271b208fd10c56d27380de6bc43f54b9c7ee2a5
+    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-ci.yml@ff4d150fc8930510099b285444e96d18d2674786
     with:
       commitlint: true
       changeset: true
