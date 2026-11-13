@@ -1,30 +1,39 @@
+# The org's one Dependabot configuration (public-repo standard, item 5). Only the ecosystems and the extra
+# major-version ignores differ by repository. The 3-day cooldown matches pnpm's minimumReleaseAge; vendored
+# subtrees under repos/ are never updated in place; @systemfsoftware/* moves with the flake input.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directories:
-      - "/"
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    exclude-paths:
+      - "repos/**"
     labels:
       - "automerge"
-    schedule:
-      interval: "weekly"
-      day: "monday"
     groups:
       github-actions-minor-patch:
-        patterns:
-          - "*"
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
-        update-types:
-          - minor
-          - patch
   - package-ecosystem: "npm"
-    directories:
-      - "/"
+    directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    exclude-paths:
+      - "repos/**"
     versioning-strategy: "increase"
     open-pull-requests-limit: 20
     ignore:
+      - dependency-name: "@systemfsoftware/*"
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
     groups:
@@ -74,22 +83,21 @@ updates:
         patterns:
           - "@types/node"
         update-types: ["minor", "patch"]
-      types-node-major:
-        patterns:
-          - "@types/node"
-        update-types: ["major"]
       other-minor-patch:
-        patterns: ["*"]
+        patterns:
+          - "*"
         exclude-patterns:
           - "oxlint"
           - "@oxlint/*"
           - "@effect/*"
+          - "effect"
           - "@commitlint/*"
           - "typescript"
           - "@types/node"
         update-types: ["minor", "patch"]
       major-updates:
-        patterns: ["*"]
+        patterns:
+          - "*"
         exclude-patterns:
           - "oxlint"
           - "@oxlint/*"
@@ -99,15 +107,15 @@ updates:
         update-types: ["major"]
 
   - package-ecosystem: "nix"
-    directories:
-      - "/"
+    directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    exclude-paths:
+      - "repos/**"
     groups:
       minor-and-patch:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
