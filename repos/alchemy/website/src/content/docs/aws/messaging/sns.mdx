@@ -1,0 +1,141 @@
+---
+title: SNS
+description: How SNS Topics broadcast one message to every subscriber, how to publish from a runtime, subscribe Functions and Queues, and filter what each subscriber receives.
+---
+
+import Fanout from "../../../../components/diagrams/Fanout.astro";
+
+SNS broadcasts messages. A publisher sends a message to a **Topic** once, and SNS pushes a copy to every **subscription**: a Lambda Function, an SQS Queue, an HTTPS endpoint, an email address. The publisher doesn't know who's listening, so adding a subscriber never changes the code that publishes.
+
+## A Topic delivers a copy to everyone
+
+A [Queue](/aws/messaging/sqs) hands each message to one consumer. A Topic hands each message to every subscriber, each with its own copy.
+
+<Fanout
+  item={{ title: "message", lines: ['"orderId": "o_104"', '"total": 120'] }}
+  routes={[
+    { target: { label: "EmailJobs", type: "SQS Queue" } },
+    { target: { label: "AnalyticsJobs", type: "SQS Queue" } },
+    { target: { label: "Audit", type: "Lambda Function" } },
+  ]}
+  caption="Api publishes once, and each subscription gets a copy of its own. Deleting the copy in EmailJobs leaves the others untouched."
+/>
+
+SNS pushes each copy as soon as it arrives and retries deliveries that fail. It doesn't store messages for later, so a subscriber that needs to work at its own pace, or survive being down for a while, subscribes through a Queue.
+
+## Declare a Topic
+
+```typescript title="src/orders.ts"
+import * as AWS from "@alchemy.run/aws";
+
+export const Orders = AWS.SNS.Topic("Orders");
+```
+
+For messages that must arrive in order and only once, make it a FIFO Topic, and subscribe FIFO Queues to it:
+
+```typescript title="src/orders.ts"
+export const Orders = AWS.SNS.Topic("Orders", {
+  fifo: true,
+  attributes: { ContentBasedDeduplication: "true" },
+});
+```
+
+Changing `fifo` replaces the Topic. Everything else updates in place.
+
+## Publish
+
+Bind `SNS.Publish` in the publisher. Its role gets `sns:Publish` on this Topic only:
+
+```typescript title="src/api.ts"
+const publish = yield* AWS.SNS.Publish(Orders);
+yield* publish({ Message: JSON.stringify({ orderId }), Subject: "OrderCreated" });
+```
+
+Provide `AWS.SNS.PublishHttp` to the runtime. To publish up to ten messages per call, bind `SNS.PublishBatch`. To publish a whole `Stream`, bind `SNS.TopicSink`, which batches it for you, and provide `AWS.SNS.TopicSinkHttp` with `AWS.SNS.PublishBatchHttp` beneath it.
+
+## Subscribe a Function
+
+A Lambda Function subscribes from Construction and receives each notification in a `Stream`:
+
+```typescript title="src/audit.ts"
+export default class Audit extends AWS.Lambda.Function<Audit>()(
+  "Audit",
+  { main: import.meta.url, functionUrl: false },
+  Effect.gen(function* () {
+    const orders = yield* Orders;
+    yield* AWS.SNS.consumeTopicNotifications(orders, (stream) =>
+      stream.pipe(Stream.runForEach((n) => Console.log(`${n.Subject}: ${n.Message}`))),
+    );
+    return {};
+  }).pipe(Effect.provide(AWS.Lambda.TopicEventSource)),
+) {}
+```
+
+Deploy creates the subscription and the Lambda permission that lets SNS invoke the Function. Each notification carries the `Message`, `Subject`, `MessageId` and `TopicArn`.
+
+## Fan out to Queues
+
+The usual shape is one Queue per subscriber. Each Queue gets its own copy and is drained by its own consumer, at its own pace, with its own retries and dead-letter queue. A subscription is a resource of its own:
+
+```typescript title="alchemy.run.ts"
+const orders = yield* Orders;
+const emails = yield* AWS.SQS.Queue("EmailJobs");
+
+yield* AWS.SNS.Subscription("EmailSubscription", {
+  topicArn: orders.topicArn,
+  protocol: "sqs",
+  endpoint: emails.queueArn,
+  attributes: { RawMessageDelivery: "true" },
+});
+```
+
+SNS needs permission to send to the Queue. Give it in the Queue's own policy, limited to this Topic:
+
+```typescript title="alchemy.run.ts"
+const emails = yield* AWS.SQS.Queue("EmailJobs", {
+  policy: {
+    Version: "2012-10-17",
+    Statement: [
+      {
+        Effect: "Allow",
+        Principal: { Service: "sns.amazonaws.com" },
+        Action: "sqs:SendMessage",
+        Resource: "*",
+        Condition: { ArnEquals: { "aws:SourceArn": orders.topicArn } },
+      },
+    ],
+  },
+});
+```
+
+`RawMessageDelivery` delivers the message body as is. Without it, each message arrives wrapped in a JSON envelope with the subject and Topic. From here, each Queue is an ordinary [SQS consumer](/aws/messaging/sqs#consume-messages).
+
+## Filter what each subscriber sees
+
+A subscriber rarely wants every message. A **filter policy** tells SNS which ones to deliver, matched on message attributes, so the rest never invoke the subscriber at all:
+
+```typescript title="src/audit.ts"
+yield* AWS.SNS.consumeTopicNotifications(
+  orders,
+  { attributes: { FilterPolicy: JSON.stringify({ type: ["order.created"] }) } },
+  (stream) => stream.pipe(Stream.runForEach((n) => Console.log(n.Message))),
+);
+```
+
+<Fanout
+  item={{ title: "message", lines: ['"Message": "…"', '"MessageAttributes":', '  { "type": "order.created" }'] }}
+  routes={[
+    { label: "no filter policy", condition: ["every message"], target: { label: "EmailJobs", type: "SQS Queue" } },
+    { label: "filter policy", condition: ['{ "type": ["order.created"] }'], target: { label: "Audit", type: "Lambda Function" } },
+    { label: "filter policy", condition: ['{ "type": ["order.refunded"] }'], target: { label: "Refunds", type: "Lambda Function" }, match: false },
+  ]}
+  caption="SNS checks each subscription's filter policy before it delivers. Refunds never sees this message, and is never invoked for it."
+/>
+
+Publishers set the attributes to match on with `MessageAttributes`. A `Subscription` takes the same `FilterPolicy` in its `attributes`.
+
+## SNS, SQS or EventBridge
+
+All three move messages between parts of an app, and each fits a different shape.
+
+Use an [SQS Queue](/aws/messaging/sqs) when one consumer should do each piece of work, at its own pace, with retries. Use an SNS Topic when several independent subscribers should each react to the same message. Use [EventBridge](/aws/messaging/eventbridge) when many kinds of events share one bus and rules route each one by its content, including events from AWS services themselves and schedules.

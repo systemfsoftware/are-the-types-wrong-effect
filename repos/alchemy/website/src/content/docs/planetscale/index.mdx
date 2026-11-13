@@ -1,0 +1,46 @@
+---
+title: PlanetScale
+description: Declare PlanetScale Postgres and MySQL databases, branches and credentials in your Stack with Alchemy, apply migrations on deploy, and give every preview stage its own branch.
+---
+
+import HubMap from "../../../components/HubMap.astro";
+
+PlanetScale is likely the fastest managed Postgres and MySQL you can buy, at a price that undercuts the large clouds. Its Metal clusters run on local NVMe drives instead of network storage. Its MySQL is built on Vitess, which shards a database across many servers so it can outgrow one machine. And every database can be branched like code, so schema changes are tested and deployed like a pull request.
+
+**New to PlanetScale?** Start with [What is PlanetScale?](/planetscale/what-is-planetscale).
+
+## A quick example
+
+A database, a branch for this stage, and a role to connect with:
+
+```typescript title="alchemy.run.ts"
+const database = yield* Planetscale.PostgresDatabase("app-db", {
+  region: { slug: "us-east" },
+  clusterSize: "PS_10",
+  migrations: "./migrations",
+});
+
+const branch = yield* Planetscale.PostgresBranch("app-branch", { database, isProduction: false });
+
+const role = yield* Planetscale.PostgresRole("app-role", {
+  database,
+  branch,
+  inheritedRoles: ["postgres"],
+});
+```
+
+The role's `origin` connects anything that speaks Postgres. On Cloudflare, give it to Hyperdrive:
+
+```typescript title="alchemy.run.ts"
+const hyperdrive = yield* Cloudflare.Hyperdrive.Connection("app-hyperdrive", { origin: role.origin });
+```
+
+## Where to start
+
+**Want to build?** Connect your organization in [Setup](/planetscale/setup), then give every pull request its own database branch with [Preview branches per PR](/planetscale/guides/preview-branches).
+
+**Looking for something specific?** Every section of these docs is listed below, and every resource is in the generated [API reference](/providers).
+
+## The docs
+
+<HubMap />

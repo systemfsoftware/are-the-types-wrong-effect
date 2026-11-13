@@ -1,0 +1,139 @@
+---
+title: Websites
+description: Deploy Vite, Astro, Next.js, vinext, Nuxt, React Router, SvelteKit, TanStack Start, Waku, Octane, or any static build to AWS with first-class Website resources.
+sidebar:
+  label: Overview
+  order: 1
+---
+
+import DAG from "../../../../components/DAG.astro";
+
+A website on AWS is three pieces working together. Its static files, the scripts, styles and images, sit in a private S3 Bucket. Its server, if it has one, runs on a [Lambda Web Function](/aws/compute/web-functions). And a CloudFront distribution in front of both serves every request from a location near the visitor: files straight from the Bucket, everything else from the server.
+
+<DAG
+  nodes={[
+    { id: "visitor", label: "visitor", type: "app.example.com", layer: 0 },
+    { id: "cdn", label: "CloudFront", type: "edge router", tone: "accent", layer: 1 },
+    { id: "bucket", label: "Assets", type: "S3 Bucket", layer: 2 },
+    { id: "server", label: "Server", type: "Lambda Web Function", layer: 2 },
+  ]}
+  edges={[
+    { from: "visitor", to: "cdn" },
+    { from: "cdn", to: "bucket", label: "/assets/*" },
+    { from: "cdn", to: "server", label: "everything else" },
+  ]}
+  caption="CloudFront serves files from the Bucket and sends the rest to the server."
+/>
+
+Each framework has a Website resource that builds your project and creates all three. Your framework's own config file loads as it is, with nothing AWS-specific in it:
+
+```typescript title="alchemy.run.ts"
+const site = yield* AWS.Website.Astro("Website", { domain: "app.example.com" });
+```
+
+Every Website resource takes the same props: a `domain`, with its certificate and DNS records (see [Custom domains](/aws/networking/custom-domains)), the server's `timeout`, `env` and scaling, and how assets are uploaded and cached. A build is skipped when no input file has changed. Under `alchemy dev`, each one runs the framework's own dev server instead of deploying.
+
+A site with no server, a single-page app or a static generator's output, creates no Function at all: just the Bucket and the distribution.
+
+## Serve from several Regions
+
+List extra Regions to run the server in each of them behind one global
+domain. CloudFront forwards to it, and each request reaches the nearest
+Region:
+
+```typescript
+const site = yield* AWS.Website.Nuxt("Website", {
+  regions: ["us-east-1", "eu-west-1"],
+});
+```
+
+The site's URL doesn't change when you add or remove Regions. `Nextjs`
+and `Vinext` keep their data caches in the home Region, so a server in
+another Region reaches back to it for cached pages; `regions` helps most
+for sites without a server-side cache.
+
+## Choose the server
+
+The SSR server runs on a Lambda Web Function: your framework's own Node
+server, serving many requests per environment and streaming each
+response. Web Functions run in a subset of Regions. Elsewhere, set
+`server: "function"` to run the server on a Lambda Function behind a
+streaming Function URL:
+
+```typescript
+const site = yield* AWS.Website.Nuxt("Website", {
+  server: "function",
+  memorySize: 2048,
+});
+```
+
+`memorySize`, `architecture`, and `runtime` apply only to
+`server: "function"`; a Web Function has a fixed 2 GB, Arm64 and
+Node.js 24.
+
+## What's supported
+
+| Framework | Resource | Guide |
+| --- | --- | --- |
+| React / Vite SPA | `Vite` | [React SPA](/aws/frontend/vite-spa) |
+| Vue | `Vite` | [Vue](/aws/frontend/vue) |
+| Foldkit | `Foldkit` | [Foldkit](/aws/frontend/foldkit) |
+| TanStack Start (React & Solid) | `TanStackStart` | [TanStack Start](/aws/frontend/tanstack-start) |
+| React Router | `ReactRouter` | [React Router](/aws/frontend/react-router) |
+| Astro | `Astro` | [Astro](/aws/frontend/astro) |
+| Next.js | `Nextjs` | [Next.js](/aws/frontend/nextjs) |
+| vinext | `Vinext` | [vinext](/aws/frontend/vinext) |
+| Nuxt | `Nuxt` | [Nuxt](/aws/frontend/nuxt) |
+| SvelteKit | `SvelteKit` | [SvelteKit](/aws/frontend/sveltekit) |
+| Waku | `Waku` | [Waku](/aws/frontend/waku) |
+| OctaneJS (fullstack) | `Octane` | [Octane](/aws/frontend/octane) |
+| Zola, Hugo, or any static generator | `StaticSite` | [Static sites](/aws/frontend/static-site) |
+
+Every row is backed by a checked-in example or a live deploy test in
+the Alchemy repository. The last row is deliberately open-ended:
+`StaticSite` deploys any directory of files (running your build
+command first if you give it one), so any generator works the same
+way.
+
+## How to choose
+
+Use the resource named after your framework. `Astro`, `Nextjs`,
+`Nuxt`, `ReactRouter`, `SvelteKit`, `TanStackStart`,
+`Waku`, and `Octane` each drive their framework's own build and know
+its output layout, config surface, and dev server.
+
+Use `Vite` when the app is client-only and a single `vite build`
+produces the whole thing — a React or Vue SPA, or any Vite project
+with no server. It creates no Lambda.
+
+Use `StaticSite` when the output is plain files from an arbitrary
+build command that emits a directory (Zola, Hugo, or any other
+generator without a dedicated resource).
+
+Use `Router` when several sites (or a site plus an API) should share
+one CloudFront distribution and one domain — distributions take
+minutes to create, and each custom domain can only attach to one.
+
+## Where next
+
+- [The Vite resource](/aws/frontend/vite) — build model, env
+  inlining, SPA fallback, dev mode.
+- [The StaticSite resource](/aws/frontend/static-site) — build
+  commands, SPA/404 handling, Router composition, invalidation.
+- Framework guides:
+  [React SPA](/aws/frontend/vite-spa),
+  [Vue](/aws/frontend/vue),
+  [Foldkit](/aws/frontend/foldkit),
+  [TanStack Start](/aws/frontend/tanstack-start),
+  [React Router](/aws/frontend/react-router),
+  [Astro](/aws/frontend/astro),
+  [Next.js](/aws/frontend/nextjs),
+  [Nuxt](/aws/frontend/nuxt),
+  [SvelteKit](/aws/frontend/sveltekit),
+  [Waku](/aws/frontend/waku),
+  [Octane](/aws/frontend/octane).
+- [Full-stack RPC + Drizzle](/aws/frontend/full-stack-tanstack-rpc-drizzle) —
+  a TanStack Start UI driving an Effect RPC Lambda over Aurora DSQL.
+- [`StaticSite` reference](/providers/aws/website/staticsite) and
+  [`Router` reference](/providers/aws/website/router) — every prop
+  and attribute.

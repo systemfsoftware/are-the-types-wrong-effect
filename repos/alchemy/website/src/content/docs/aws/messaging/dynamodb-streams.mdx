@@ -1,0 +1,114 @@
+---
+title: DynamoDB Streams
+description: How a DynamoDB Stream records every change to a table in order, what each change record carries, and how a Function consumes changes and checkpoints at the first failure.
+---
+
+import Log from "../../../../components/diagrams/Log.astro";
+
+A DynamoDB Stream is a table's own change log. Every insert, update and delete becomes a **change record**, kept for 24 hours, in the order the changes happened to each item. A Function reading the stream sees every change to the table, including ones made by code that never told anyone.
+
+## Every write becomes a change record
+
+The table writes the record as part of the change, so there's no second write to forget or to fail. Records for one item stay in order. Records for different items may be read in parallel.
+
+<Log
+  lanes={[
+    {
+      id: "stream",
+      label: "Orders",
+      type: "table stream",
+      records: ["INSERT #1", "MODIFY #1", "INSERT #2", "MODIFY #2", "REMOVE #1"],
+    },
+  ]}
+  cursors={[{ lane: "stream", at: 3, label: "Indexer" }]}
+  writer="every write"
+  caption="Every write to the table appends a change record, as part of the write. Records for one item stay in order, and the consumer reads them shortly after."
+/>
+
+Each record says what happened, `INSERT`, `MODIFY` or `REMOVE`, the item's keys, and, depending on the stream's **view type**, the item as it was before, after, or both.
+
+## Subscribe to a table
+
+Subscribe a Function from Construction. Each invocation receives a batch of change records:
+
+```typescript title="src/indexer.ts"
+export default class Indexer extends AWS.Lambda.Function<Indexer>()(
+  "Indexer",
+  { main: import.meta.url, functionUrl: false },
+  Effect.gen(function* () {
+    const orders = yield* Orders;
+    yield* AWS.DynamoDB.consumeTableChanges(orders, (event) =>
+      Effect.forEach(
+        event.Records,
+        (record) => Console.log(`${record.eventName}: ${record.dynamodb.Keys?.pk?.S}`),
+        { discard: true },
+      ),
+    );
+    return {};
+  }).pipe(Effect.provide(AWS.Lambda.TableEventSource)),
+) {}
+```
+
+There's nothing to turn on first. Deploy enables the stream on the table, creates the event source mapping, and grants the Function read access to the stream.
+
+## Choose what each record carries
+
+By default a record carries the item's keys. Ask for the item itself with `streamViewType`:
+
+```typescript title="src/indexer.ts"
+yield* AWS.DynamoDB.consumeTableChanges(orders, { streamViewType: "NEW_AND_OLD_IMAGES" }, handle);
+```
+
+`NEW_IMAGE` carries the item after the change, `OLD_IMAGE` before it, and `NEW_AND_OLD_IMAGES` both, which lets a consumer see exactly which attributes changed. Pick the smallest one your consumer needs.
+
+The images are in DynamoDB's attribute format. Type the event with your item's shape to read them:
+
+```typescript title="src/indexer.ts"
+(event: AWS.DynamoDB.StreamEvent<{ pk: { S: string }; total: { N: string } }>) =>
+  Effect.forEach(
+    event.Records,
+    (record) => Console.log(record.dynamodb.NewImage?.total.N ?? "(deleted)"),
+    { discard: true },
+  )
+```
+
+## Start from the right place
+
+A new subscription starts with changes made after it exists, `startingPosition: "LATEST"`. To process what the stream still holds from the last 24 hours, start from `"TRIM_HORIZON"`:
+
+```typescript title="src/indexer.ts"
+yield* AWS.DynamoDB.consumeTableChanges(
+  orders,
+  { streamViewType: "NEW_IMAGE", startingPosition: "TRIM_HORIZON", batchSize: 10 },
+  handle,
+);
+```
+
+`batchSize` caps the records per invocation. Larger batches cost fewer invocations. Smaller ones retry less work when one fails.
+
+## Checkpoint at the first failure
+
+Lambda moves its place in the stream forward after each batch succeeds. When a batch fails, the batch is retried, and changes behind it wait, so they're never applied out of order.
+
+Report the first record that failed instead, and Lambda keeps everything before it:
+
+```typescript title="src/indexer.ts"
+(event) =>
+  Effect.gen(function* () {
+    for (const record of event.Records) {
+      const ok = yield* writeToIndex(record).pipe(
+        Effect.as(true),
+        Effect.catchCause(() => Effect.succeed(false)),
+      );
+      if (!ok) return { batchItemFailures: [{ itemIdentifier: record.dynamodb.SequenceNumber! }] };
+    }
+  })
+```
+
+A record that can never succeed blocks the stream for its items until it expires. Catch errors that retrying won't fix, and move on.
+
+## What streams are for
+
+Use a stream to keep something else in step with the table: a search index, a cache, a copy in a warehouse, a running total. Use it to react to changes, like sending an email when an order's status becomes `shipped`, without the code that changed it having to know.
+
+To hand changes to other consumers, forward them to a [Queue](/aws/messaging/sqs#send-many-messages-at-once) or a [Topic](/aws/messaging/sns). For an ordered stream your code writes to directly, use [Kinesis](/aws/messaging/kinesis).

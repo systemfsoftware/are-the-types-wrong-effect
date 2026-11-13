@@ -1,0 +1,110 @@
+---
+title: Kinesis
+description: How Kinesis Data Streams keep records in order per partition key across shards, how runtimes write records and consume them in batches, and how retention, replay and checkpoints work.
+---
+
+import Log from "../../../../components/diagrams/Log.astro";
+
+Kinesis Data Streams is an ordered log of **records**. Producers append records, and they stay in the stream for a retention period, 24 hours by default, whether or not anyone has read them. Consumers read the log in order, each keeping its own place, so several consumers can read the same records independently and any of them can go back and read again.
+
+## Shards keep records in order
+
+A stream is split into **shards**. Each record carries a **partition key**, and Kinesis sends every record with the same key to the same shard. Within a shard, records are kept in the order they arrived.
+
+<Log
+  lanes={[
+    { id: "s1", label: "shard 1", records: ["#1 placed", "#3 placed", "#1 paid", "#1 shipped"] },
+    { id: "s2", label: "shard 2", records: ["#2 placed", "#2 paid", "#4 placed"] },
+  ]}
+  cursors={[
+    { lane: "s1", at: 2, label: "Audit" },
+    { lane: "s2", at: 1, label: "Audit" },
+  ]}
+  writer="PutRecord"
+  caption="The partition key picks the shard, so every record for order #1 is in shard 1, in order. A consumer reads each shard in parallel, at its own position."
+/>
+
+So the guarantee is per key: every event for `order#1` arrives in the order it happened. Events for different orders may interleave. Choose the partition key as the thing whose history must stay in order, usually an entity's id.
+
+## Declare a stream
+
+```typescript title="src/events.ts"
+import * as AWS from "@alchemy.run/aws";
+
+export const Events = AWS.Kinesis.Stream("Events", { streamMode: "ON_DEMAND" });
+```
+
+On-demand streams add and remove shards with load, and you pay for the data you write and read. With `streamMode: "PROVISIONED"` you set `shardCount` yourself, and pay per shard per hour, which is cheaper at steady, known throughput.
+
+Keep records longer than a day with `retentionPeriod`, up to a year, so a new consumer or a fixed bug can replay further back.
+
+## Write records
+
+Bind `Kinesis.PutRecord` in the producer. Its role gets `kinesis:PutRecord` on this stream:
+
+```typescript title="src/api.ts"
+const putRecord = yield* AWS.Kinesis.PutRecord(Events);
+yield* putRecord({
+  PartitionKey: orderId,
+  Data: new TextEncoder().encode(JSON.stringify({ type: "order.paid", orderId })),
+});
+```
+
+`Data` is bytes, so JSON, Avro or protobuf all work. Provide `AWS.Kinesis.PutRecordHttp` to the runtime. To write up to 500 records in one call, bind `Kinesis.PutRecords`. To write a whole `Stream`, bind `Kinesis.StreamSink`.
+
+## Consume records
+
+A Lambda Function consumes a stream by subscribing from Construction. Lambda reads each shard in order and invokes the Function with batches:
+
+```typescript title="src/audit.ts"
+export default class Audit extends AWS.Lambda.Function<Audit>()(
+  "Audit",
+  { main: import.meta.url, functionUrl: false },
+  Effect.gen(function* () {
+    const events = yield* Events;
+    yield* AWS.Kinesis.consumeStreamRecords(
+      events,
+      { startingPosition: "LATEST", batchSize: 100 },
+      (event) =>
+        Effect.forEach(
+          event.Records,
+          (record) =>
+            Console.log(new TextDecoder().decode(Buffer.from(record.kinesis.data, "base64"))),
+          { discard: true },
+        ),
+    );
+    return {};
+  }).pipe(Effect.provide(AWS.Lambda.StreamEventSource)),
+) {}
+```
+
+Each record's data arrives base64-encoded in the event, so decode it first. Deploy creates the event source mapping and grants the Function read access to the stream.
+
+`startingPosition: "LATEST"` starts with records written after the subscription exists. `"TRIM_HORIZON"` starts with the oldest record still retained, replaying everything the stream holds.
+
+## Checkpoint at the first failure
+
+Lambda moves a shard's **checkpoint** forward after each batch succeeds. If a batch fails, the whole batch is retried, and the shard waits. Nothing behind it is processed until it succeeds, because skipping ahead would break the order.
+
+Report the first record that failed instead, and Lambda checkpoints everything before it and retries from there:
+
+```typescript title="src/audit.ts"
+(event) =>
+  Effect.gen(function* () {
+    for (const record of event.Records) {
+      const ok = yield* handleRecord(record).pipe(
+        Effect.as(true),
+        Effect.catchCause(() => Effect.succeed(false)),
+      );
+      if (!ok) return { batchItemFailures: [{ itemIdentifier: record.kinesis.sequenceNumber }] };
+    }
+  }),
+```
+
+A record that can never succeed still blocks its shard until it expires. Catch errors that retrying won't fix, record them somewhere you'll see, and move on.
+
+## Stream or queue
+
+Both carry work from producers to consumers. Use a stream when order matters per key, when several consumers read the same records, or when you want to replay history. Use an [SQS Queue](/aws/messaging/sqs) when each message is independent work for one consumer: a failed message there is retried on its own, without holding up the rest.
+
+A table's own change log is a stream too. See [DynamoDB Streams](/aws/messaging/dynamodb-streams).
