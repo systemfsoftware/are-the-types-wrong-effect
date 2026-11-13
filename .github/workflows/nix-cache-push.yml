@@ -75,7 +75,7 @@ jobs:
           : > "$RUNNER_TEMP/out-paths"
           : > "$RUNNER_TEMP/build-failures"
           members=$(nix eval --json "${ref}#packages.${SYSTEM}.workspace-tarballs.members" --apply 'map (member: member.attr)' | jq -r '.[]')
-          mapfile -t attrs < <(printf '%s\n' workspace-tarballs "$members" | sed '/^$/d' | sort -u)
+          mapfile -t attrs < <(printf '%s\n' workspace-tarballs pnpm-store "$members" | sed '/^$/d' | sort -u)
           echo "Push set (${SYSTEM}): ${attrs[*]}"
           printf '%s\n' "${attrs[@]}" > "$RUNNER_TEMP/push-set"
           for attr in "${attrs[@]}"; do
