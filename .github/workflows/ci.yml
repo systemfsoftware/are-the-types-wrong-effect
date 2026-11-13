@@ -38,9 +38,13 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-dist-
             turbo-${{ runner.os }}-
-      # Root package.json `check:ci` is the one definition. Never re-enumerate its steps here.
+      # Root package.json `check:ci` is the one definition of the pre-merge gate. Never re-enumerate its steps here.
       - name: Gate
         run: pnpm check:ci
+      # Mutation testing runs on main, never before the merge (owner, SYS-1411): run 43368492402's gate sat 44 min in it.
+      - name: Mutation
+        if: github.ref == 'refs/heads/main'
+        run: pnpm mutation
 
   e2e:
     name: e2e
