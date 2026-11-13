@@ -1,0 +1,75 @@
+---
+title: Cloudflare
+description: Build on Cloudflare with Alchemy. Declare Workers, Durable Objects, R2, D1, KV and Queues in TypeScript, and bind each one into the Worker that uses it with a typed client.
+---
+
+import HubMap from "../../../components/HubMap.astro";
+
+Cloudflare runs the largest network on the internet, in more than 340 cities. It serves DNS, caches and protects websites, blocks attacks, and connects offices and devices.
+
+It also runs the Workers developer platform, which runs your code at the edge in every one of those cities, next to storage, databases, queues, AI inference and containers. Its Durable Objects add globally unique, stateful objects that live close to their users, which makes them ideal for agents, WebSockets and real-time coordination.
+
+**New to Cloudflare?** Start with [What is Cloudflare?](/cloudflare/what-is-cloudflare).
+
+## A quick example
+
+A Bucket is a declaration:
+
+```typescript title="src/uploads.ts"
+import * as Cloudflare from "@alchemy.run/cloudflare";
+
+export const Uploads = Cloudflare.R2.Bucket("Uploads");
+```
+
+A Worker binds it and reads from it. The binding is in the Worker's own code, and its access level is in the name:
+
+```typescript title="src/worker.ts"
+import * as Cloudflare from "@alchemy.run/cloudflare";
+import * as Effect from "effect/Effect";
+import * as HttpServerResponse from "effect/http/HttpServerResponse";
+import { Uploads } from "./uploads.ts";
+
+export default Cloudflare.Worker(
+  "Worker",
+  { main: import.meta.url },
+  Effect.gen(function* () {
+    const uploads = yield* Cloudflare.R2.ReadBucket(Uploads);
+    return {
+      fetch: Effect.gen(function* () {
+        const object = yield* uploads.get("hello.txt");
+        return object
+          ? HttpServerResponse.text(yield* object.text())
+          : HttpServerResponse.text("Not found", { status: 404 });
+      }).pipe(Effect.orDie),
+    };
+  }).pipe(Effect.provide(Cloudflare.R2.ReadBucketBinding)),
+);
+```
+
+And the Stack deploys it to the account your profile names:
+
+```typescript title="alchemy.run.ts"
+import * as Alchemy from "alchemy";
+import * as Cloudflare from "@alchemy.run/cloudflare";
+import * as Effect from "effect/Effect";
+import Worker from "./src/worker.ts";
+
+export default Alchemy.Stack(
+  "MyApp",
+  { providers: Cloudflare.providers(), state: Cloudflare.state() },
+  Effect.gen(function* () {
+    const worker = yield* Worker;
+    return { url: worker.url };
+  }),
+);
+```
+
+## Where to start
+
+**Want to build?** The [tutorial](/cloudflare/tutorial/part-1) goes from an empty directory to a Worker with storage, tests, local development and CI, one step at a time. Start with [Setup](/cloudflare/setup) to connect your account.
+
+**Looking for something specific?** Every section of these docs is listed below, and every resource is in the generated [API reference](/providers).
+
+## The docs
+
+<HubMap />

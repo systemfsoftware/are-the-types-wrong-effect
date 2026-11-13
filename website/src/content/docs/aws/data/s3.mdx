@@ -1,0 +1,161 @@
+---
+title: S3
+description: How S3 Buckets hold objects under keys, how a runtime reads and writes them through bindings, and how to share, react to and serve the objects you store.
+---
+
+import Records from "../../../../components/diagrams/Records.astro";
+
+S3 stores files, called **objects**, in containers called **Buckets**. An object is any sequence of bytes, from a few characters to five terabytes, stored under a **key** you choose. Buckets hold as many objects as you put in them, and you pay for what you store and transfer.
+
+## A Bucket holds objects under keys
+
+A Bucket is a flat map from keys to objects. A key is just a string: `avatars/sam.png`, `reports/2026/q1.pdf`, `hello.txt`.
+
+There are no real folders. A key with slashes in it looks like a path, and S3 can list every key that starts with a **prefix** like `reports/2026/`, so slashes work like folders when you list. But `reports/2026/q1.pdf` is one key, not a file inside two directories.
+
+<Records
+  title="Files · S3 Bucket"
+  columns={["key", "size"]}
+  rows={[
+    ["avatars/ana.png", "48 KB"],
+    ["avatars/sam.png", "51 KB"],
+    ["hello.txt", "12 B"],
+    ["reports/2026/q1.pdf", "2 MB"],
+    ["reports/2026/q2.pdf", "2 MB"],
+    ["reports/2027/q1.pdf", "1 MB"],
+  ]}
+  query={{ label: 'List prefix "reports/2026/"', rows: [3, 4], prefix: "reports/2026/" }}
+  caption="Keys are stored flat, in order. Listing a prefix returns every key that starts with it: there's no folder in between."
+/>
+
+Writing a key that already exists replaces its object as a whole. S3 never changes part of an object. To keep the old copy as well, turn on versioning, and each write becomes a new **version** of the key.
+
+## Declare a Bucket
+
+A Bucket is a declaration. Give it an id:
+
+```typescript title="src/files.ts"
+import * as AWS from "@alchemy.run/aws";
+
+export const Files = AWS.S3.Bucket("Files");
+```
+
+Bucket names are global: no two Buckets anywhere in AWS share a name. So you don't pick one. Alchemy names it from your app, stage and id, like `myapp-dev-files-a1b2c3`, and your `dev` and `prod` stages each get their own Bucket.
+
+A new Bucket is private. Nothing outside your account can read it, and nothing inside can either, until a policy allows it.
+
+## Write objects
+
+Bind `S3.PutObject` in a runtime to write to the Bucket. The binding gives the runtime a client, and gives its role `s3:PutObject` on this Bucket's objects and no others:
+
+```typescript title="src/api.ts"
+const putObject = yield* AWS.S3.PutObject(Files);
+```
+
+Call it with a key and a body:
+
+```typescript title="src/api.ts"
+yield* putObject({ Key: "hello.txt", Body: "Hello, world", ContentType: "text/plain" });
+```
+
+The request is the S3 API's own `PutObject` input without `Bucket`, which the binding fills in. Provide its client, `S3.PutObjectHttp`, to the runtime:
+
+```typescript title="src/api.ts"
+export default class Api extends AWS.Lambda.Function<Api>()(
+  "Api",
+  { main: import.meta.url },
+  Effect.gen(function* () {
+    const putObject = yield* AWS.S3.PutObject(Files);
+    return {
+      fetch: Effect.gen(function* () {
+        const request = yield* HttpServerRequest;
+        const key = new URL(request.url).pathname.slice(1);
+        yield* putObject({ Key: key, Body: yield* request.text });
+        return HttpServerResponse.empty({ status: 204 });
+      }).pipe(Effect.orDie),
+    };
+  }).pipe(Effect.provide(AWS.S3.PutObjectHttp)),
+) {}
+```
+
+## Read objects
+
+Bind `S3.GetObject` to read. Its result carries the object's metadata and its `Body`, a stream of bytes:
+
+```typescript title="src/api.ts"
+const getObject = yield* AWS.S3.GetObject(Files);
+const object = yield* getObject({ Key: "hello.txt" });
+```
+
+Pass the stream straight to the response. The bytes flow through as they arrive, so an object larger than the Function's memory still downloads:
+
+```typescript title="src/api.ts"
+return HttpServerResponse.stream(object.Body!);
+```
+
+A key with no object fails with `NoSuchKey`. Catch it by name, and every other failure stays in the type:
+
+```typescript title="src/api.ts"
+const object = yield* getObject({ Key: key }).pipe(
+  Effect.catchTag("NoSuchKey", () => Effect.succeed(undefined)),
+);
+if (!object?.Body) return HttpServerResponse.text("Not found", { status: 404 });
+```
+
+## One binding per operation
+
+Each S3 operation is its own binding, and each binding adds one statement to the role. A runtime that only reads gets `S3.GetObject`. One that also lists gets `S3.ListObjectsV2`:
+
+```typescript title="src/api.ts"
+const listObjects = yield* AWS.S3.ListObjectsV2(Files);
+const page = yield* listObjects({ Prefix: "reports/2026/" });
+const keys = (page.Contents ?? []).map((object) => object.Key);
+```
+
+So the role reads like a summary of what the code does with the Bucket. Deleting, copying, tagging and multipart uploads each have a binding of their own, listed in the [Bucket reference](/providers/aws/s3/bucket).
+
+## Hand out links with presigned URLs
+
+A browser can't call S3 with your role's credentials, and you don't want every upload and download to pass through your Function. A **presigned URL** solves both: it's a link, signed by the Function, that allows one operation on one key for a limited time.
+
+```typescript title="src/api.ts"
+const presignGetObject = yield* AWS.S3.PresignGetObject(Files);
+const url = yield* presignGetObject({ key: "reports/2026/q1.pdf", expiresIn: 3600 });
+```
+
+Anyone holding the link can download that object for the next hour, straight from S3. `S3.PresignPutObject` does the same for uploads. Signing makes no network call, but the link can only do what the signer may do, so the binding grants the role the matching permission.
+
+See [R2 presigned URLs](/cloudflare/data/r2-presigned-urls) for the same pattern on Cloudflare.
+
+## React to new objects
+
+A Bucket can tell a Function every time an object is created or deleted. Subscribe from the Function's Construction phase:
+
+```typescript title="src/thumbnails.ts"
+const files = yield* Files;
+yield* AWS.S3.consumeBucketEvents(files, { events: ["s3:ObjectCreated:*"] }, (stream) =>
+  stream.pipe(Stream.runForEach((event) => Console.log(`new object: ${event.key}`))),
+);
+```
+
+Deploy adds a notification to the Bucket and permission for S3 to invoke the Function. See [S3 events](/aws/messaging/s3-events).
+
+## Serve files to the public
+
+Keep the Bucket private even when its files are public. Put CloudFront in front of it instead: the distribution reads from the Bucket, caches near your users and serves your domain over HTTPS. The Website resources set this up for you:
+
+```typescript title="alchemy.run.ts"
+const site = yield* AWS.Website.StaticSite("Site", { path: "./dist" });
+```
+
+See [Websites](/aws/frontend/websites).
+
+## Delete a Bucket
+
+S3 won't delete a Bucket that still has objects in it, so destroying a Stack with a full Bucket fails. That protects your data from an accidental destroy.
+
+For a Bucket whose contents you can lose, like a cache or a preview stage's uploads, set `forceDestroy`, and destroy empties it first:
+
+```typescript title="src/files.ts"
+export const Files = AWS.S3.Bucket("Files", { forceDestroy: true });
+```

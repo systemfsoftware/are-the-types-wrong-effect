@@ -1,0 +1,37 @@
+---
+title: Better Auth
+description: Build authentication with an Effect service, automatic database bindings, and deploy-time migrations.
+---
+
+import HubMap from "../../../components/HubMap.astro";
+
+[Better Auth](https://better-auth.com) is an open-source authentication framework for TypeScript. It runs inside your own app and keeps users and sessions in your own database.
+
+It supports email and password, OAuth providers like GitHub and Google, and plugins for two-factor sign-in, passkeys and organizations.
+
+**New to Better Auth?** Start with [What is Better Auth?](/better-auth/what-is-better-auth).
+
+## A quick example
+
+An Auth service is a Better Auth configuration:
+
+```typescript
+import { BetterAuth } from "@alchemy.run/better-auth";
+
+const makeAuth = BetterAuth({
+  basePath: "/api/auth",
+  emailAndPassword: { enabled: true },
+});
+```
+
+Alchemy binds its database, applies its migrations on deploy, and serves its routes from your Worker or Lambda. Pick a [sign-in provider](/better-auth/sign-in-providers/email-password) and a [database](/better-auth/databases) to go with it.
+
+## Where to start
+
+**Want to build?** The [tutorial](/better-auth/tutorial/part-1) builds an app with browser sign-in, session middleware and GitHub sign-in, in six parts.
+
+**Looking for something specific?** Every section of these docs is listed below, and every resource is in the generated [API reference](/providers).
+
+## The docs
+
+<HubMap />

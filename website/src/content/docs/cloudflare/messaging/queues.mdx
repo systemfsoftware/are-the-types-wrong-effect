@@ -1,0 +1,166 @@
+---
+title: Queues
+description: How Cloudflare Queues carry messages from producer Workers to a consumer in batches, with retries and dead-letter queues, and how platform events like Workflow completions arrive on a Queue.
+---
+
+import StateMachine from "../../../../components/diagrams/StateMachine.astro";
+
+A Queue carries messages from one Worker to another. The **producer** sends a message and returns at once. Cloudflare holds it, and delivers it in a **batch** to the **consumer** Worker, which does the work. A slow job no longer slows the request that asked for it, and a burst of work waits in the Queue instead of overwhelming the consumer.
+
+## Delivered at least once, in batches
+
+The consumer receives messages in batches, a few or a hundred at a time. When it finishes a batch, the messages are **acknowledged** and removed. When it fails, they're **retried** later. After too many attempts, a message moves to a **dead-letter queue**, if the Queue has one, or is dropped.
+
+<StateMachine
+  states={[
+    { id: "queued", label: "queued", col: 0, row: 0, start: true },
+    { id: "batch", label: "in a batch", type: "with the consumer", col: 1, row: 0, tone: "accent" },
+    { id: "acked", label: "acknowledged", type: "removed", col: 2, row: 0, end: true },
+    { id: "retry", label: "waiting", type: "retryDelay", col: 1, row: 1, tone: "warn" },
+    { id: "dlq", label: "DeadLetters", type: "dead-letter queue", col: 2, row: 1, end: true, tone: "danger" },
+  ]}
+  transitions={[
+    { from: "queued", to: "batch", label: "delivered" },
+    { from: "batch", to: "acked", label: "batch succeeds" },
+    { from: "batch", to: "retry", label: "batch fails", bend: 0.7 },
+    { from: "retry", to: "batch", label: "retried", bend: 0.7 },
+    { from: "retry", to: "dlq", label: "after maxRetries" },
+  ]}
+  caption="A message leaves only when its batch succeeds. A failed batch comes back after a delay, and a message that keeps failing moves to the dead-letter queue."
+/>
+
+So a message is never lost to a failed consumer, but it can be delivered more than once. Make the work safe to repeat: check whether it's done already, or write results under a key derived from the message.
+
+## Declare a Queue
+
+```typescript title="src/jobs.ts"
+import * as Cloudflare from "@alchemy.run/cloudflare";
+
+export const Jobs = Cloudflare.Queues.Queue("Jobs");
+```
+
+## Send messages
+
+Bind `WriteQueue` in the producer to get a sender. A message body is any value that can be serialized:
+
+```typescript title="src/api.ts"
+export default Cloudflare.Worker(
+  "Api",
+  { main: import.meta.url },
+  Effect.gen(function* () {
+    const jobs = yield* Cloudflare.Queues.WriteQueue(Jobs);
+    return {
+      fetch: jobs.send({ type: "thumbnail", key: "avatars/sam.png" }).pipe(
+        Effect.as(HttpServerResponse.empty({ status: 202 })),
+        Effect.orDie,
+      ),
+    };
+  }).pipe(Effect.provide(Cloudflare.Queues.WriteQueueBinding)),
+);
+```
+
+`sendBatch` sends up to a hundred messages in one call.
+
+## Consume messages
+
+The consumer subscribes from its Construction phase. Each batch arrives as a `Stream` of messages:
+
+```typescript title="src/consumer.ts"
+export default Cloudflare.Worker(
+  "Consumer",
+  { main: import.meta.url },
+  Effect.gen(function* () {
+    const jobs = yield* Jobs;
+    yield* Cloudflare.Queues.consumeQueueMessages<Job>(jobs, (messages) =>
+      Stream.runForEach(messages, (message) => Effect.log(message.body.key)),
+    );
+    return {};
+  }).pipe(Effect.provide(Cloudflare.Queues.EventSourceLive)),
+);
+```
+
+Deploy registers the Worker as the Queue's consumer. When the handler succeeds, every message in the batch is acknowledged. When it fails, every message is retried. To decide per message, call `message.ack()` or `message.retry()` inside the handler.
+
+One Worker can produce to a Queue and consume from it, or consume several Queues.
+
+## Tune batches and retries
+
+Pass settings before the handler:
+
+```typescript title="src/consumer.ts"
+yield* Cloudflare.Queues.consumeQueueMessages<Job>(
+  jobs,
+  { batchSize: 25, maxWaitTime: "5 seconds", maxRetries: 3, retryDelay: "30 seconds" },
+  handle,
+);
+```
+
+A batch is delivered when it reaches `batchSize` or has waited `maxWaitTime`, whichever comes first. Larger batches mean fewer invocations. A shorter wait means lower latency. `retryDelay` spaces out the retries of a failed batch.
+
+## Catch messages that keep failing
+
+A message that fails `maxRetries` times is dropped, unless the Queue names a **dead-letter queue**. Cloudflare doesn't alert on a dead-letter queue, so consume it too:
+
+```typescript title="src/consumer.ts"
+const deadLetters = yield* DeadLetters;
+
+yield* Cloudflare.Queues.consumeQueueMessages<Job>(
+  jobs,
+  { maxRetries: 3, deadLetterQueue: deadLetters },
+  handle,
+);
+
+yield* Cloudflare.Queues.consumeQueueMessages<Job>(deadLetters, (messages) =>
+  Stream.runForEach(messages, (message) =>
+    Effect.logError(`gave up on ${message.body.key} after ${message.attempts} attempts`),
+  ),
+);
+```
+
+Replace the log with what the failure needs: store the message to replay later, or alert someone. A dead-letter queue owned by another stack can be passed as `yield* Cloudflare.Queues.Queue.ref("DeadLetters", { stack: "shared", stage: "production" })`, and one Alchemy doesn't manage, by its name.
+
+## Send a stream of messages
+
+`QueueSink` turns a Queue into an Effect Sink. Run any `Stream` of message bodies into it, and it sends them in batches:
+
+```typescript title="src/consumer.ts"
+const enriched = yield* Cloudflare.Queues.QueueSink(Enriched);
+
+yield* Cloudflare.Queues.consumeQueueMessages<Click>(Clicks, (messages) =>
+  messages.pipe(
+    Stream.map((message) => ({ ...message.body, receivedAt: Date.now() })),
+    Stream.run(enriched),
+  ),
+);
+```
+
+This Worker reads one Queue, enriches each message, and writes to another. Provide `Cloudflare.Queues.QueueSinkBinding`.
+
+## Receive events from Cloudflare
+
+Cloudflare can send its own events to a Queue: a Workflow instance completed, a Worker build failed, a bucket was created. A **subscription** connects an event source to a Queue:
+
+```typescript title="alchemy.run.ts"
+const events = yield* Cloudflare.Queues.Queue("WorkflowEvents");
+
+yield* Cloudflare.Queues.Subscription("IngestionEvents", {
+  source: worker.env.INGESTION,
+  events: ["instance.completed", "instance.errored"],
+  queueId: events.queueId,
+});
+```
+
+The Queue still needs a consumer. These resources can be a source, directly or through `.ref(...)`:
+
+| Resource | Events about |
+| --- | --- |
+| `Cloudflare.Workflows.WorkflowResource` | Instances of that Workflow |
+| `Cloudflare.Worker` | Workers Builds runs for that Worker |
+| `Cloudflare.AI.Model` | Batch inference for that model |
+| `Cloudflare.KV.Namespace` | Every namespace in the account |
+| `Cloudflare.R2.Bucket` | Every bucket in the account |
+| `Cloudflare.R2.SuperSlurperJob` | Every migration job in the account |
+| `Cloudflare.Vectorize.Index` | Every index in the account |
+| `Cloudflare.Images.Variant` | Every image upload in the account |
+
+The account-wide sources report on every resource of that kind, not just the one you pass. An account allows one subscription per source. Events can take a while to start arriving after a subscription is created, so check that one arrives before relying on it.

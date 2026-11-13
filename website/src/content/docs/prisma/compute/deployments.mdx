@@ -1,0 +1,129 @@
+---
+title: Deployments
+description: The fail-closed Compute deployment lifecycle — health-checked promotion, rollback recovery, old-generation cleanup, and env-only redeploys.
+---
+import Timeline from "../../../../components/diagrams/Timeline.astro";
+
+When the artifact or deployment configuration changes,
+`Prisma.Compute` creates a new generation and walks it through a
+fail-closed sequence: upload the artifact, start the candidate, verify
+its preview health endpoint, promote it, confirm the app reports it as
+latest, verify the stable endpoint — and only then touch the previous
+deployment.
+
+<Timeline
+  end={10}
+  lanes={[
+    { id: "old", label: "previous", type: "stable deployment" },
+    { id: "new", label: "candidate", type: "new generation" },
+  ]}
+  bars={[
+    { lane: "old", start: 0, end: 7.6, label: "serving the stable endpoint" },
+    { lane: "old", start: 7.6, end: 9, label: "removed", tone: "muted" },
+    { lane: "new", start: 0.6, end: 2, label: "upload", tone: "default" },
+    { lane: "new", start: 2, end: 3.2, label: "start", tone: "warn" },
+    { lane: "new", start: 3.2, end: 5, label: "health", tone: "default" },
+    { lane: "new", start: 5, end: 10, label: "promoted · serving" },
+  ]}
+  marks={[{ at: 5, label: "promote" }, { at: 7.6, label: "stable endpoint verified" }]}
+  caption="The previous deployment keeps serving until the candidate is healthy, promoted, and verified on the stable endpoint. Only then is the old one touched."
+/>
+
+## Health checks and promotion
+
+`healthCheck.path` gates promotion. If the candidate never becomes
+healthy, alchemy attempts to destroy it without changing the stable
+deployment. When a previous deployment exists, it keeps serving:
+
+```typescript
+const app = yield* Prisma.Compute("api", {
+  project,
+  path: "./app",
+  port: 3000,
+  healthCheck: { path: "/api/health" },
+});
+```
+
+When promotion succeeds but the stable endpoint fails verification,
+alchemy attempts to restore the previous deployment. If recovery
+converges, it cleans up the failed candidate. If recovery cannot
+converge—or no safe rollback target exists—alchemy fails the deploy,
+preserves the generations needed for recovery, and retries recovery
+before making further cloud changes. Terminally failed deployments
+are never restarted or selected as rollback targets.
+
+## Old-generation cleanup
+
+By default the previous deployment is kept (stopped) after a
+successful promotion. `destroyOldDeployment: true` deletes it once
+the replacement is fully promoted and healthy:
+
+```typescript
+const app = yield* Prisma.Compute("api", {
+  project,
+  path: "./app",
+  destroyOldDeployment: true,
+});
+```
+
+If cleanup fails, alchemy records the pending action in state and
+retries it before creating another generation.
+
+## Env-only redeploys
+
+`skipCodeUpload: true` creates the next deployment from the currently
+promoted artifact. It requires an existing promoted deployment and is
+useful when only environment variables changed:
+
+```typescript
+const app = yield* Prisma.Compute("api", {
+  project,
+  skipCodeUpload: true,
+  env: { FEATURE_FLAG: "on" },
+});
+```
+
+## Redeploying for changed inputs
+
+The low-level `Prisma.Deployment` resource owns no environment
+variables, so it cannot see an env-value change on its own. Prisma
+also snapshots environment variables into a deployment when the
+deployment is created, so changing only a value updates the
+platform's variable record but never reaches the running app.
+
+Declare the values the deployment must be recreated for with
+`triggers`. When the resolved value changes, the next deploy
+replaces the deployment (create-before-delete) even though the
+artifact is unchanged:
+
+```typescript
+const deployment = yield* Prisma.Deployment("web", {
+  app,
+  artifactPath: "./dist/app.tar.gz",
+  triggers: { DATABASE_URL: Redacted.make(databaseUrl) },
+  start: true,
+  promote: true,
+});
+```
+
+The values are folded into the deployment fingerprint as a salted
+hash and persisted `Redacted`; the plaintext never lands in state.
+`Prisma.Compute` needs no equivalent — it owns `env` and already
+folds those values into its own fingerprint.
+
+## No-op convergence
+
+Deploys are hash-driven: when the built artifact and configuration
+are unchanged, reconcile reuses the same healthy deployment instead
+of creating a new generation — repeat deploys converge to exactly
+one active deployment.
+
+## Where next
+
+- [Apps](/prisma/compute/apps) — builds, Effect-native services,
+  and local dev.
+
+Reference:
+
+- [Compute API reference](/providers/prisma/compute)
+- [Deployment API reference](/providers/prisma/deployment)

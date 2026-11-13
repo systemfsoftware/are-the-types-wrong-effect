@@ -1,0 +1,67 @@
+---
+title: Railway
+description: Run Effect programs on Railway with Alchemy. Declare Projects, Services, Functions, Postgres, MySQL, Redis, Volumes and Buckets in one TypeScript program.
+---
+
+import HubMap from "../../../components/HubMap.astro";
+
+Railway is a cloud for running containers and the databases beside them. A project groups your services, Postgres, MySQL and Redis databases, volumes and buckets. Railway runs each service, gives it a URL, and connects everything in the project over a private network. Environments copy a whole project for staging or a pull request, and you pay only for the CPU and memory you use.
+
+**New to Railway?** Start with [What is Railway?](/railway/what-is-railway).
+
+## A quick example
+
+A project is a declaration:
+
+```typescript title="src/project.ts"
+import * as Railway from "@alchemy.run/railway";
+
+export const Site = Railway.Project("Site");
+```
+
+A Service is your program in it:
+
+```typescript title="src/api.ts"
+import * as Railway from "@alchemy.run/railway";
+import * as Effect from "effect/Effect";
+import * as HttpServerResponse from "effect/http/HttpServerResponse";
+import { Site } from "./project.ts";
+
+export default class Api extends Railway.Service<Api>()(
+  "Api",
+  { project: Site, main: import.meta.url, port: 3000 },
+  Effect.gen(function* () {
+    return {
+      fetch: Effect.succeed(HttpServerResponse.text("hello from Railway")),
+    };
+  }),
+) {}
+```
+
+And the Stack deploys it to your workspace, with a public `*.up.railway.app` URL:
+
+```typescript title="alchemy.run.ts"
+import * as Alchemy from "alchemy";
+import * as Railway from "@alchemy.run/railway";
+import * as Effect from "effect/Effect";
+import Api from "./src/api.ts";
+
+export default Alchemy.Stack(
+  "MyApp",
+  { providers: Railway.providers(), state: Alchemy.localState() },
+  Effect.gen(function* () {
+    const api = yield* Api;
+    return { url: api.url };
+  }),
+);
+```
+
+## Where to start
+
+**Want to build?** The [tutorial](/railway/tutorial/part-1) goes from an empty directory to a project running an HTTP Service with a Volume and a variable, one step at a time. Start with [Setup](/railway/setup) to connect your workspace.
+
+**Looking for something specific?** Every section of these docs is listed below, and every resource is in the generated [API reference](/providers).
+
+## The docs
+
+<HubMap />

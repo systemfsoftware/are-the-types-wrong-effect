@@ -1,0 +1,191 @@
+---
+title: Lambda
+description: How a Lambda Function runs your code per invocation, how it's invoked over a Function URL, by events or by other code, and how construction, timeouts and configuration work.
+---
+
+import Timeline from "../../../../components/diagrams/Timeline.astro";
+
+A Lambda Function is code that AWS runs when something invokes it: an HTTP request, a message on a queue, a new object in a Bucket, a schedule. You don't run a server. AWS starts environments for your code as invocations arrive, and you pay only for the time they spend running.
+
+## How Lambda runs your code
+
+Lambda runs your code in **execution environments**: small, isolated sandboxes, each holding one copy of your Function. An environment handles one invocation at a time. When invocations arrive faster than the existing environments can finish them, Lambda starts more, and when traffic drops, it stops them.
+
+<Timeline
+  end={10}
+  lanes={[
+    { id: "e1", label: "environment 1" },
+    { id: "e2", label: "environment 2" },
+    { id: "e3", label: "environment 3" },
+  ]}
+  bars={[
+    { lane: "e1", start: 0, end: 0.7, tone: "warn" },
+    { lane: "e1", start: 0.7, end: 2.6, label: "invocation" },
+    { lane: "e1", start: 2.8, end: 4.6, label: "invocation" },
+    { lane: "e1", start: 5, end: 6.8, label: "invocation" },
+    { lane: "e1", start: 7.4, end: 9.2, label: "invocation" },
+    { lane: "e2", start: 1.4, end: 2.1, tone: "warn" },
+    { lane: "e2", start: 2.1, end: 4, label: "invocation" },
+    { lane: "e2", start: 4.4, end: 6.2, label: "invocation" },
+    { lane: "e3", start: 1.6, end: 2.3, tone: "warn" },
+    { lane: "e3", start: 2.3, end: 4.2, label: "invocation" },
+  ]}
+  marks={[{ at: 1.4, label: "traffic spikes" }]}
+  legend={[{ tone: "accent", label: "invocation" }, { tone: "warn", label: "cold start" }]}
+  caption="Each environment runs one invocation at a time. When more arrive than the warm ones can take, Lambda starts more, each with a cold start first."
+/>
+
+Starting a new environment is a **cold start**: Lambda loads your code and runs its setup before the first invocation, which adds tens to hundreds of milliseconds. After that the environment is **warm**, and later invocations skip the setup.
+
+So a Function scales with no capacity planning, and costs nothing while nothing calls it. In exchange, an invocation can run for at most 15 minutes, and memory, and the CPU that comes with it, is fixed per Function.
+
+## Declare a Function
+
+A Function is a class. Its first argument is the id, its second the configuration, and its third the program it runs:
+
+```typescript title="src/api.ts"
+import * as AWS from "@alchemy.run/aws";
+import * as Effect from "effect/Effect";
+
+export default class Api extends AWS.Lambda.Function<Api>()(
+  "Api",
+  { main: import.meta.url },
+  Effect.gen(function* () {
+    return {};
+  }),
+) {}
+```
+
+`main: import.meta.url` makes this file the entry point. Deploy bundles it into a zip, uploads it, and creates the Function with its execution role and log group. The role starts with permission to write logs, and each [binding](/aws/iam) adds to it.
+
+Yield the class in your Stack to deploy it:
+
+```typescript title="alchemy.run.ts"
+const api = yield* Api;
+```
+
+## Construction runs once per environment
+
+The program has two parts. The outer `Effect.gen` is the **Construction phase**. It runs once when an environment starts, and again at deploy time, where its bindings become IAM statements. What it returns are the handlers, which run once per invocation:
+
+```typescript title="src/api.ts"
+Effect.gen(function* () {
+  const putObject = yield* AWS.S3.PutObject(Files); // once per environment
+  return {
+    fetch: putObject({ Key: "hit", Body: "1" }).pipe(/* once per invocation */),
+  };
+});
+```
+
+Put clients and bindings in Construction, so every invocation in the environment reuses them. Put per-request work in the handlers.
+
+## Serve HTTP from a Function URL
+
+A `fetch` handler answers HTTP requests. It's an Effect that reads the request and returns a response, with the `effect/http` APIs:
+
+```typescript title="src/api.ts"
+return {
+  fetch: Effect.succeed(HttpServerResponse.text("Hello from Lambda!")),
+};
+```
+
+Requests reach it through a **Function URL**, an HTTPS endpoint AWS gives the Function. Choose who may call it with `functionUrl`:
+
+```typescript title="src/api.ts"
+{ main: import.meta.url, functionUrl: true }
+```
+
+`true` creates a public URL, `{ authType: "AWS_IAM" }` creates one that only accepts requests signed with AWS credentials, and `false` creates none. Leaving it out creates a public URL, so set `functionUrl: false` on a Function that only handles events.
+
+Return the URL from your Stack to see it after a deploy:
+
+```typescript title="alchemy.run.ts"
+const api = yield* Api;
+return { url: api.functionUrl };
+```
+
+A Lambda Function buffers its whole response, up to 6 MB, before the caller sees any of it. For an API or a website that streams, or that serves many requests at once per environment, use a [Lambda Web Function](/aws/compute/web-functions).
+
+## Be invoked by events
+
+Services invoke a Function too. A Queue delivers batches of messages, a Bucket reports new objects, a Table streams its changes, and EventBridge delivers events and schedules. Subscribe to one from Construction:
+
+```typescript title="src/worker.ts"
+yield* SQS.consumeQueueMessages(Jobs, { batchSize: 10 }, (event) =>
+  Effect.forEach(event.Records, (record) => Console.log(record.body), { discard: true }),
+);
+```
+
+Deploy creates the subscription and the permissions it needs, and provides the event source's layer, here `AWS.Lambda.QueueEventSource`, to the Function. See [SQS](/aws/messaging/sqs), [S3 events](/aws/messaging/s3-events), [DynamoDB Streams](/aws/messaging/dynamodb-streams), [Kinesis](/aws/messaging/kinesis) and [EventBridge](/aws/messaging/eventbridge).
+
+## Be invoked by other code
+
+Another runtime can call a Function directly. Bind `Lambda.InvokeFunction` to it, and the caller's role gets `lambda:InvokeFunction` on that Function only:
+
+```typescript title="src/api.ts"
+const invoke = yield* AWS.Lambda.InvokeFunction(Worker);
+yield* invoke({ InvocationType: "Event", Payload: JSON.stringify({ id }) });
+```
+
+`"Event"` hands the payload over and returns at once. `"RequestResponse"` waits for the result. For typed calls between Functions, see [Effect RPC](/aws/apis/effect-rpc).
+
+## Configure per stage
+
+Memory, timeout and log retention are props. Memory also sets the CPU: a Function with 1,769 MB gets one full vCPU.
+
+```typescript title="src/api.ts"
+{
+  main: import.meta.url,
+  memorySize: 1024,
+  timeout: Duration.seconds(30),
+  logging: { retention: "2 weeks" },
+}
+```
+
+To vary them by stage, compute the props from the Stack:
+
+```typescript title="src/api.ts"
+Stack.useSync((stack) => ({
+  main: import.meta.url,
+  memorySize: stack.stage === "prod" ? 1024 : 512,
+}))
+```
+
+Without `logging`, Lambda creates the log group on the first invocation and keeps its events forever. With it, Alchemy creates the group up front with that retention, and deletes it with the Function.
+
+## Clean up inside the invocation
+
+Each invocation runs in a fresh `Scope`, closed before the response is sent. A finalizer you add in a handler runs then:
+
+```typescript title="src/api.ts"
+fetch: Effect.gen(function* () {
+  yield* Effect.addFinalizer(() => Console.log("request done"));
+  return HttpServerResponse.text("ok");
+}),
+```
+
+There's no reliable way to do work after the response on Lambda. AWS freezes the environment once the invocation returns, and a frozen environment may never run again. So keep finalizers short, and write anything that must not be lost, to a queue or a table, before you return.
+
+Finalizers added in Construction run when the environment shuts down, with about half a second to finish, and not at all if the environment crashes. Treat them as best effort. See [Instance scope vs request scope](/infrastructure-as-effects/runtime#instance-scope-vs-request-scope).
+
+## When an invocation times out
+
+When a handler runs past its `timeout`, it's interrupted. Its finalizers run and its open spans end, so the trace shows the call that hung, ending with an `AWS.Lambda.InvocationTimeoutError`.
+
+Lambda itself is given `timeout` plus `timeoutMargin`, one second by default, so cleanup and telemetry finish before Lambda stops the environment. Size the margin for your finalizers and one export to your telemetry backend:
+
+```typescript title="src/api.ts"
+{
+  main: import.meta.url,
+  timeout: Duration.seconds(30),
+  timeoutMargin: Duration.seconds(2),
+}
+```
+
+The two together must fit within Lambda's 15 minutes. Lambda still records the invocation as timed out, retries it like any other failure, and starts a fresh environment, so nothing the interrupted handler left running can resume later.
+
+## When to choose another runtime
+
+Lambda is a good place to start: there's nothing to run while idle, and it scales without setup. It fits work that finishes within 15 minutes and arrives as requests or events.
+
+Reach for something else when the work doesn't fit that shape. An API that streams responses or holds many requests per environment fits a [Lambda Web Function](/aws/compute/web-functions). A process that runs continuously, holds connections open or already ships as a container fits [ECS](/aws/compute/ecs). Kubernetes workloads fit [EKS](/aws/compute/eks), and software that needs the whole machine fits [EC2](/aws/compute/ec2). See [Choosing a runtime](/aws/compute/choosing-a-runtime).
