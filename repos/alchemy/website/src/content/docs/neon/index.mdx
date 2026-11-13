@@ -1,0 +1,45 @@
+---
+title: Neon
+description: Declare Neon Postgres projects, branches and roles, plus Functions, storage, Auth, the Data API and AI Gateway, in an Alchemy Stack, with a branch per preview stage.
+---
+
+import HubMap from "../../../components/HubMap.astro";
+
+Neon started as serverless Postgres and has grown into branchable infrastructure. Storage is separate from compute, so a database scales with load and sleeps when idle. A branch copies the whole database, data included, in a second. Around Postgres, Neon now runs Functions, object storage, user sign-in, a Data API and an AI gateway. Each is attached to a branch, so branching copies the whole backend, not just the data.
+
+**New to Neon?** Start with [What is Neon?](/neon/what-is-neon).
+
+## A quick example
+
+A project and a branch, with migrations applied on deploy:
+
+```typescript title="alchemy.run.ts"
+const project = yield* Neon.Project("app-db", { region: "aws-us-east-1" });
+const branch = yield* Neon.Branch("app-branch", { project, migrations: "./migrations" });
+```
+
+A role for the app, and a Function on the branch:
+
+```typescript title="alchemy.run.ts"
+const app = yield* Neon.Role("App", { branch });
+const api = yield* Neon.Function("Api", { branch, main: "./src/api.ts" });
+```
+
+Or connect from somewhere else. A branch's `origin` goes to Cloudflare Hyperdrive, which does its own pooling:
+
+```typescript title="alchemy.run.ts"
+const hyperdrive = yield* Cloudflare.Hyperdrive.Connection("app-hyperdrive", {
+  origin: branch.origin,
+  dev: branch.pooledOrigin,
+});
+```
+
+## Where to start
+
+**Want to build?** The [upload tutorial](/neon/tutorial) combines a Vite frontend, private files, signed-in users, SQL records and an upload-triggered Function. Start with [Setup](/neon/setup) for credentials and the prerequisites for each feature.
+
+**Looking for something specific?** Every section of these docs is listed below, and every resource is in the generated [API reference](/providers).
+
+## The docs
+
+<HubMap />

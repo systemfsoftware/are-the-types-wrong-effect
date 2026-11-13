@@ -1,7 +1,7 @@
 import { TypeSafeClient, TypeSafeDecisionModel } from "@effect/ai-typesafe"
 import { type Config, Effect, type Layer, Redacted, Schema } from "effect"
-import { Decision, DecisionModel, type Model } from "effect/unstable/ai"
-import type { HttpClient } from "effect/unstable/http"
+import { Decision, DecisionModel, type Model } from "effect/ai"
+import type { HttpClient } from "effect/http"
 import { describe, expect, it } from "tstyche"
 
 declare const acceptsKnownModel: (model: TypeSafeDecisionModel.Model) => void
@@ -22,6 +22,7 @@ describe("TypeSafeDecisionModel", () => {
       expect(acceptsKnownModel).type.toBeCallableWith("jev-latest")
       expect(acceptsKnownModel).type.toBeCallableWith("jev-preview")
       expect(acceptsKnownModel).type.toBeCallableWith("jev-1.13.0")
+      expect(acceptsKnownModel).type.toBeCallableWith("jev-1.14.0")
       expect(acceptsKnownModel).type.not.toBeCallableWith("not-a-real-model")
       expect(TypeSafeDecisionModel.model).type.toBeCallableWith("not-a-real-model")
       expect(TypeSafeDecisionModel.layer).type.toBeCallableWith({ model: "not-a-real-model" })

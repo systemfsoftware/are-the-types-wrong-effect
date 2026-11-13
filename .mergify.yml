@@ -1,6 +1,22 @@
 # Mergify: policy lives in systemfsoftware/.github (.mergify.yml). This file only names this repo's CI checks.
 extends: .github
 queue_rules:
+  - name: subtree
+    merge_method: merge
+    queue_conditions:
+      - 'commits[*].commit_message ~= (?ms)\A(?=.*^git-subtree-dir: \S+$)(?=.*^git-subtree-split: [0-9a-f]{40}$)'
+      - -linear-history
+      - check-success = check
+      - check-success = e2e
+      - or:
+          - check-success = lint PR commits
+          - check-skipped = lint PR commits
+      - or:
+          - check-success = require-changeset / a publishable-package change needs an intent
+          - check-skipped = require-changeset / a publishable-package change needs an intent
+    merge_conditions:
+      - check-success = check
+      - check-success = e2e
   - name: default
     # Checked on the PR itself before it enters the queue.
     queue_conditions:
@@ -12,6 +28,16 @@ queue_rules:
       - or:
           - check-success = require-changeset / a publishable-package change needs an intent
           - check-skipped = require-changeset / a publishable-package change needs an intent
+      - '-commits[*].commit_message ~= (?m)^git-subtree-dir: \S+$'
+      - not:
+          and:
+            - 'title ~= (?i)(?<![\w.-])(add|pull|update|sync|vendor|vendored|vendoring|refresh|import|bump|upgrade)(?!\.?[\w-])'
+            - 'title ~= (?i)(?<![\w.-])subtrees?(?!\.?[\w-])'
+            - or:
+                - "added-files ~= ^(vendor|vendored|third[_-]party|external|repos|subtrees?)/"
+                - "modified-files ~= ^(vendor|vendored|third[_-]party|external|repos|subtrees?)/"
+      - -added-files ~= ^(repos/constitution|repos/worktrunk-scripts|repos/effect|repos/alchemy)/
+      - -modified-files ~= ^(repos/constitution|repos/worktrunk-scripts|repos/effect|repos/alchemy)/
     # Checked on Mergify's queue draft PR (mergify/merge-queue/*), i.e. CI on the PR rebased with main and any batch.
     merge_conditions:
       - check-success = check

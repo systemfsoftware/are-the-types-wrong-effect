@@ -1,0 +1,146 @@
+---
+title: RDS & Aurora
+description: How RDS and Aurora run Postgres and MySQL inside your VPC, how the Aurora helper creates a cluster with its secret, subnets and instances, and how runtimes connect, migrate and scale it.
+---
+
+import Zones from "../../../../components/diagrams/Zones.astro";
+
+RDS runs relational databases for you: Postgres, MySQL, MariaDB and others, with backups, patching and failover handled by AWS. **Aurora** is AWS's own engine behind the Postgres and MySQL interfaces. It separates compute from storage, so a cluster's instances share one copy of the data, replicated across three Availability Zones.
+
+## A cluster is storage plus instances
+
+An Aurora **cluster** owns the storage: one volume, grown automatically, kept in six copies across three zones. **Instances** are the compute that run queries against it. One instance is the **writer**. Others are **readers**, which serve reads from the same storage and take over if the writer fails.
+
+<Zones
+  title="Aurora cluster"
+  zones={["us-east-1a", "us-east-1b", "us-east-1c"]}
+  instances={[
+    { zone: 0, label: "writer", type: "instance", flow: "writes", tone: "accent" },
+    { zone: 1, label: "reader", type: "instance", flow: "reads" },
+    { zone: 2, label: "reader", type: "instance", flow: "reads" },
+  ]}
+  volume={{ label: "cluster volume", type: "one copy of the data, grown automatically", copies: 2 }}
+  caption="The instances in each zone share one volume. It keeps two copies in every zone, so losing a zone loses no data. If the writer fails, a reader in another zone takes over."
+/>
+
+Instances come in two kinds. **Serverless v2** instances scale their capacity, measured in ACUs, up and down with load. **Provisioned** instances have a fixed size, like `db.r6g.large`.
+
+## It lives in your VPC
+
+A database has no public address. Its instances sit in private subnets of a VPC, and a **security group** decides who may connect on the database's port. Its admin password is kept in **Secrets Manager**, never in code.
+
+So a database starts with a network. The `Network` helper builds one, and a security group lets one other group in on port 5432:
+
+```typescript title="src/network.ts"
+const network = yield* AWS.EC2.Network("Network", { cidrBlock: "10.0.0.0/16", nat: "single" });
+
+const appSecurityGroup = yield* AWS.EC2.SecurityGroup("App", { vpcId: network.vpcId });
+
+const databaseSecurityGroup = yield* AWS.EC2.SecurityGroup("Database", {
+  vpcId: network.vpcId,
+  ingress: [
+    { ipProtocol: "tcp", fromPort: 5432, toPort: 5432, referencedGroupId: appSecurityGroup.groupId },
+  ],
+});
+```
+
+Anything in `appSecurityGroup` can reach the database. Nothing else can. See [VPC & networking](/aws/networking).
+
+## Create a cluster
+
+`AWS.RDS.Aurora` creates everything a cluster needs from the subnets and security groups it lives in:
+
+```typescript title="src/database.ts"
+const db = yield* AWS.RDS.Aurora("Database", {
+  subnetIds: network.privateSubnetIds,
+  securityGroupIds: [databaseSecurityGroup.groupId],
+});
+```
+
+That's a Secrets Manager secret with a generated password, a subnet group, an Aurora PostgreSQL cluster with a database named `app` and the Data API turned on, and one Serverless v2 writer scaling between 0.5 and 1 ACU. Set `engine: "aurora-mysql"` for MySQL.
+
+Each part is on the result: `db.secret`, `db.cluster`, `db.writer`, `db.readers`. Configure any of them through the helper's props, or declare the `AWS.RDS.DB*` resources yourself when you need full control.
+
+## Apply migrations on deploy
+
+Point `migrations` at a directory of `.sql` files. Each deploy applies the new ones once the writer is ready, in order, and records them in an `__alchemy_migrations` table:
+
+```typescript title="src/database.ts"
+const db = yield* AWS.RDS.Aurora("Database", {
+  subnetIds: network.privateSubnetIds,
+  securityGroupIds: [databaseSecurityGroup.groupId],
+  migrations: "./migrations",
+});
+```
+
+Migrations travel over the Data API, so the machine running the deploy needs no route into the VPC. Over the Data API each statement is its own call: put one statement per file, or separate them with `--> statement-breakpoint` as drizzle-kit does. A database already migrated by drizzle-kit or Prisma is picked up where it left off.
+
+Without the Data API, declare an `AWS.RDS.MigrationRunner`, a Function inside the VPC that applies them, and pass it as `migrationsTransport`. See [SQL migrations](/sql/effect-sql/migrations).
+
+## Connect with a driver
+
+A runtime inside the VPC connects with an ordinary Postgres driver. Bind `AWS.RDS.Connect` to the cluster, and it resolves the host, port and credentials from the secret each time you ask, granting the runtime permission to read that secret:
+
+```typescript title="src/database.ts"
+const connect = yield* AWS.RDS.Connect(db.cluster, { secret: db.secret, database: "app" });
+
+const sql = yield* SQL.Postgres({
+  url: connect.pipe(Effect.map((connection) => connection.url)),
+});
+```
+
+The password never lands in an environment variable, and a rotated secret is picked up on the next connection. `SQL.Postgres` opens its pool on the first query of an invocation and closes it when the invocation ends. See [Effect SQL on Postgres](/sql/effect-sql/postgres).
+
+A Lambda Function joins the VPC with its `vpc` prop:
+
+```typescript title="src/api.ts"
+{ main: import.meta.url, vpc: { subnetIds: network.privateSubnetIds, securityGroupIds: [appSecurityGroup.groupId] } }
+```
+
+## Query without a connection
+
+The **Data API** runs SQL over HTTPS instead. There's no driver, no pool and no VPC to join, so any runtime can use it. Bind `AWS.RDSData.ExecuteStatement`:
+
+```typescript title="src/api.ts"
+const execute = yield* AWS.RDSData.ExecuteStatement(db.cluster, { secret: db.secret, database: "app" });
+const result = yield* execute({ sql: "select now()" });
+```
+
+The binding grants `rds-data:ExecuteStatement` on the cluster and read access to the secret. Provide `AWS.RDSData.ExecuteStatementHttp` to the runtime. Transactions use `BeginTransaction`, `CommitTransaction` and `RollbackTransaction`, each a binding of its own.
+
+Each Data API call adds a little latency over a warm connection. It suits functions that run a few queries per invocation, where opening a connection would cost more.
+
+## Add readers, a proxy and capacity
+
+Grow the same declaration as load grows:
+
+```typescript title="src/database.ts"
+const db = yield* AWS.RDS.Aurora("Database", {
+  subnetIds: network.privateSubnetIds,
+  securityGroupIds: [databaseSecurityGroup.groupId],
+  readers: 2,
+  scaling: { minCapacity: 0.5, maxCapacity: 8 },
+  proxy: true,
+});
+```
+
+`readers` adds instances that serve reads and take over on failure. `scaling` sets the Serverless v2 range. Use `instanceClass` for a fixed instance size instead.
+
+`proxy` adds an **RDS Proxy** in front of the cluster. Lambda can start hundreds of environments at once, each opening its own connections, and a database only accepts so many. The proxy holds a shared pool and hands connections out, so a traffic spike doesn't exhaust the database. Bind `AWS.RDS.Connect` to `db.proxy` instead of the cluster to use it.
+
+## Keep the data across deploys
+
+Destroying the cluster deletes its data, with no final snapshot. Protect a production database from an accidental destroy with `deletionProtection`, and keep backups for longer than the default day:
+
+```typescript title="src/database.ts"
+const db = yield* AWS.RDS.Aurora("Database", {
+  subnetIds: network.privateSubnetIds,
+  securityGroupIds: [databaseSecurityGroup.groupId],
+  deletionProtection: true,
+  backupRetentionPeriod: "14 days",
+});
+```
+
+AWS then refuses to delete the cluster until you turn the protection off. Within the retention period, you can restore the cluster to any point in time.
+
+For the whole app, from network to Drizzle queries, see [Drizzle + Aurora](/aws/data/drizzle-aurora). For a serverless database with no VPC at all, see [Drizzle + DSQL](/aws/data/drizzle-dsql).

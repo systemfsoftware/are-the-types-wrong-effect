@@ -1,0 +1,71 @@
+---
+title: AWS
+description: Build on AWS with Alchemy. Declare Lambda Functions, containers, tables, buckets and queues in TypeScript, and let bindings write each runtime's IAM policy from the calls its code makes.
+---
+
+import HubMap from "../../../components/HubMap.astro";
+
+Amazon Web Services is a cloud platform with services for compute, storage, databases, networking, analytics, machine learning and security, in regions around the world.
+
+**New to AWS?** Start with [What is AWS?](/aws/what-is-aws).
+
+## A quick example
+
+A Queue is a declaration:
+
+```typescript title="src/jobs.ts"
+import * as AWS from "@alchemy.run/aws";
+
+export const Jobs = AWS.SQS.Queue("Jobs");
+```
+
+A Lambda Function binds it and sends to it. The binding gives the Function `sqs:SendMessage` on that one Queue, and `SendMessageHttp` is the client that makes the call:
+
+```typescript title="src/api.ts"
+import * as AWS from "@alchemy.run/aws";
+import * as Effect from "effect/Effect";
+import * as HttpServerResponse from "effect/http/HttpServerResponse";
+import { Jobs } from "./jobs.ts";
+
+export default class Api extends AWS.Lambda.Function<Api>()(
+  "Api",
+  { main: import.meta.url },
+  Effect.gen(function* () {
+    const send = yield* AWS.SQS.SendMessage(Jobs);
+    return {
+      fetch: send({ MessageBody: "hello" }).pipe(
+        Effect.as(HttpServerResponse.text("queued")),
+        Effect.orDie,
+      ),
+    };
+  }).pipe(Effect.provide(AWS.SQS.SendMessageHttp)),
+) {}
+```
+
+And the Stack deploys it to the account your profile signs in to:
+
+```typescript title="alchemy.run.ts"
+import * as Alchemy from "alchemy";
+import * as AWS from "@alchemy.run/aws";
+import * as Effect from "effect/Effect";
+import Api from "./src/api.ts";
+
+export default Alchemy.Stack(
+  "MyApp",
+  { providers: AWS.providers(), state: AWS.state() },
+  Effect.gen(function* () {
+    const api = yield* Api;
+    return { url: api.functionUrl };
+  }),
+);
+```
+
+## Where to start
+
+**Want to build?** Connect your account in [Setup](/aws/setup), then follow the [tutorial](/aws/tutorial/part-1) from a single Bucket to a Lambda Function with tests and CI.
+
+**Looking for something specific?** Every section of these docs is listed below, and every resource is in the generated [API reference](/providers).
+
+## The docs
+
+<HubMap />

@@ -1,9 +1,9 @@
 import { Context, Deferred, Effect, Layer, Metric, Option, Queue, Schema } from "effect"
-import { Headers } from "effect/unstable/http"
-import * as Rpc from "effect/unstable/rpc/Rpc"
-import * as RpcGroup from "effect/unstable/rpc/RpcGroup"
-import * as RpcMiddleware from "effect/unstable/rpc/RpcMiddleware"
-import * as RpcServer from "effect/unstable/rpc/RpcServer"
+import { Headers } from "effect/http"
+import * as Rpc from "effect/rpc/Rpc"
+import * as RpcGroup from "effect/rpc/RpcGroup"
+import * as RpcMiddleware from "effect/rpc/RpcMiddleware"
+import * as RpcServer from "effect/rpc/RpcServer"
 
 export class User extends Schema.Class<User>("User")({
   id: Schema.String,
@@ -20,7 +20,10 @@ class StreamUsers extends Rpc.make("StreamUsers", {
 
 class CurrentUser extends Context.Service<CurrentUser, User>()("CurrentUser") {}
 
-class Unauthorized extends Schema.Error<Unauthorized>("Unauthorized")({
+// Exported so declaration emit can name it. Error classes are yieldable, so a
+// private one is a cycle that TypeScript 7.1 reports as TS5088 in `rpc-e2e.ts`
+// (microsoft/TypeScript#64461).
+export class Unauthorized extends Schema.Error<Unauthorized>("Unauthorized")({
   _tag: Schema.tag("Unauthorized")
 }) {}
 
@@ -78,7 +81,7 @@ export const UserRpcs = RpcGroup.make(
 
 export const AuthLayer = Layer.succeed(AuthMiddleware)(
   AuthMiddleware.of((effect, options) =>
-    Effect.provideService(
+    options.headers.unauthorized ? Effect.fail(new Unauthorized({})) : Effect.provideService(
       effect,
       CurrentUser,
       new User({ id: options.headers.userid ?? "1", name: options.headers.name ?? "Fallback name" })

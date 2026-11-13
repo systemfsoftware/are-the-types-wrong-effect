@@ -1,8 +1,8 @@
 import { OpenRouterClient, OpenRouterConfig, OpenRouterDecisionModel } from "@effect/ai-openrouter"
 import { assert, describe, it } from "@effect/vitest"
-import { Effect, Layer, Redacted, Schema } from "effect"
-import { Decision, DecisionModel, Model } from "effect/unstable/ai"
-import { HttpClient, type HttpClientError, HttpClientRequest, HttpClientResponse } from "effect/unstable/http"
+import { Effect, Layer, Redacted, Result, Schema } from "effect"
+import { Decision, DecisionModel, Model } from "effect/ai"
+import { HttpClient, type HttpClientError, HttpClientRequest, HttpClientResponse } from "effect/http"
 
 const Ticket = Schema.Struct({
   message: Schema.String,
@@ -67,7 +67,124 @@ const decisionsResponse = {
   usage: { input_tokens: 312, output_tokens: 48 }
 }
 
+const Structured = Decision.make({
+  input: Schema.String,
+  decisions: {
+    severity: Decision.rate({
+      instructions: ["How severe?"],
+      criteria: ["Minor", { label: "Critical", description: { impact: "outage" } }]
+    })
+  }
+})
+
 describe("OpenRouterDecisionModel", () => {
+  it.effect("accepts rounded choice probabilities that total 0.99", () =>
+    Effect.gen(function*() {
+      const definition = Decision.make({
+        input: Schema.String,
+        decisions: {
+          neutral3: Decision.classify({
+            instructions: "Choose a sentiment",
+            criteria: { negative: "Negative", neutral: "Neutral", positive: "Positive" }
+          })
+        }
+      })
+      const { answers } = yield* DecisionModel.decide(definition, { input: "It is fine" }).pipe(
+        Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
+        Effect.provide(makeClientLayer((request) =>
+          Effect.succeed(jsonResponse(request, {
+            model: "test/decision-model",
+            answers: {
+              neutral3: {
+                type: "choice",
+                choice: "neutral",
+                probabilities: { negative: 0.02, neutral: 0.93, positive: 0.04 },
+                confidence: 0.93
+              }
+            },
+            usage: { input_tokens: 10, output_tokens: 5 }
+          }))
+        ))
+      )
+
+      assert.strictEqual(answers.neutral3.label, "neutral")
+      assert.closeTo(Object.values(answers.neutral3.probabilities).reduce((sum, value) => sum + value, 0), 1, 1e-6)
+    }))
+
+  for (
+    const [name, probabilities, succeeds] of [
+      ["extra provider key", { a: 0.5, b: 0.5, extra: 0.01 }, true],
+      ["drift outside two-decimal rounding", { a: 0.49, b: 0.49 }, false],
+      ["out-of-range probability", { a: 1.01, b: -0.02 }, false],
+      ["all-zero distribution", { a: 0, b: 0 }, false],
+      ["eight rounded labels", { a: 0.12, b: 0.12, c: 0.12, d: 0.12, e: 0.12, f: 0.12, g: 0.12, h: 0.13 }, true]
+    ] as const
+  ) {
+    it.effect(name, () =>
+      Effect.gen(function*() {
+        const definition = Decision.make({
+          input: Schema.String,
+          decisions: {
+            choice: Decision.classify({
+              instructions: "Pick a label",
+              criteria: Object.fromEntries(
+                Object.keys(probabilities).filter((key) => key !== "extra").map((key) => [key, key])
+              )
+            })
+          }
+        })
+        const result = yield* Effect.result(
+          DecisionModel.decide(definition, { input: "test" }).pipe(
+            Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
+            Effect.provide(makeClientLayer((request) =>
+              Effect.succeed(jsonResponse(request, {
+                model: "test/decision-model",
+                answers: { choice: { type: "choice", choice: "a", probabilities, confidence: 0.5 } },
+                usage: { input_tokens: 1, output_tokens: 1 }
+              }))
+            ))
+          )
+        )
+        if (succeeds) {
+          assert.isTrue(Result.isSuccess(result))
+          if (Result.isSuccess(result)) {
+            assert.closeTo(
+              Object.values(result.success.answers.choice.probabilities).reduce((sum, value) => sum + value, 0),
+              1,
+              1e-6
+            )
+            if (name === "extra provider key") {
+              assert.deepStrictEqual(result.success.answers.choice.probabilities, { a: 0.5, b: 0.5 })
+            }
+          }
+        } else {
+          assert.isTrue(Result.isFailure(result))
+          if (Result.isFailure(result)) assert.strictEqual(result.failure.reason._tag, "InvalidOutputError")
+        }
+      }))
+  }
+
+  it.effect("normalizes rounded score probabilities", () =>
+    Effect.gen(function*() {
+      const definition = Decision.make({
+        input: Schema.String,
+        decisions: { score: Decision.rate({ instructions: "Rate", criteria: ["low", "mid", "high"] }) }
+      })
+      const { answers } = yield* DecisionModel.decide(definition, { input: "test" }).pipe(
+        Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
+        Effect.provide(makeClientLayer((request) =>
+          Effect.succeed(jsonResponse(request, {
+            model: "test/decision-model",
+            answers: {
+              score: { type: "score", score: 1, probabilities: { "0": 0.1, "1": 0.7, "2": 0.19 }, confidence: 0.7 }
+            },
+            usage: { input_tokens: 1, output_tokens: 1 }
+          }))
+        ))
+      )
+      assert.closeTo(Object.values(answers.score.probabilities).reduce((sum, value) => sum + value, 0), 1, 1e-6)
+    }))
+
   it.effect("omits absent probability criteria from the encoded question", () =>
     Effect.gen(function*() {
       const definition = Decision.make({
@@ -291,7 +408,7 @@ describe("OpenRouterDecisionModel", () => {
       assert.strictEqual(error.reason._tag, "InvalidUserInputError")
     }))
 
-  it.effect("maps a malformed successful response to a client InvalidOutputError", () =>
+  it.effect("maps a malformed successful response to a non-retryable client InvalidResponseError", () =>
     Effect.gen(function*() {
       const error = yield* DecisionModel.decide(TicketTriage, { input: ticket }).pipe(
         Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
@@ -306,7 +423,7 @@ describe("OpenRouterDecisionModel", () => {
       assert.strictEqual(error._tag, "AiError")
       assert.strictEqual(error.module, "OpenRouterClient")
       assert.strictEqual(error.method, "createDecisions")
-      assert.strictEqual(error.reason._tag, "InvalidOutputError")
+      assert.strictEqual(error.reason._tag, "InvalidResponseError")
     }))
 
   it.effect("make constructs a DecisionModel service", () =>
@@ -345,7 +462,7 @@ describe("OpenRouterDecisionModel", () => {
     Effect.gen(function*() {
       const { confidence: _choiceConfidence, ...department } = decisionsResponse.answers.department
       const { confidence: _scoreConfidence, legend: _legend, ...frustration } = decisionsResponse.answers.frustration
-      const { answers, usage } = yield* DecisionModel.decide(TicketTriage, { input: ticket }).pipe(
+      const { answers, id, metadata, usage } = yield* DecisionModel.decide(TicketTriage, { input: ticket }).pipe(
         Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
         Effect.provide(makeClientLayer((request) =>
           Effect.succeed(jsonResponse(request, {
@@ -359,15 +476,18 @@ describe("OpenRouterDecisionModel", () => {
       assert.strictEqual(answers.frustration.label, "Very angry, strong language")
       assert.strictEqual(answers.urgent.probability, 0.999)
       assert.deepStrictEqual({ ...usage }, { inputTokens: 312, outputTokens: 48 })
+      assert.isUndefined(id)
+      assert.deepStrictEqual(metadata.openrouter, {})
     }))
 
-  it.effect("drops provider-specific cost, id and provider metadata", () =>
+  it.effect("returns the response id, resolved model, cost and serving provider", () =>
     Effect.gen(function*() {
       const result = yield* DecisionModel.decide(TicketTriage, { input: ticket }).pipe(
-        Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
+        Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model-latest" })),
         Effect.provide(makeClientLayer((request) =>
           Effect.succeed(jsonResponse(request, {
             ...decisionsResponse,
+            model: "test/decision-model-1.2",
             id: "decision-1",
             provider: "test-provider",
             usage: { ...decisionsResponse.usage, cost: 0.001 }
@@ -375,8 +495,9 @@ describe("OpenRouterDecisionModel", () => {
         ))
       )
       assert.deepStrictEqual({ ...result.usage }, { inputTokens: 312, outputTokens: 48 })
-      assert.isFalse("id" in result)
-      assert.isFalse("provider" in result)
+      assert.strictEqual(result.id, "decision-1")
+      assert.strictEqual(result.modelId, "test/decision-model-1.2")
+      assert.deepStrictEqual(result.metadata.openrouter, { cost: 0.001, provider: "test-provider" })
       assert.isFalse("cost" in result.answers.department)
     }))
 
@@ -654,6 +775,27 @@ describe("OpenRouterDecisionModel", () => {
       assert.strictEqual(error.reason._tag, "InvalidOutputError")
     }))
 
+  it.effect("decideSettled reports choice and score answers without probabilities as NoDistribution", () =>
+    Effect.gen(function*() {
+      const { probabilities: _choice, ...department } = decisionsResponse.answers.department
+      const { probabilities: _score, ...frustration } = decisionsResponse.answers.frustration
+      const { outcomes } = yield* DecisionModel.decideSettled(TicketTriage, { input: ticket }).pipe(
+        Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
+        Effect.provide(makeClientLayer((request) =>
+          Effect.succeed(jsonResponse(request, {
+            ...decisionsResponse,
+            answers: { ...decisionsResponse.answers, department, frustration }
+          }))
+        ))
+      )
+
+      assert.isTrue(Result.isFailure(outcomes.department) && outcomes.department.failure.reason === "NoDistribution")
+      assert.isTrue(
+        Result.isFailure(outcomes.frustration) && outcomes.frustration.failure.reason === "NoDistribution"
+      )
+      assert.isTrue(Result.isSuccess(outcomes.urgent))
+    }))
+
   it.effect("fails with InvalidOutputError when a score distribution skips a level index", () =>
     Effect.gen(function*() {
       const error = yield* DecisionModel.decide(TicketTriage, { input: ticket }).pipe(
@@ -712,8 +854,37 @@ describe("OpenRouterDecisionModel", () => {
         assert.strictEqual(error.reason._tag, reason)
       }))
   }
-})
 
+  it.effect("sends structured descriptions and maps score indices to labels", () =>
+    Effect.gen(function*() {
+      const result = yield* DecisionModel.decide(Structured, { input: "Checkout is down" })
+      assert.strictEqual(result.answers.severity.label, "Critical")
+      assert.deepStrictEqual({ ...result.answers.severity.probabilities }, { Minor: 0.1, Critical: 0.9 })
+    }).pipe(
+      Effect.provide(OpenRouterDecisionModel.layer({ model: "test/decision-model" })),
+      Effect.provide(makeClientLayer((request) =>
+        Effect.gen(function*() {
+          const body = yield* getRequestBody(request)
+          assert.deepStrictEqual(body.questions, {
+            severity: { type: "score", instructions: ["How severe?"], criteria: ["Minor", { impact: "outage" }] }
+          })
+          return jsonResponse(request, {
+            model: "test/decision-model",
+            usage: { input_tokens: 120, output_tokens: 0 },
+            answers: {
+              severity: {
+                type: "score",
+                score: 0.9,
+                probabilities: { "0": 0.1, "1": 0.9 },
+                confidence: 0.9,
+                legend: { "0": "Minor", "1": { impact: "outage" } }
+              }
+            }
+          })
+        })
+      ))
+    ))
+})
 const makeClientLayer = (
   handler: (
     request: HttpClientRequest.HttpClientRequest
@@ -756,12 +927,11 @@ const jsonResponse = (
     })
   )
 
-const getRequestBody = (request: HttpClientRequest.HttpClientRequest) =>
-  Effect.gen(function*() {
-    const body = request.body
-    if (body._tag === "Uint8Array") {
-      const text = new TextDecoder().decode(body.body)
-      return JSON.parse(text)
-    }
-    return yield* Effect.die(new Error("Expected Uint8Array body"))
-  })
+const getRequestBody = Effect.fnUntraced(function*(request: HttpClientRequest.HttpClientRequest) {
+  const body = request.body
+  if (body._tag === "Uint8Array") {
+    const text = new TextDecoder().decode(body.body)
+    return JSON.parse(text)
+  }
+  return yield* Effect.die(new Error("Expected Uint8Array body"))
+})
