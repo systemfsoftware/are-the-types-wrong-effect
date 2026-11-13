@@ -12,6 +12,13 @@ Starter template for TypeScript / Effect libraries and tools.
 | **Human approval** | Releases, publishing, external credentials   | User-confirmed only.                                   |
 | **Editable**       | Workspace source, tests, documentation       | Edit freely.                                           |
 
+## Doc Triggers
+
+| Doc                                 | Trigger                                                                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CONSTITUTION.md`                   | architecture changes, rule authoring, or design disputes                                                                                        |
+| `repos/constitution/ENFORCEMENT.md` | building or changing an instrument that grades work (lint gates, stream rules, CI checks, thresholds, rubrics, advisors); situational read only |
+
 ## Definition of Done
 
 | ID        | Rule                                                | Gate                |
