@@ -6,28 +6,19 @@ queue_rules:
     queue_conditions:
       - 'commits[*].commit_message ~= (?ms)\A(?=.*^git-subtree-dir: \S+$)(?=.*^git-subtree-split: [0-9a-f]{40}$)'
       - -linear-history
-      - check-success = check
-      - check-success = e2e
+      - check-success = checks / check
       - or:
           - check-success = lint PR commits
           - check-skipped = lint PR commits
-      - or:
-          - check-success = require-changeset / a publishable-package change needs an intent
-          - check-skipped = require-changeset / a publishable-package change needs an intent
     merge_conditions:
-      - check-success = check
-      - check-success = e2e
+      - check-success = checks / check
   - name: default
     # Checked on the PR itself before it enters the queue.
     queue_conditions:
-      - check-success = check
-      - check-success = e2e
+      - check-success = checks / check
       - or:
           - check-success = lint PR commits
           - check-skipped = lint PR commits
-      - or:
-          - check-success = require-changeset / a publishable-package change needs an intent
-          - check-skipped = require-changeset / a publishable-package change needs an intent
       - '-commits[*].commit_message ~= (?m)^git-subtree-dir: \S+$'
       - not:
           and:
@@ -40,5 +31,4 @@ queue_rules:
       - -modified-files ~= ^(repos/constitution|repos/worktrunk-scripts|repos/effect|repos/alchemy)/
     # Checked on Mergify's queue draft PR (mergify/merge-queue/*), i.e. CI on the PR rebased with main and any batch.
     merge_conditions:
-      - check-success = check
-      - check-success = e2e
+      - check-success = checks / check
