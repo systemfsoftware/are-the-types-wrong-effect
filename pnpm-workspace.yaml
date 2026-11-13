@@ -9,10 +9,10 @@ catalog:
   "@commitlint/cli": ^21.2.4
   "@commitlint/config-conventional": ^21.2.4
   "@commitlint/types": ^21.2.3
-  "@effect/platform-node": 4.0.0-rc.116
-  "@effect/platform-node-shared": 4.0.0-rc.116
-  "@effect/tsgo": ^0.50.0
-  "@effect/vitest": 4.0.0-rc.116
+  "@effect/platform-node": 4.1.3
+  "@effect/platform-node-shared": 4.1.3
+  "@effect/tsgo": ^0.67.5
+  "@effect/vitest": 4.1.3
   "@loaderkit/resolve": ^1.0.6
   "@microsoft/api-extractor": ^7.59.1
   "@systemfsoftware/arethetypeswrong-cli": ^4.2.0
@@ -36,7 +36,7 @@ catalog:
   "@vitest/coverage-v8": ^5.0.1
   "@vitest/snapshot": ^5.0.1
   cjs-module-lexer: ^2.2.1
-  effect: 4.0.0-rc.116
+  effect: 4.1.3
   fast-check: ^4.10.0
   husky: ^9.1.7
   lint-staged: ^17.5.1
@@ -61,10 +61,10 @@ packages:
   - packages/*
   - packages/arethetypeswrong/*
 overrides:
-  effect: 4.0.0-rc.116
-  "@effect/platform-node": 4.0.0-rc.116
-  "@effect/platform-node-shared": 4.0.0-rc.116
-  "@effect/vitest": 4.0.0-rc.116
+  effect: 4.1.3
+  "@effect/platform-node": 4.1.3
+  "@effect/platform-node-shared": 4.1.3
+  "@effect/vitest": 4.1.3
 # Three days (minutes); the same in every systemfsoftware repo, so producer and consumer gates agree.
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
