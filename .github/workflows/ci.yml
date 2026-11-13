@@ -38,7 +38,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-dist-
             turbo-${{ runner.os }}-
-      # Root package.json `check:ci` is the one definition. Never re-enumerate its steps here.
+      # Root package.json `check:ci` is the one definition of the pre-merge gate. Never re-enumerate its steps here.
       - name: Gate
         run: pnpm check:ci
 
