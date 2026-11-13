@@ -1,5 +1,9 @@
 name: CI
 
+# One job per pull request. A pull request runs format, lint, typecheck and build on the affected packages. A Mergify queue draft (head ref
+# `mergify/merge-queue/*`) and a push to main run the full command. Mergify builds its drafts as pull requests, so
+# there is no merge_group trigger. The squash-message lint and the change-intent check are steps of the same job.
+# A newer push to a pull request cancels its older run.
 on:
   push:
     branches: [main]
@@ -9,55 +13,11 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      CI: "true"
-      OXLINT_FORMAT: github
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - name: dprint from the flake
-        run: echo "$(nix build --no-link --print-out-paths .#dprint)/bin" >> "$GITHUB_PATH"
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Turbo cache
-        uses: actions/cache@v6
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-dist-${{ github.sha }}
-          restore-keys: |
-            turbo-${{ runner.os }}-dist-
-            turbo-${{ runner.os }}-
-      # Root package.json `check:ci` is the one definition of the pre-merge gate. Never re-enumerate its steps here.
-      - name: Gate
-        run: pnpm check:ci
-
-  e2e:
-    name: e2e
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      CI: "true"
-    steps:
-      - uses: actions/checkout@v7
-      - uses: cachix/install-nix-action@v31
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-      - name: Install
-        run: pnpm install --frozen-lockfile
-      - name: attw CLI e2e
-        run: pnpm test:e2e
+  checks:
+    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-ci.yml@7544b79a7f94d783ba7832bc7b07a413d5c60793
+    with:
+      commitlint: true
+      changeset: true
+      fast: pnpm format:check && export TURBO_SCM_BASE="$BASE" TURBO_SCM_HEAD="$HEAD" && pnpm exec turbo run lint typecheck typecheck:node build --affected
+      full: pnpm check:ci && pnpm test:e2e
