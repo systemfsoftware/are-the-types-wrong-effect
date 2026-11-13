@@ -15,7 +15,7 @@
   },
   "license": "Apache-2.0",
   "name": "are-the-types-wrong",
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@11.27.0",
   "private": true,
   "scripts": {
     "attw": "turbo --concurrency=${TURBO_CONCURRENCY:-50%} attw",
