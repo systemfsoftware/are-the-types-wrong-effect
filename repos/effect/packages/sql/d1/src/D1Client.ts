@@ -8,6 +8,7 @@
  * Transactions, streaming queries, and `updateValues` are not supported by this
  * driver.
  *
+ * @stability unstable
  * @since 4.0.0
  */
 import type { D1Database, D1PreparedStatement, D1Result } from "@cloudflare/workers-types"
@@ -18,16 +19,17 @@ import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import { identity } from "effect/Function"
 import * as Layer from "effect/Layer"
+import * as Reactivity from "effect/reactivity/Reactivity"
 import type * as Scope from "effect/Scope"
+import * as Client from "effect/sql/SqlClient"
+import type { Connection } from "effect/sql/SqlConnection"
+import { SqlError, UnknownError } from "effect/sql/SqlError"
+import * as Statement from "effect/sql/Statement"
 import * as Stream from "effect/Stream"
-import * as Reactivity from "effect/unstable/reactivity/Reactivity"
-import * as Client from "effect/unstable/sql/SqlClient"
-import type { Connection } from "effect/unstable/sql/SqlConnection"
-import { SqlError, UnknownError } from "effect/unstable/sql/SqlError"
-import * as Statement from "effect/unstable/sql/Statement"
 
 const ATTR_DB_SYSTEM_NAME = "db.system.name"
 const ATTR_DB_OPERATION_NAME = "db.operation.name"
+const ATTR_DB_OPERATION_BATCH_SIZE = "db.operation.batch.size"
 const ATTR_DB_QUERY_TEXT = "db.query.text"
 
 const classifyError = (cause: unknown, message: string, operation: string) =>
@@ -36,6 +38,7 @@ const classifyError = (cause: unknown, message: string, operation: string) =>
 /**
  * Unique runtime identifier used to tag `D1Client` values.
  *
+ * @stability unstable
  * @category type IDs
  * @since 4.0.0
  */
@@ -44,6 +47,7 @@ export const TypeId: TypeId = "~@effect/sql-d1/D1Client"
 /**
  * Type-level literal for the `D1Client` runtime identifier.
  *
+ * @stability unstable
  * @category type IDs
  * @since 4.0.0
  */
@@ -52,10 +56,11 @@ export type TypeId = "~@effect/sql-d1/D1Client"
 /**
  * Cloudflare D1 SQL client service, extending `SqlClient` with its D1 configuration and no `updateValues` support.
  *
+ * @stability unstable
  * @category services
  * @since 4.0.0
  */
-export interface D1Client extends Client.SqlClient {
+export interface D1Client extends Client.Base {
   readonly [TypeId]: TypeId
   readonly config: D1ClientConfig
 
@@ -96,14 +101,16 @@ export interface D1Client extends Client.SqlClient {
  * Use to access or provide a Cloudflare D1 SQL client through the Effect
  * context.
  *
+ * @stability unstable
  * @category services
  * @since 4.0.0
  */
-export const D1Client = Context.Service<D1Client>("@effect/sql-d1/D1Client")
+export const D1Client = Context.Service<D1Client, D1Client & Client.SqlClient>("@effect/sql-d1/D1Client")
 
 /**
  * Configuration for a Cloudflare D1 client, including the `D1Database`, prepared statement cache settings, span attributes, and query/result name transforms.
  *
+ * @stability unstable
  * @category models
  * @since 4.0.0
  */
@@ -127,6 +134,11 @@ interface StatementWithTransformRows extends Statement.Statement<any> {
   readonly transformRows: TransformRows | undefined
 }
 
+const batchSpanName = (spanAttributes: ReadonlyArray<readonly [string, unknown]>): string => {
+  const target = Statement.spanTarget(spanAttributes)
+  return target === undefined ? "BATCH" : `BATCH ${target}`
+}
+
 const makeBatch = (options: {
   readonly db: D1Database
   readonly prepareCache: Cache.Cache<string, D1PreparedStatement, SqlError>
@@ -139,8 +151,9 @@ const makeBatch = (options: {
   if (statements.length === 0) {
     return Effect.succeed([] as unknown as BatchResults<Statements>)
   }
+  const isBatch = statements.length > 1
   return Effect.useSpan(
-    "sql.execute",
+    isBatch ? batchSpanName(options.spanAttributes) : Statement.spanName(options.spanAttributes),
     { kind: "client" },
     (span) =>
       Effect.withFiber(Effect.fnUntraced(function*(fiber) {
@@ -162,7 +175,10 @@ const makeBatch = (options: {
         for (const [key, value] of options.spanAttributes) {
           span.attribute(key, value)
         }
-        span.attribute(ATTR_DB_OPERATION_NAME, "batch")
+        if (isBatch) {
+          span.attribute(ATTR_DB_OPERATION_NAME, "BATCH")
+          span.attribute(ATTR_DB_OPERATION_BATCH_SIZE, statements.length)
+        }
         span.attribute(ATTR_DB_QUERY_TEXT, queryTexts.join("; "))
 
         // D1 batches execute on the binding directly and intentionally cannot participate in SqlClient transactions.
@@ -192,12 +208,13 @@ const makeBatch = (options: {
 /**
  * Creates a scoped Cloudflare D1 SQL client. Prepared statements are cached, while transactions and streaming queries are not supported by this driver.
  *
+ * @stability unstable
  * @category constructors
  * @since 4.0.0
  */
 export const make = (
   options: D1ClientConfig
-): Effect.Effect<D1Client, never, Scope.Scope | Reactivity.Reactivity> =>
+): Effect.Effect<D1Client & Client.SqlClient, never, Scope.Scope | Reactivity.Reactivity> =>
   Effect.gen(function*() {
     const compiler = Statement.makeCompilerSqlite(options.transformQueryNames)
     const transformRows = options.transformResultNames ?
@@ -322,15 +339,16 @@ export const make = (
     const acquirer = Effect.succeed(connection)
     const transactionAcquirer = Effect.die("transactions are not supported in D1")
 
-    let client!: D1Client
+    let client!: D1Client & Client.SqlClient
     client = Object.assign(
       (yield* Client.make({
+        driver: "d1",
         acquirer,
         compiler,
         transactionAcquirer,
         spanAttributes,
         transformRows
-      })) as D1Client,
+      })) as D1Client & Client.SqlClient,
       {
         [TypeId]: TypeId as TypeId,
         config: options,
@@ -345,14 +363,15 @@ export const make = (
 
     if (options.transformQueryNames !== undefined || transformRows !== undefined) {
       const clientWithoutTransformsBase = yield* Client.make({
+        driver: "d1",
         acquirer: Effect.succeed(connection),
         compiler: compiler.withoutTransform,
         transactionAcquirer,
         spanAttributes,
         transformRows: undefined
       })
-      let clientWithoutTransforms!: D1Client
-      clientWithoutTransforms = Object.assign(clientWithoutTransformsBase as D1Client, {
+      let clientWithoutTransforms!: D1Client & Client.SqlClient
+      clientWithoutTransforms = Object.assign(clientWithoutTransformsBase as D1Client & Client.SqlClient, {
         [TypeId]: TypeId as TypeId,
         config: options,
         batch: makeBatch({
@@ -374,6 +393,7 @@ export const make = (
 /**
  * Creates a layer from a `Config`-wrapped D1 client configuration, providing both `D1Client` and `SqlClient`.
  *
+ * @stability unstable
  * @category layers
  * @since 4.0.0
  */
@@ -394,6 +414,7 @@ export const layerConfig = (
 /**
  * Creates a layer from a concrete D1 client configuration, providing both `D1Client` and `SqlClient`.
  *
+ * @stability unstable
  * @category layers
  * @since 4.0.0
  */
