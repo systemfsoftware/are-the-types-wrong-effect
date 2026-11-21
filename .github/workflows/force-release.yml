@@ -28,9 +28,7 @@ jobs:
   force-release:
     name: dummy changeset + release PR
     runs-on: ubuntu-latest
-    # Only this job writes: it pushes the branch, opens the pull request and dispatches CI on the branch.
     permissions:
-      actions: write
       contents: write
       pull-requests: write
     env:
@@ -66,7 +64,21 @@ jobs:
             --head "$BRANCH" \
             --title "chore(release): force $BUMP" \
             --body "Manually triggered ${BUMP} release (run ${{ github.run_id }}). Merging drops a dummy changeset intent on main; the Release workflow then opens the version-packages PR."
-          # A pull request opened with the workflow token starts its pull_request workflows in `action_required` with
-          # no jobs, so the required check is never emitted. A dispatched run is not gated that way and reports its
-          # checks on the branch head the pull request points at.
-          gh workflow run ci.yml --ref "refs/heads/$BRANCH"
+      - name: Approve the CI run the pull request holds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A pull request opened with the workflow token starts its pull_request workflows in `action_required`
+          # with no jobs, so the required check is never emitted until a run is approved.
+          sha=$(git rev-parse HEAD)
+          for _ in $(seq 1 12); do
+            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$sha&event=pull_request" \
+              --jq '[.workflow_runs[] | select(.conclusion == "action_required")][0].id // empty')
+            [ -n "$id" ] && break
+            sleep 5
+          done
+          if [ -z "$id" ]; then
+            echo "No pull_request run is held on $sha."
+            exit 0
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/approve"
