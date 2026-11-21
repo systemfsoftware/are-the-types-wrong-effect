@@ -22,14 +22,17 @@ on:
           - major
 
 permissions:
-  actions: write
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   force-release:
     name: dummy changeset + release PR
     runs-on: ubuntu-latest
+    # Only this job writes: it pushes the branch, opens the pull request and dispatches CI on the branch.
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
     env:
       HUSKY: "0"
     steps:
@@ -66,4 +69,4 @@ jobs:
           # A pull request opened with the workflow token starts its pull_request workflows in `action_required` with
           # no jobs, so the required check is never emitted. A dispatched run is not gated that way and reports its
           # checks on the branch head the pull request points at.
-          gh workflow run ci.yml --ref "$BRANCH"
+          gh workflow run ci.yml --ref "refs/heads/$BRANCH"
