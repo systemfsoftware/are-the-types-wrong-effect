@@ -22,6 +22,7 @@ on:
           - major
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -62,3 +63,7 @@ jobs:
             --head "$BRANCH" \
             --title "chore(release): force $BUMP" \
             --body "Manually triggered ${BUMP} release (run ${{ github.run_id }}). Merging drops a dummy changeset intent on main; the Release workflow then opens the version-packages PR."
+          # A pull request opened with the workflow token starts its pull_request workflows in `action_required` with
+          # no jobs, so the required check is never emitted. A dispatched run is not gated that way and reports its
+          # checks on the branch head the pull request points at.
+          gh workflow run ci.yml --ref "$BRANCH"
