@@ -7,17 +7,17 @@ Starter template for TypeScript / Effect libraries and tools.
 | Surface            | Examples                                     | Limit                                                  |
 | ------------------ | -------------------------------------------- | ------------------------------------------------------ |
 | **Evaluator**      | `commitlint.config.ts`, `.github/workflows/` | Read-only; never edit the instrument that grades work. |
-| **Doctrine**       | `CONSTITUTION.md`, `subtrees.toml`           | Project law; edit only on deliberate direction.        |
+| **Doctrine**       | `subtrees.toml`                              | Project law; edit only on deliberate direction.        |
 | **Vendored**       | `repos/**`                                   | Read-only; updated via git subtree, never hand-edited. |
 | **Human approval** | Releases, publishing, external credentials   | User-confirmed only.                                   |
 | **Editable**       | Workspace source, tests, documentation       | Edit freely.                                           |
 
 ## Doc Triggers
 
-| Doc                                 | Trigger                                                                                                                                         |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CONSTITUTION.md`                   | architecture changes, rule authoring, or design disputes                                                                                        |
-| `repos/constitution/ENFORCEMENT.md` | building or changing an instrument that grades work (lint gates, stream rules, CI checks, thresholds, rubrics, advisors); situational read only |
+| Doc                                                                         | Trigger                                                                      |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `repos/constitution/CODING_STANDARDS.md` and `repos/constitution/REVIEW.md` | you plan, write, review or propose a test                                    |
+| `repos/constitution/GRADERS.md`                                             | you build or change a check (a lint rule, CI job, hook, threshold or rubric) |
 
 ## Definition of Done
 
