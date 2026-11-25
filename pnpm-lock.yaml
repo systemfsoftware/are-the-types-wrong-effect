@@ -119,8 +119,8 @@ catalogs:
       specifier: ^0.23.0
       version: 0.23.0
     turbo:
-      specifier: ^2.11.10
-      version: 2.11.10
+      specifier: ^2.11.13
+      version: 2.11.13
     typescript:
       specifier: ^7.0.2
       version: 7.0.2
@@ -179,7 +179,7 @@ importers:
         version: 7.0.2001
       turbo:
         specifier: 'catalog:'
-        version: 2.11.10
+        version: 2.11.13
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1790,33 +1790,33 @@ packages:
   '@systemfsoftware/tsconfig@2.0.1':
     resolution: {integrity: sha512-to7HVa3ZY4la1y354tkWFBe0CjQcS4DKgj2C6JNwseLqJfNpvgrPwqK9Ra/qowJmKNgmHjC2e6q1gycH8Zh5tQ==}
 
-  '@turbo/darwin-64@2.11.10':
-    resolution: {integrity: sha512-By4idRap5+nLnMuRzLB4qkOPRlvNdyY1ne4VJYDyUoUB11H94k7uif9mbe3JT8JSNXs1D68uMcBj6hJ/jMQRvA==}
+  '@turbo/darwin-64@2.11.13':
+    resolution: {integrity: sha512-5IT29i4j55E5O66+la7L8Y46ut7dFaNZqrgUIYYNtcpMt9Ql7aYnSQb/6tZ+prE2AfX1RBCAtRJE41txS2rG3w==}
     cpu: [x64]
     os: [darwin]
 
-  '@turbo/darwin-arm64@2.11.10':
-    resolution: {integrity: sha512-pyEYlVcuexOPa92p0Wlwl9YT1Is5D60lxN3ItWm3g30YLvFaUq86TF4BBWg5ZAc0uMTnrOzCvuCsOBTdzUWnRQ==}
+  '@turbo/darwin-arm64@2.11.13':
+    resolution: {integrity: sha512-YFJPayVNlhSPRIZSeERiZYGKKqPs6N6qGhim8J3GtBdv5ZjUNF1ixfnAAyCVTqFEnMSkn1W7F0Y07kca8EjWsg==}
     cpu: [arm64]
     os: [darwin]
 
-  '@turbo/linux-64@2.11.10':
-    resolution: {integrity: sha512-1tYeR/IDZ5HEdsb0jNq2L2xam5nMQ+g80tlV2BZmv4OFw+pMcUM0mMmUcfc5wXPPNHVNPuDMjh9Y8G8HgXPLZA==}
+  '@turbo/linux-64@2.11.13':
+    resolution: {integrity: sha512-R5RIQflV4ffBDNuUwjmtmzIr6Y2UeyeeHTtultYF7cnFn3tG1RZ4GRBlpjUhHB6JxuR7l1B450hlbzdtlD3ghg==}
     cpu: [x64]
     os: [android, linux]
 
-  '@turbo/linux-arm64@2.11.10':
-    resolution: {integrity: sha512-HuekQxvVGhUd46g1Im/DKdOtglHr4/gguZAvzEpPUgtxNkztSa8lWhQEGQ+EmPQ0n7w19qjThFU+OfEEd0uvlw==}
+  '@turbo/linux-arm64@2.11.13':
+    resolution: {integrity: sha512-AwV8pVO/cH/lwx1B7SGfzUA/3e6vmPaygFp9NOSRESs6t3Wr63zrBuXlluDogAOIxIMlHDB2ZbBueDsBnQxh2Q==}
     cpu: [arm64]
     os: [android, linux]
 
-  '@turbo/windows-64@2.11.10':
-    resolution: {integrity: sha512-UJOP3BkbreY3/JlMgJR6ZiimxYIBn+c+B4tnBIxD0E9c3Estmk+XoVNVBNBottZLNRXe3/ScgOU4+/k8tIWysg==}
+  '@turbo/windows-64@2.11.13':
+    resolution: {integrity: sha512-PGXYTaFaN3FZloe4RffNGJmfB+TIWlqQgKK1PVyKwPN+PUzxGa+byxHBWFHredMaVbnUc6L/F6/QR4iHyM/wug==}
     cpu: [x64]
     os: [win32]
 
-  '@turbo/windows-arm64@2.11.10':
-    resolution: {integrity: sha512-xOkEjF3ws/b/YNlc+bvJHMYBn+vL+QbEISZFVi0qS+ImmhA1X3/gmNmBrjjIG3dg6aeN+n6gQitzSkXQ286qJQ==}
+  '@turbo/windows-arm64@2.11.13':
+    resolution: {integrity: sha512-YdRHWstBUHWt/eChOEM4f9LT0dPiWK5SNgtV77bLCr3JNke9M5E7metqelNYj+tXe36dH0BZrk2CMnFlWqHKng==}
     cpu: [arm64]
     os: [win32]
 
@@ -3291,8 +3291,8 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
-  turbo@2.11.10:
-    resolution: {integrity: sha512-3GJYwig8ygEI89oaOZdduJX8/aw6O9eRPYHoIt6T3FZl9hkKjiyIspufJoVgqXihPoJu8M5CSV0DlZvzfohBCw==}
+  turbo@2.11.13:
+    resolution: {integrity: sha512-2EZ8StW6tqaj71HGF60oUOmJrPQHidmZ5dcwv2VORofya9JthVrfZhxbzRMx/QxjPwYi754i2h5RFsZSDzpnaQ==}
     hasBin: true
 
   tweetnacl@0.14.5:
@@ -3497,12 +3497,15 @@ packages:
 
   yuku-ast@0.9.5:
     resolution: {integrity: sha512-Q8qW8WwQnN5Cm0ZZivdRIfv0sRLTjUq0YumXJkw8CYN1aCdICH9rk4C47/4n6kA5EqDtlj+F608twoTSV2MwdQ==}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   yuku-codegen@0.9.5:
     resolution: {integrity: sha512-zGUVyDpSK4b6c9B0yyxi2P0wujn1XZTbG9dCb7d6gyAoP63EMgyLzUwPUvwxPG5jgYqhlI7w+S3oCyapqGr4PA==}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   yuku-parser@0.9.5:
     resolution: {integrity: sha512-IBnAdNVMswWbJcM7woPluOudectJzFjJ1N8jVRxP9Uq4CIv5hZdBIcdmtRbFDYF/Ph2j2gVup4YJ4N9mh0jYFA==}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   zip-stream@6.0.1:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
@@ -4888,22 +4891,22 @@ snapshots:
 
   '@systemfsoftware/tsconfig@2.0.1': {}
 
-  '@turbo/darwin-64@2.11.10':
+  '@turbo/darwin-64@2.11.13':
     optional: true
 
-  '@turbo/darwin-arm64@2.11.10':
+  '@turbo/darwin-arm64@2.11.13':
     optional: true
 
-  '@turbo/linux-64@2.11.10':
+  '@turbo/linux-64@2.11.13':
     optional: true
 
-  '@turbo/linux-arm64@2.11.10':
+  '@turbo/linux-arm64@2.11.13':
     optional: true
 
-  '@turbo/windows-64@2.11.10':
+  '@turbo/windows-64@2.11.13':
     optional: true
 
-  '@turbo/windows-arm64@2.11.10':
+  '@turbo/windows-arm64@2.11.13':
     optional: true
 
   '@types/argparse@1.0.38': {}
@@ -6271,14 +6274,14 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  turbo@2.11.10:
+  turbo@2.11.13:
     optionalDependencies:
-      '@turbo/darwin-64': 2.11.10
-      '@turbo/darwin-arm64': 2.11.10
-      '@turbo/linux-64': 2.11.10
-      '@turbo/linux-arm64': 2.11.10
-      '@turbo/windows-64': 2.11.10
-      '@turbo/windows-arm64': 2.11.10
+      '@turbo/darwin-64': 2.11.13
+      '@turbo/darwin-arm64': 2.11.13
+      '@turbo/linux-64': 2.11.13
+      '@turbo/linux-arm64': 2.11.13
+      '@turbo/windows-64': 2.11.13
+      '@turbo/windows-arm64': 2.11.13
 
   tweetnacl@0.14.5: {}
 
